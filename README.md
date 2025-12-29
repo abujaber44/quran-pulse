@@ -11,7 +11,7 @@ Feel the Pulse of the Quran – Memorize, Recite, Understand.
 - Settings for preferences
 
 ## Setup
-1. Place `AmiriQuran-Regular.ttf` in `assets/fonts/`.
+1. Place `Amiri-Regular.ttf` in `assets/fonts/`.
 2. `npm install`
 3. `npx expo start`
 
