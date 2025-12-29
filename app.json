@@ -1,0 +1,42 @@
+{
+  "expo": {
+    "name": "Quran Pulse",
+    "slug": "quran-pulse",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff",
+      "plugins": [
+        "expo-dev-client"
+      ]
+    },
+    "updates": {
+      "fallbackToCacheTimeout": 0
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.quranpulse.app",
+      "infoPlist": {"NSMicrophoneUsageDescription": "This app uses audio to play Quran recitation."}
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#ffffff"
+      },
+      "package": "com.quranpulse.app"
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "description": "Feel the Pulse of the Quran – Memorize, Recite, Understand.",
+    "plugins": [
+      "expo-audio"
+    ]
+  }
+}
