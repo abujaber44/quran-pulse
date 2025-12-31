@@ -130,10 +130,10 @@ const styles = StyleSheet.create({
     paddingBottom: 20,
   },
   settingsBtn: { 
-    padding: 10, 
+    padding: 5, 
     backgroundColor: '#f9f9f9ff', 
-    borderRadius: 25, 
-    marginRight: 16,
+    borderRadius: 5, 
+    marginRight: 1,
   },
   settingsIcon: { 
     fontSize: 24, 
@@ -144,12 +144,15 @@ const styles = StyleSheet.create({
     fontSize: 36, 
     fontWeight: 'bold', 
     color: '#2c3e50', 
-    fontFamily: 'AmiriQuran' 
+    fontFamily: 'AmiriQuran',
+    textAlign: 'center', 
   },
   subtitle: { 
     fontSize: 18, 
     color: '#7f8c8d', 
-    marginTop: 4 
+    marginTop: 4,
+    fontStyle: 'italic',
+    textAlign: 'center', 
   },
   searchContainer: {
     paddingHorizontal: 16,
