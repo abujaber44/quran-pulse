@@ -11,7 +11,7 @@ import {
   Alert,
 } from 'react-native';
 import Slider from '@react-native-community/slider';
-import { fetchAyahs, fetchTranslations } from '../services/quranApi';
+import { fetchAyahs, fetchTranslations, fetchTafseer } from '../services/quranApi';
 import { useAudio } from '../context/AudioContext';
 import { useSettings } from '../context/SettingsContext';
 import { getGlobalAyahNumber } from '../utils/quranUtils';
@@ -39,6 +39,8 @@ export default function SurahScreen({ route }: any) {
   const [tempStart, setTempStart] = useState(1);
   const [tempEnd, setTempEnd] = useState(surah.verses_count);
   const [expandedTafseer, setExpandedTafseer] = useState<number | null>(null);
+  const [currentTafseer, setCurrentTafseer] = useState<string>('');
+  const [loadingTafseer, setLoadingTafseer] = useState(false);
 
   const scrollRef = useRef<ScrollView>(null);
   const ayahRefs = useRef<{ [key: number]: View | null }>({});
@@ -67,7 +69,6 @@ export default function SurahScreen({ route }: any) {
 
   const { settings } = useSettings();
 
-  // Stop audio when leaving screen
   useEffect(() => {
     return () => {
       if (sound) {
@@ -77,29 +78,25 @@ export default function SurahScreen({ route }: any) {
     };
   }, [sound]);
 
-  // Load Arabic ayahs + English translations (safe index-based merge)
+  // Load Arabic ayahs + English translations (index-based merge)
   useEffect(() => {
     const loadData = async () => {
       try {
         const ayahsData = await fetchAyahs(surah.id);
         const translationsData = await fetchTranslations(surah.id);
 
-        // Since translations come in exact order without verse_number, map by index
         const ayahsWithTranslation = ayahsData.map((ayah: any, index: number) => ({
           ...ayah,
           translation: translationsData[index]?.text || 'Translation not available',
-          tafseer: 'Tafseer (detailed explanation) coming soon...',
         }));
 
         setAyahs(ayahsWithTranslation);
       } catch (error) {
         console.error('Error loading ayahs or translations:', error);
-        // Fallback: load Arabic only
         const ayahsData = await fetchAyahs(surah.id);
         setAyahs(ayahsData.map((ayah: any) => ({
           ...ayah,
-          translation: 'Translation unavailable (check connection)',
-          tafseer: '',
+          translation: 'Translation unavailable',
         })));
       }
     };
@@ -107,14 +104,14 @@ export default function SurahScreen({ route }: any) {
     loadData();
   }, [surah.id]);
 
-  // Auto-play first ayah if enabled
+  // Auto-play first ayah
   useEffect(() => {
     if (settings.autoPlayOnStart && ayahs.length > 0 && !currentAyah) {
       handlePlayAyah(1);
     }
   }, [ayahs.length, settings.autoPlayOnStart]);
 
-  // Auto next ayah (no skipping)
+  // Auto next ayah
   useEffect(() => {
     if (!currentAyah || currentAyah.surah !== surah.id) return;
 
@@ -133,7 +130,7 @@ export default function SurahScreen({ route }: any) {
     }
   }, [positionMillis, durationMillis, currentAyah, repeatMode, repeatRange, memorizationMode, surah.id, surahs]);
 
-  // Auto-scroll to current ayah
+  // Auto-scroll
   useEffect(() => {
     if (currentAyah && currentAyah.surah === surah.id) {
       const view = ayahRefs.current[currentAyah.ayah];
@@ -141,10 +138,7 @@ export default function SurahScreen({ route }: any) {
         view.measureLayout(
           scrollRef.current as any,
           (x, y) => {
-            scrollRef.current?.scrollTo({
-              y: y - 150,
-              animated: true,
-            });
+            scrollRef.current?.scrollTo({ y: y - 150, animated: true });
           },
           () => {}
         );
@@ -178,8 +172,26 @@ export default function SurahScreen({ route }: any) {
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
-  const toggleTafseer = (ayahNum: number) => {
-    setExpandedTafseer(expandedTafseer === ayahNum ? null : ayahNum);
+  // Load real tafseer from quran-tafseer.com (ID 1 = التفسير الميسر)
+  const toggleTafseer = async (ayahNum: number) => {
+    if (expandedTafseer === ayahNum) {
+      setExpandedTafseer(null);
+      return;
+    }
+
+    setLoadingTafseer(true);
+    setExpandedTafseer(ayahNum);
+
+    try {
+      const text = await fetchTafseer(surah.id, ayahNum);
+      console.log('Fetched tafseer:', text);
+      setCurrentTafseer(text);
+    } catch (error) {
+      console.error('Tafseer load error:', error);
+      setCurrentTafseer('Failed to load tafseer.');
+    } finally {
+      setLoadingTafseer(false);
+    }
   };
 
   const isDark = settings.isDarkMode;
@@ -248,22 +260,24 @@ export default function SurahScreen({ route }: any) {
                 {ayah.text_uthmani}
               </Text>
 
-              {/* English Translation */}
+              {/* English Translation - Left Aligned */}
               <Text style={[styles.translationText, isDark && styles.darkText]}>
-                {ayah.translation || 'Translation not available'}
+                {ayah.translation}
               </Text>
 
               {/* Tafseer Toggle */}
               <TouchableOpacity onPress={() => toggleTafseer(ayah.verse_number)} style={styles.tafseerToggleBtn}>
                 <Text style={[styles.tafseerToggle, isDark && styles.darkText]}>
-                  {expandedTafseer === ayah.verse_number ? '↑ Hide Tafseer' : '↓ Show Tafseer'}
+                  {expandedTafseer === ayah.verse_number 
+                    ? (loadingTafseer ? 'Loading...' : '↑ Hide Tafseer') 
+                    : '↓ Show Tafseer'}
                 </Text>
               </TouchableOpacity>
 
-              {/* Expandable Tafseer */}
+              {/* Real Tafseer (التفسير الميسر) */}
               {expandedTafseer === ayah.verse_number && (
                 <Text style={[styles.tafseerText, isDark && styles.darkText]}>
-                  {ayah.tafseer || 'Tafseer (detailed explanation) coming soon...'}
+                  {currentTafseer}
                 </Text>
               )}
 
@@ -447,16 +461,15 @@ const styles = StyleSheet.create({
   translationText: {
     fontSize: 16,
     lineHeight: 28,
-    textAlign: 'left',          // ← Changed from 'right' to 'left'
+    textAlign: 'left',
     color: '#2c3e50',
-    marginTop: 12,
-    paddingHorizontal: 16,     // Slightly more padding for better look
-    fontStyle: 'italic',
+    marginTop: 16,
+    paddingHorizontal: 16,
   },
   tafseerToggleBtn: {
     marginTop: 12,
     alignSelf: 'flex-end',
-    paddingHorizontal: 8,
+    paddingHorizontal: 16,
   },
   tafseerToggle: {
     fontSize: 14,
@@ -466,7 +479,7 @@ const styles = StyleSheet.create({
   tafseerText: {
     fontSize: 15,
     lineHeight: 26,
-    textAlign: 'left',          // ← Also left-aligned for English readability
+    textAlign: 'right', // Arabic tafseer — right-aligned
     color: '#34495e',
     marginTop: 10,
     paddingHorizontal: 16,
