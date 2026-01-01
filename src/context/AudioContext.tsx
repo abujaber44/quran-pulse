@@ -10,17 +10,14 @@ interface Reciter {
   name: string;
 }
 
-const reciters: Reciter[] = [
+const reciters = [
   { id: 'ar.alafasy', name: 'Mishary Rashid Alafasy' },
   { id: 'ar.husary', name: 'Mahmoud Khalil Al-Husary' },
   { id: 'ar.minshawi', name: 'Muhammad Siddiq Al-Minshawi' },
-  { id: 'ar.abdulsamad', name: 'Abdul Basit Abdul Samad (Murattal)' },
-  { id: 'ar.abdulsamad_mujawwad', name: 'Abdul Basit Abdul Samad (Mujawwad)' },
-  { id: 'ar.sudais', name: 'Abdur Rahman As-Sudais' },
-  { id: 'ar.shuraym', name: 'Saud Ash-Shuraim' },
-  { id: 'ar.maher', name: 'Maher Al Muaiqly' },
-  { id: 'ar.ghamdi', name: 'Saad Al Ghamdi' },
-  { id: 'ar.shatri', name: 'Abu Bakr Ash-Shatri' },
+  { id: 'ar.muhammadayyoub', name: 'Muhammad Ayyoub' },
+  { id: 'ar.mahermuaiqly', name: 'Maher Al Muaiqly' },
+  { id: 'ar.shaatree', name: 'Abu Bakr Ash-Shatri' },
+  { id: 'ar.ahmedajamy', name: 'Ahmed ibn Ali al-Ajamy' },
 ];
 
 const BASE_URL = 'https://cdn.islamic.network/quran/audio/128';
