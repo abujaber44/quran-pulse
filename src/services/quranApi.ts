@@ -8,7 +8,6 @@ export const fetchSurahs = async () => {
   return data.chapters;
 };
 
-// Keep this exactly as your working version — audio depends on it
 export const fetchAyahs = async (chapterId: number) => {
   const { data } = await axios.get(
     `${BASE_URL}/verses/by_chapter/${chapterId}?fields=text_uthmani&per_page=1000`
@@ -16,7 +15,6 @@ export const fetchAyahs = async (chapterId: number) => {
   return data.verses;
 };
 
-// New: Separate call for English translation (Saheeh International - ID 131)
 export const fetchTranslations = async (chapterId: number) => {
   const { data } = await axios.get(`${BASE_URL}/quran/translations/85`, {
     params: {
@@ -24,4 +22,17 @@ export const fetchTranslations = async (chapterId: number) => {
     },
   });
   return data.translations;
+};
+
+
+export const fetchTafseer = async (suraNumber: number, ayahNumber: number) => {
+  try {
+    const response = await axios.get(
+      `http://api.quran-tafseer.com/tafseer/1/${suraNumber}/${ayahNumber}`,
+    );
+    return response.data.text || 'Tafseer not available.';
+  } catch (error) {
+    console.error('Tafseer error:', error.message);
+    return 'Failed to load tafseer. Check your internet connection.';
+  }
 };

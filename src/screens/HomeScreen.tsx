@@ -1,16 +1,52 @@
 // src/screens/HomeScreen.tsx
 import React, { useEffect, useState } from 'react';
-import { View, Text, FlatList, TouchableOpacity, StyleSheet } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context'; // ← Updated import
+import {
+  View,
+  Text,
+  FlatList,
+  TouchableOpacity,
+  StyleSheet,
+  TextInput,
+  TouchableWithoutFeedback,
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { fetchSurahs } from '../services/quranApi';
 import { Surah } from '../types';
 
 export default function HomeScreen({ navigation }: any) {
   const [surahs, setSurahs] = useState<Surah[]>([]);
+  const [filteredSurahs, setFilteredSurahs] = useState<Surah[]>([]);
+  const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
-    fetchSurahs().then(setSurahs);
+    fetchSurahs().then((data) => {
+      setSurahs(data);
+      setFilteredSurahs(data);
+    });
   }, []);
+
+  // Real-time search filter
+  useEffect(() => {
+    if (!searchQuery.trim()) {
+      setFilteredSurahs(surahs);
+      return;
+    }
+
+    const query = searchQuery.toLowerCase().trim();
+    const filtered = surahs.filter((surah) => {
+      return (
+        surah.name_simple.toLowerCase().includes(query) ||
+        surah.name_arabic.includes(searchQuery)
+      );
+    });
+
+    setFilteredSurahs(filtered);
+  }, [searchQuery, surahs]);
+
+  // Clear search function
+  const clearSearch = () => {
+    setSearchQuery('');
+  };
 
   const renderSurah = ({ item }: { item: Surah }) => (
     <TouchableOpacity
@@ -31,7 +67,7 @@ export default function HomeScreen({ navigation }: any) {
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.container}>
-        {/* Header with Settings in Top-Left */}
+        {/* Header with Settings */}
         <View style={styles.header}>
           <TouchableOpacity 
             style={styles.settingsBtn} 
@@ -46,11 +82,37 @@ export default function HomeScreen({ navigation }: any) {
           </View>
         </View>
 
+        {/* Search Bar with Clear (×) Button */}
+        <View style={styles.searchContainer}>
+          <View style={styles.searchWrapper}>
+            <TextInput
+              style={styles.searchInput}
+              placeholder="Search Surah (English or Arabic)..."
+              placeholderTextColor="#aaa"
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+              autoCapitalize="none"
+              autoCorrect={false}
+            />
+
+            {/* Clear Button (×) */}
+            {searchQuery.length > 0 && (
+              <TouchableWithoutFeedback onPress={clearSearch}>
+                <View style={styles.clearButton}>
+                  <Text style={styles.clearIcon}>×</Text>
+                </View>
+              </TouchableWithoutFeedback>
+            )}
+          </View>
+        </View>
+
+        {/* Surahs List */}
         <FlatList
-          data={surahs}
+          data={filteredSurahs}
           keyExtractor={(item) => item.id.toString()}
           renderItem={renderSurah}
           contentContainerStyle={styles.list}
+          showsVerticalScrollIndicator={false}
         />
       </View>
     </SafeAreaView>
@@ -68,10 +130,10 @@ const styles = StyleSheet.create({
     paddingBottom: 20,
   },
   settingsBtn: { 
-    padding: 10, 
+    padding: 5, 
     backgroundColor: '#f9f9f9ff', 
-    borderRadius: 25, 
-    marginRight: 16,
+    borderRadius: 5, 
+    marginRight: 1,
   },
   settingsIcon: { 
     fontSize: 24, 
@@ -82,12 +144,45 @@ const styles = StyleSheet.create({
     fontSize: 36, 
     fontWeight: 'bold', 
     color: '#2c3e50', 
-    fontFamily: 'AmiriQuran' 
+    fontFamily: 'AmiriQuran',
+    textAlign: 'center', 
   },
   subtitle: { 
     fontSize: 18, 
     color: '#7f8c8d', 
-    marginTop: 4 
+    marginTop: 4,
+    fontStyle: 'italic',
+    textAlign: 'center', 
+  },
+  searchContainer: {
+    paddingHorizontal: 16,
+    paddingBottom: 12,
+    backgroundColor: '#f8f9fa',
+  },
+  searchWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+  },
+  searchInput: {
+    flex: 1,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    fontSize: 16,
+    color: '#2c3e50',
+  },
+  clearButton: {
+    paddingHorizontal: 16,
+  },
+  clearIcon: {
+    fontSize: 20,
+    color: '#7f8c8d',
   },
   list: { paddingHorizontal: 16 },
   surahCard: { 
