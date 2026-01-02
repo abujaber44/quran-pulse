@@ -129,15 +129,18 @@ const styles = StyleSheet.create({
     paddingTop: 20,
     paddingBottom: 20,
   },
-  settingsBtn: { 
-    padding: 5, 
-    backgroundColor: '#f9f9f9ff', 
-    borderRadius: 5, 
-    marginRight: 1,
-  },
-  settingsIcon: { 
-    fontSize: 24, 
-    color: '#fff' 
+  settingsBtn: {
+    width: 50,
+    height: 50,
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    borderRadius: 25,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 16,
+    },
+  settingsIcon: {
+    fontSize: 24,
+    color: '#fff',
   },
   titleContainer: { flex: 1 },
   title: { 
