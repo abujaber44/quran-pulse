@@ -181,7 +181,6 @@ export default function SurahScreen({ route }: any) {
 
     try {
       const text = await fetchTafseer(surah.id, ayahNum);
-      console.log('Fetched tafseer:', text);
       setCurrentTafseer(text);
     } catch (error) {
       console.error('Tafseer load error:', error);
@@ -245,7 +244,7 @@ export default function SurahScreen({ route }: any) {
           {ayahs.map((ayah) => (
             <TouchableOpacity
               key={ayah.verse_number}
-              ref={(ref) => (ayahRefs.current[ayah.verse_number] = ref)}
+              ref={(ref) => { ayahRefs.current[ayah.verse_number] = ref; }}
               style={[
                 styles.ayahCard,
                 isDark && styles.darkAyahCard,
@@ -283,7 +282,7 @@ export default function SurahScreen({ route }: any) {
               </Text>
             </TouchableOpacity>
           ))}
-          <View style={{ height: 150 }} />
+          <View style={{ height: 130 }} />
         </ScrollView>
 
         {/* Player */}
@@ -390,7 +389,7 @@ export default function SurahScreen({ route }: any) {
                   <Text style={styles.rangeActionBtn}>Repeat Single</Text>
                 </TouchableOpacity>
                 <TouchableOpacity onPress={() => {
-                  setRepeatRange({ start: tempStart, end: tempEnd });
+                  setRepeatRange(tempStart, tempEnd);
                   setRepeatMode('range');
                   setRangeModal(false);
                 }}>
@@ -432,17 +431,17 @@ const styles = StyleSheet.create({
   ayahNumberBottom: { position: 'absolute', bottom: 12, left: 16, fontSize: 18, color: '#3498db', backgroundColor: '#fff', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20, fontWeight: 'bold' },
   playerContainer: { position: 'absolute', bottom: 0, left: 0, right: 0, paddingHorizontal: 16, paddingBottom: 20 },
   darkPlayerContainer: { backgroundColor: 'transparent' },
-  playerCard: { backgroundColor: '#fff', borderRadius: 20, padding: 20, elevation: 12, shadowColor: '#000', shadowOffset: { width: 0, height: -6 }, shadowOpacity: 0.15, shadowRadius: 12 },
+  playerCard: { backgroundColor: '#fff', borderRadius: 20, padding: 12, elevation: 12, shadowColor: '#000', shadowOffset: { width: 0, height: -6 }, shadowOpacity: 0.15, shadowRadius: 12 },
   darkPlayerCard: { backgroundColor: '#1e1e1e' },
-  playerHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
-  playerAyahNumber: { fontSize: 28, fontWeight: 'bold', color: '#3498db', marginRight: 12 },
-  playerTitle: { fontSize: 18, fontWeight: '600', color: '#2c3e50' },
+  playerHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 6 },
+  playerAyahNumber: { fontSize: 20, fontWeight: 'bold', color: '#3498db', marginRight: 12 },
+  playerTitle: { fontSize: 13, fontWeight: '600', color: '#2c3e50' },
   slider: { width: '100%', height: 40 },
   timeText: { textAlign: 'center', color: '#7f8c8d', marginVertical: 8 },
   playerControls: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  controlBtn: { fontSize: 18, color: '#2c3e50', fontWeight: '600' },
+  controlBtn: { fontSize: 18, color: '#27ae60', fontWeight: '600' },
   disabledBtn: { color: '#bdc3c7' },
-  playPauseBtn: { fontSize: 64, color: '#27ae60' },
+  playPauseBtn: { fontSize: 40, color: '#27ae60' },
   darkText: { color: '#fff' },
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'center', alignItems: 'center' },
   modal: { backgroundColor: '#fff', padding: 20, borderRadius: 16, width: '90%', maxHeight: '80%' },
@@ -464,19 +463,20 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
   },
   tafseerToggleBtn: {
-    marginTop: 12,
+    marginTop: 16,
     alignSelf: 'flex-end',
     paddingHorizontal: 16,
+    paddingVertical: 6
   },
   tafseerToggle: {
-    fontSize: 14,
+    fontSize: 16,
     color: '#27ae60',
     fontWeight: '600',
   },
   tafseerText: {
     fontSize: 15,
     lineHeight: 26,
-    textAlign: 'right', // Arabic tafseer — right-aligned
+    textAlign: 'right',
     color: '#34495e',
     marginTop: 10,
     paddingHorizontal: 16,

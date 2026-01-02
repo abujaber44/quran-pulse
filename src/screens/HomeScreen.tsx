@@ -1,4 +1,3 @@
-// src/screens/HomeScreen.tsx
 import React, { useEffect, useState } from 'react';
 import {
   View,
@@ -106,6 +105,14 @@ export default function HomeScreen({ navigation }: any) {
           </View>
         </View>
 
+        {/* Asma Al-Husna Button */}
+        <TouchableOpacity
+          style={styles.asmaButton}
+          onPress={() => navigation.navigate('AsmaAlHusna')}
+        >
+          <Text style={styles.asmaButtonText}>Asma Al-Husna</Text>
+        </TouchableOpacity>
+
         {/* Surahs List */}
         <FlatList
           data={filteredSurahs}
@@ -129,15 +136,18 @@ const styles = StyleSheet.create({
     paddingTop: 20,
     paddingBottom: 20,
   },
-  settingsBtn: { 
-    padding: 5, 
-    backgroundColor: '#f9f9f9ff', 
-    borderRadius: 5, 
-    marginRight: 1,
-  },
-  settingsIcon: { 
-    fontSize: 24, 
-    color: '#fff' 
+  settingsBtn: {
+    width: 50,
+    height: 50,
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    borderRadius: 25,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 16,
+    },
+  settingsIcon: {
+    fontSize: 24,
+    color: '#fff',
   },
   titleContainer: { flex: 1 },
   title: { 
@@ -204,4 +214,17 @@ const styles = StyleSheet.create({
   surahNameEnglish: { fontSize: 18, color: '#2c3e50', fontWeight: '600' },
   surahNameArabic: { fontFamily: 'AmiriQuran', fontSize: 28, color: '#2c3e50', marginTop: 4 },
   versesCount: { fontSize: 14, color: '#7f8c8d' },
+  asmaButton: {
+    backgroundColor: '#27ae60',
+    marginHorizontal: 16,
+    paddingVertical: 14,
+    borderRadius: 16,
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  asmaButtonText: {
+    color: '#fff',
+    fontSize: 18,
+    fontWeight: '600',
+  },
 });
