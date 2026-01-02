@@ -1,5 +1,6 @@
 // src/context/AudioContext.tsx
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { Alert } from 'react-native';
 import { Audio } from 'expo-av';
 import { getReciter, saveReciter } from '../services/storage';
 import { getGlobalAyahNumber } from '../utils/quranUtils';
@@ -52,7 +53,8 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
   const [durationMillis, setDurationMillis] = useState(0);
   const [selectedReciter, setSelectedReciter] = useState<Reciter>(reciters[0]);
   const [repeatMode, setRepeatMode] = useState<'none' | 'single' | 'range'>('none');
-  const [repeatRange, setRepeatRange] = useState<{ start: number; end: number } | null>(null);
+  const [repeatRange, setRepeatRangeState] = useState<{ start: number; end: number } | null>(null);
+  const setRepeatRange = (start: number, end: number) => setRepeatRangeState({ start, end });
   const [memorizationMode, setMemorizationMode] = useState(false);
 
   const { settings } = useSettings(); // ← Get global settings

@@ -1,4 +1,3 @@
-// App.tsx
 import React, { useEffect, useState } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
@@ -10,6 +9,7 @@ import { SettingsProvider } from './src/context/SettingsContext';
 import HomeScreen from './src/screens/HomeScreen';
 import SurahScreen from './src/screens/SurahScreen';
 import SettingsScreen from './src/screens/SettingsScreen';
+import AsmaAlHusnaScreen from './src/screens/AsmaAlHusnaScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -49,6 +49,11 @@ export default function App() {
               name="Settings"
               component={SettingsScreen}
               options={{ title: 'Settings' }}
+            />
+            <Stack.Screen 
+              name="AsmaAlHusna" 
+              component={AsmaAlHusnaScreen} 
+              options={{ title: 'Asma Al-Husna' }}
             />
           </Stack.Navigator>
         </NavigationContainer>
