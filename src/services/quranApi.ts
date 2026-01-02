@@ -1,4 +1,3 @@
-// src/services/quranApi.ts
 import axios from 'axios';
 
 const BASE_URL = 'https://api.quran.com/api/v4';
@@ -31,8 +30,9 @@ export const fetchTafseer = async (suraNumber: number, ayahNumber: number) => {
       `http://api.quran-tafseer.com/tafseer/1/${suraNumber}/${ayahNumber}`,
     );
     return response.data.text || 'Tafseer not available.';
-  } catch (error) {
-    console.error('Tafseer error:', error.message);
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : String(err);
+    console.error('Tafseer error:', message);
     return 'Failed to load tafseer. Check your internet connection.';
   }
 };
