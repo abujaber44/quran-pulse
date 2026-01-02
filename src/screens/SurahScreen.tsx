@@ -244,7 +244,7 @@ export default function SurahScreen({ route }: any) {
           {ayahs.map((ayah) => (
             <TouchableOpacity
               key={ayah.verse_number}
-              ref={(ref) => (ayahRefs.current[ayah.verse_number] = ref)}
+              ref={(ref) => { ayahRefs.current[ayah.verse_number] = ref; }}
               style={[
                 styles.ayahCard,
                 isDark && styles.darkAyahCard,
@@ -389,7 +389,7 @@ export default function SurahScreen({ route }: any) {
                   <Text style={styles.rangeActionBtn}>Repeat Single</Text>
                 </TouchableOpacity>
                 <TouchableOpacity onPress={() => {
-                  setRepeatRange({ start: tempStart, end: tempEnd });
+                  setRepeatRange(tempStart, tempEnd);
                   setRepeatMode('range');
                   setRangeModal(false);
                 }}>
