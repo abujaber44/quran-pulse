@@ -10,6 +10,7 @@ import HomeScreen from './src/screens/HomeScreen';
 import SurahScreen from './src/screens/SurahScreen';
 import SettingsScreen from './src/screens/SettingsScreen';
 import AsmaAlHusnaScreen from './src/screens/AsmaAlHusnaScreen';
+import PrayerTimesScreen from './src/screens/PrayerTimesScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -54,6 +55,11 @@ export default function App() {
               name="AsmaAlHusna" 
               component={AsmaAlHusnaScreen} 
               options={{ title: 'Asma Al-Husna' }}
+            />
+            <Stack.Screen
+              name="PrayerTimes"
+              component={PrayerTimesScreen}
+              options={{ title: 'Prayer Times' }}
             />
           </Stack.Navigator>
         </NavigationContainer>

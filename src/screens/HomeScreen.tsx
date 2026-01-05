@@ -105,13 +105,24 @@ export default function HomeScreen({ navigation }: any) {
           </View>
         </View>
 
-        {/* Asma Al-Husna Button */}
-        <TouchableOpacity
-          style={styles.asmaButton}
-          onPress={() => navigation.navigate('AsmaAlHusna')}
-        >
-          <Text style={styles.asmaButtonText}>Asma Al-Husna</Text>
-        </TouchableOpacity>
+        {/* Feature Buttons */}
+        <View style={styles.featureButtonsContainer}>
+          {/* Asma Al-Husna Button */}
+          <TouchableOpacity
+            style={styles.featureButton}
+            onPress={() => navigation.navigate('AsmaAlHusna')}
+          >
+            <Text style={styles.featureButtonText}>Asma Al-Husna</Text>
+          </TouchableOpacity>
+
+          {/* Prayer Times Button */}
+          <TouchableOpacity
+            style={styles.featureButton}
+            onPress={() => navigation.navigate('PrayerTimes')}
+          >
+            <Text style={styles.featureButtonText}>Prayer Times & Athan</Text>
+          </TouchableOpacity>
+        </View>
 
         {/* Surahs List */}
         <FlatList
@@ -144,7 +155,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 16,
-    },
+  },
   settingsIcon: {
     fontSize: 24,
     color: '#fff',
@@ -194,6 +205,29 @@ const styles = StyleSheet.create({
     fontSize: 20,
     color: '#7f8c8d',
   },
+  featureButtonsContainer: {
+    flexDirection: 'row',
+    paddingHorizontal: 16,
+    marginBottom: 12,
+    gap: 12,
+  },
+  featureButton: {
+    flex: 1,
+    backgroundColor: '#27ae60',
+    paddingVertical: 14,
+    borderRadius: 16,
+    alignItems: 'center',
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+  },
+  featureButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+  },
   list: { paddingHorizontal: 16 },
   surahCard: { 
     backgroundColor: '#fff', 
@@ -214,17 +248,4 @@ const styles = StyleSheet.create({
   surahNameEnglish: { fontSize: 18, color: '#2c3e50', fontWeight: '600' },
   surahNameArabic: { fontFamily: 'AmiriQuran', fontSize: 28, color: '#2c3e50', marginTop: 4 },
   versesCount: { fontSize: 14, color: '#7f8c8d' },
-  asmaButton: {
-    backgroundColor: '#27ae60',
-    marginHorizontal: 16,
-    paddingVertical: 14,
-    borderRadius: 16,
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  asmaButtonText: {
-    color: '#fff',
-    fontSize: 18,
-    fontWeight: '600',
-  },
 });
