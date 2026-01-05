@@ -63,7 +63,10 @@ export default function PrayerTimesScreen() {
   };
 
   const requestPermissions = async () => {
-    await Notifications.requestPermissionsAsync();
+    const { status } = await Notifications.requestPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert('Permission required', 'Please enable notifications for Athan alerts');
+    }
   };
 
   const getLocationAndCity = async () => {
@@ -104,7 +107,7 @@ export default function PrayerTimesScreen() {
       const month = (date.getMonth() + 1).toString().padStart(2, '0');
       const year = date.getFullYear();
 
-      const url = `http://api.aladhan.com/v1/timingsByCity/${day}-${month}-${year}?city=${encodeURIComponent(cityName)}&country=&method=5`;
+      const url = `https://api.aladhan.com/v1/timingsByCity/${day}-${month}-${year}?city=${encodeURIComponent(cityName)}&country=&method=2`;
 
       const response = await fetch(url);
       const data = await response.json();
@@ -121,7 +124,7 @@ export default function PrayerTimesScreen() {
 
         setPrayers(prayerList);
         findNextPrayer(prayerList);
-        scheduleAthanNotifications(prayerList);
+        await scheduleAthanNotifications(prayerList);
       } else {
         Alert.alert('Not Found', `Could not find prayer times for "${cityName}". Try a nearby major city.`);
       }
@@ -155,23 +158,31 @@ export default function PrayerTimesScreen() {
       if (!prayer.enabled) continue;
 
       const [h, m] = prayer.time.split(':').map(Number);
-      let trigger = new Date(today);
-      trigger.setHours(h, m, 0, 0);
+      let triggerDate = new Date(today);
+      triggerDate.setHours(h, m, 0, 0);
 
-      if (trigger <= today) {
-        trigger.setDate(trigger.getDate() + 1);
+      if (triggerDate <= today) {
+        triggerDate.setDate(triggerDate.getDate() + 1);
       }
 
-      await Notifications.scheduleNotificationAsync({
-        content: {
-          title: `حان الآن موعد صلاة ${prayer.name}`,
-          body: '🕌 الله أكبر الله أكبر',
-          sound: true, // This triggers your custom athan.mp3
-          priority: Notifications.AndroidNotificationPriority.HIGH,
-          vibrate: [0, 250, 250, 250],
-        },
-        trigger: trigger as unknown as Notifications.NotificationTriggerInput,
-      });
+      try {
+        await Notifications.scheduleNotificationAsync({
+          content: {
+            title: `حان الآن موعد صلاة ${prayer.name}`,
+            body: '🕌 الله أكبر الله أكبر',
+            sound: 'athan.mp3',
+            priority: Notifications.AndroidNotificationPriority.HIGH,
+            vibrate: [0, 250, 250, 250],
+          },
+          trigger: {
+            type: 'timeInterval',
+            seconds: (triggerDate.getTime() - today.getTime()) / 1000,
+            repeats: false,
+          },
+        });
+      } catch (error) {
+        console.error(`Failed to schedule ${prayer.name}:`, error);
+      }
     }
   };
 
