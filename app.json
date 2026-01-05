@@ -8,35 +8,56 @@
     "splash": {
       "image": "./assets/splash.png",
       "resizeMode": "contain",
-      "backgroundColor": "#ffffff",
-      "plugins": [
-        "expo-dev-client"
-      ]
+      "backgroundColor": "#ffffff"
     },
     "updates": {
       "fallbackToCacheTimeout": 0
     },
     "assetBundlePatterns": [
-      "**/*"
+      "**/*",
+      "assets/sounds/*"
     ],
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.quranpulse.app",
-      "infoPlist": {"NSMicrophoneUsageDescription": "This app uses audio to play Quran recitation."}
+      "infoPlist": {
+        "NSMicrophoneUsageDescription": "This app uses audio to play Quran recitation."
+      }
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "com.quranpulse.app"
+      "package": "com.quranpulse.app",
+      "permissions": [
+        "android.permission.RECORD_AUDIO",
+        "android.permission.MODIFY_AUDIO_SETTINGS"
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png"
     },
     "description": "Feel the Pulse of the Quran – Memorize, Recite, Understand.",
     "plugins": [
-      "expo-audio"
-    ]
+      "expo-dev-client",
+      "expo-audio",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/notification-icon.png",
+          "color": "#27ae60",
+          "sounds": [
+            "./assets/sounds/athan.mp3"
+          ]
+        }
+      ],
+      "expo-font"
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "589d81ab-213a-4f0a-95e5-31d0764e8523"
+      }
+    }
   }
 }
