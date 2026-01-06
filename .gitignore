@@ -1,3 +1,57 @@
+# Dependencies
 node_modules/
+
+# Expo and local caches
 .expo/
+.expo-shared/
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Build outputs
+ios/build/
+android/app/build/
+android/.gradle/
+*.apk
+*.aab
+
+# Lock files (optional - prevents merge conflicts)
+package-lock.json
+yarn.lock
+
+# Logs and temp files
 *.log
+*.tmp
+.DS_Store
+Thumbs.db
+
+# Coverage and test outputs
+coverage/
+.nyc_output/
+
+# Environment variables (if you add .env files)
+.env
+.env.local
+.env.development
+.env.production
+
+# EAS build artifacts (if using EAS)
+.eas/
+
+# OS-specific files
+# macOS
+.DS_Store
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Linux
+*~
+
+# Git
+.git/
