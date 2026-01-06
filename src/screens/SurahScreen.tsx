@@ -39,6 +39,9 @@ export default function SurahScreen({ route }: any) {
   const [currentTafseer, setCurrentTafseer] = useState<string>('');
   const [loadingTafseer, setLoadingTafseer] = useState(false);
 
+  // For cancelling previous tafseer fetch
+  const abortControllerRef = useRef<AbortController | null>(null);
+
   const scrollRef = useRef<ScrollView>(null);
   const ayahRefs = useRef<{ [key: number]: View | null }>({});
 
@@ -75,7 +78,7 @@ export default function SurahScreen({ route }: any) {
     };
   }, [sound]);
 
-  // Load Arabic ayahs + English translations (index-based merge)
+  // Load Arabic ayahs + English translations
   useEffect(() => {
     const loadData = async () => {
       try {
@@ -169,24 +172,48 @@ export default function SurahScreen({ route }: any) {
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
-  // Load real tafseer from quran-tafseer.com (ID 1 = التفسير الميسر)
+  // Fixed toggleTafseer — prevents flash of previous tafseer
   const toggleTafseer = async (ayahNum: number) => {
     if (expandedTafseer === ayahNum) {
       setExpandedTafseer(null);
       return;
     }
 
+    // Cancel any previous fetch
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+
+    // Clear old tafseer immediately
+    setCurrentTafseer('');
     setLoadingTafseer(true);
     setExpandedTafseer(ayahNum);
 
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
+
     try {
-      const text = await fetchTafseer(surah.id, ayahNum);
-      setCurrentTafseer(text);
-    } catch (error) {
-      console.error('Tafseer load error:', error);
-      setCurrentTafseer('Failed to load tafseer.');
+      const text = await fetchTafseer(surah.id, ayahNum, controller.signal);
+      // Only update if this is still the current request
+      if (!controller.signal.aborted) {
+        setCurrentTafseer(text);
+      }
+    } catch (error: any) {
+      if (error.name === 'AbortError') {
+        console.log('Tafseer fetch cancelled');
+      } else {
+        console.error('Tafseer load error:', error);
+        if (!controller.signal.aborted) {
+          setCurrentTafseer('Failed to load tafseer. Check your connection.');
+        }
+      }
     } finally {
-      setLoadingTafseer(false);
+      if (!controller.signal.aborted) {
+        setLoadingTafseer(false);
+      }
+      if (abortControllerRef.current === controller) {
+        abortControllerRef.current = null;
+      }
     }
   };
 
@@ -256,12 +283,10 @@ export default function SurahScreen({ route }: any) {
                 {ayah.text_uthmani}
               </Text>
 
-              {/* English Translation - Left Aligned */}
               <Text style={[styles.translationText, isDark && styles.darkText]}>
                 {ayah.translation}
               </Text>
 
-              {/* Tafseer Toggle */}
               <TouchableOpacity onPress={() => toggleTafseer(ayah.verse_number)} style={styles.tafseerToggleBtn}>
                 <Text style={[styles.tafseerToggle, isDark && styles.darkText]}>
                   {expandedTafseer === ayah.verse_number 
@@ -270,7 +295,6 @@ export default function SurahScreen({ route }: any) {
                 </Text>
               </TouchableOpacity>
 
-              {/* Real Tafseer (التفسير الميسر) */}
               {expandedTafseer === ayah.verse_number && (
                 <Text style={[styles.tafseerText, isDark && styles.darkText]}>
                   {currentTafseer}
@@ -427,7 +451,7 @@ const styles = StyleSheet.create({
   ayahCard: { backgroundColor: '#fff', padding: 28, marginBottom: 16, borderRadius: 20, elevation: 6, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.1, shadowRadius: 8, position: 'relative' },
   darkAyahCard: { backgroundColor: '#1e1e1e' },
   playingCard: { backgroundColor: '#e8f5e9', borderLeftWidth: 6, borderLeftColor: '#27ae60' },
-  ayahText: { fontFamily: 'AmiriQuran', lineHeight: 72, textAlign: 'right', color: '#2c3e50' },
+  ayahText: { fontFamily: 'AmiriQuran', lineHeight: 56, textAlign: 'right', color: '#2c3e50', fontSize: 32 },
   ayahNumberBottom: { position: 'absolute', bottom: 12, left: 16, fontSize: 18, color: '#3498db', backgroundColor: '#fff', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20, fontWeight: 'bold' },
   playerContainer: { position: 'absolute', bottom: 0, left: 0, right: 0, paddingHorizontal: 16, paddingBottom: 20 },
   darkPlayerContainer: { backgroundColor: 'transparent' },

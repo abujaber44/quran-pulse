@@ -1,3 +1,4 @@
+// src/screens/PrayerTimesScreen.tsx
 import React, { useEffect, useState } from 'react';
 import {
   View,
@@ -22,7 +23,8 @@ interface Prayer {
   enabled: boolean;
 }
 
-const PRAYER_STORAGE_KEY = 'prayer_city';
+const CITY_STORAGE_KEY = 'prayer_city';
+const PRAYER_PREFS_KEY = 'prayer_athan_prefs'; // For persisting toggle state
 const DEFAULT_CITY = 'Makkah';
 
 export default function PrayerTimesScreen() {
@@ -34,21 +36,25 @@ export default function PrayerTimesScreen() {
   const { settings } = useSettings();
   const isDark = settings.isDarkMode;
 
-  // Load saved city on mount
   useEffect(() => {
-    loadSavedCity();
+    loadSavedData();
     requestPermissions();
   }, []);
 
-  const loadSavedCity = async () => {
+  const loadSavedData = async () => {
     try {
-      const saved = await AsyncStorage.getItem(PRAYER_STORAGE_KEY);
-      if (saved) {
-        setCity(saved);
-        loadPrayerTimes(saved);
-      } else {
-        loadPrayerTimes(DEFAULT_CITY);
+      const savedCity = await AsyncStorage.getItem(CITY_STORAGE_KEY);
+      const savedPrefs = await AsyncStorage.getItem(PRAYER_PREFS_KEY);
+
+      const cityToUse = savedCity || DEFAULT_CITY;
+      setCity(cityToUse);
+
+      let initialPrefs = { Fajr: true, Dhuhr: true, Asr: true, Maghrib: true, Isha: true };
+      if (savedPrefs) {
+        initialPrefs = JSON.parse(savedPrefs);
       }
+
+      loadPrayerTimes(cityToUse, initialPrefs);
     } catch (err) {
       loadPrayerTimes(DEFAULT_CITY);
     }
@@ -56,9 +62,17 @@ export default function PrayerTimesScreen() {
 
   const saveCity = async (newCity: string) => {
     try {
-      await AsyncStorage.setItem(PRAYER_STORAGE_KEY, newCity);
+      await AsyncStorage.setItem(CITY_STORAGE_KEY, newCity);
     } catch (err) {
       console.error('Failed to save city', err);
+    }
+  };
+
+  const savePrayerPrefs = async (prefs: Record<string, boolean>) => {
+    try {
+      await AsyncStorage.setItem(PRAYER_PREFS_KEY, JSON.stringify(prefs));
+    } catch (err) {
+      console.error('Failed to save prayer preferences', err);
     }
   };
 
@@ -99,7 +113,7 @@ export default function PrayerTimesScreen() {
     }
   };
 
-  const loadPrayerTimes = async (cityName: string) => {
+  const loadPrayerTimes = async (cityName: string, initialPrefs?: Record<string, boolean>) => {
     setLoading(true);
     try {
       const date = new Date();
@@ -115,11 +129,11 @@ export default function PrayerTimesScreen() {
       if (data.code === 200) {
         const timings = data.data.timings;
         const prayerList: Prayer[] = [
-          { name: 'Fajr', time: timings.Fajr, enabled: true },
-          { name: 'Dhuhr', time: timings.Dhuhr, enabled: true },
-          { name: 'Asr', time: timings.Asr, enabled: true },
-          { name: 'Maghrib', time: timings.Maghrib, enabled: true },
-          { name: 'Isha', time: timings.Isha, enabled: true },
+          { name: 'Fajr', time: timings.Fajr, enabled: initialPrefs?.Fajr ?? true },
+          { name: 'Dhuhr', time: timings.Dhuhr, enabled: initialPrefs?.Dhuhr ?? true },
+          { name: 'Asr', time: timings.Asr, enabled: initialPrefs?.Asr ?? true },
+          { name: 'Maghrib', time: timings.Maghrib, enabled: initialPrefs?.Maghrib ?? true },
+          { name: 'Isha', time: timings.Isha, enabled: initialPrefs?.Isha ?? true },
         ];
 
         setPrayers(prayerList);
@@ -150,6 +164,7 @@ export default function PrayerTimesScreen() {
     setNextPrayer('Fajr (tomorrow)');
   };
 
+  // Your working notification scheduling (kept exactly as is)
   const scheduleAthanNotifications = async (prayerList: Prayer[]) => {
     await Notifications.cancelAllScheduledNotificationsAsync();
 
@@ -190,13 +205,22 @@ export default function PrayerTimesScreen() {
     const updated = [...prayers];
     updated[index].enabled = !updated[index].enabled;
     setPrayers(updated);
+
+    // Save toggle preferences
+    const prefs = updated.reduce((acc, p) => {
+      acc[p.name] = p.enabled;
+      return acc;
+    }, {} as Record<string, boolean>);
+    savePrayerPrefs(prefs);
+
     scheduleAthanNotifications(updated);
   };
 
-  const handleCitySubmit = () => {
-    if (city.trim()) {
-      saveCity(city.trim());
-      loadPrayerTimes(city.trim());
+  const handleCityChange = (newCity: string) => {
+    if (newCity.trim()) {
+      setCity(newCity.trim());
+      saveCity(newCity.trim());
+      loadPrayerTimes(newCity.trim());
     }
   };
 
@@ -213,32 +237,41 @@ export default function PrayerTimesScreen() {
 
   return (
     <KeyboardAvoidingView style={[styles.container, isDark && styles.darkBg]} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-      <View style={styles.cityRow}>
-        <TextInput
-          style={[styles.cityInput, isDark && styles.darkInput]}
-          placeholder="Enter city (e.g., London, Riyadh)"
-          placeholderTextColor="#aaa"
-          value={city}
-          onChangeText={setCity}
-          onSubmitEditing={handleCitySubmit}
-        />
-        <TouchableOpacity style={styles.refreshBtn} onPress={handleCitySubmit}>
-          <Text style={styles.refreshText}>Go</Text>
+      {/* Header: Athan Times for City */}
+      <View style={styles.headerContainer}>
+        <Text style={[styles.headerTitle, isDark && styles.darkText]}>Athan Times for</Text>
+        <Text style={[styles.cityName, isDark && styles.darkText]}>{city}</Text>
+        <TouchableOpacity onPress={() => {
+          Alert.prompt(
+            'Change City',
+            'Enter city name:',
+            [
+              { text: 'Cancel', style: 'cancel' },
+              { text: 'Update', onPress: handleCityChange },
+            ],
+            'plain-text',
+            city
+          );
+        }}>
+          <Text style={styles.changeCityText}>Change City</Text>
         </TouchableOpacity>
       </View>
 
+      {/* Use My Location */}
       <TouchableOpacity style={styles.locationBtn} onPress={getLocationAndCity} disabled={fetchingLocation}>
         <Text style={styles.locationText}>
-          {fetchingLocation ? 'Detecting...' : '📍 Use My Location'}
+          {fetchingLocation ? 'Detecting location...' : '📍 Use My Location'}
         </Text>
       </TouchableOpacity>
 
+      {/* Next Prayer */}
       <Text style={[styles.nextPrayer, isDark && styles.darkText]}>
         Next prayer: <Text style={styles.bold}>{nextPrayer}</Text>
       </Text>
 
+      {/* Prayer Times Cards */}
       {prayers.map((prayer, i) => (
-        <View key={i} style={[styles.prayerRow, isDark && styles.darkRow]}>
+        <View key={i} style={[styles.prayerCard, isDark && styles.darkCard]}>
           <View>
             <Text style={[styles.prayerName, isDark && styles.darkText]}>{prayer.name}</Text>
             <Text style={[styles.prayerTime, isDark && styles.darkText]}>{prayer.time}</Text>
@@ -252,6 +285,7 @@ export default function PrayerTimesScreen() {
         </View>
       ))}
 
+      {/* Note */}
       <Text style={[styles.note, isDark && styles.darkText]}>
         Athan will play at prayer time even if app is closed
       </Text>
@@ -264,19 +298,31 @@ const styles = StyleSheet.create({
   darkBg: { backgroundColor: '#121212' },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   loadingText: { marginTop: 16, fontSize: 16, color: '#2c3e50' },
-  cityRow: { flexDirection: 'row', marginBottom: 12 },
-  cityInput: { flex: 1, padding: 14, backgroundColor: '#fff', borderRadius: 16, elevation: 4 },
-  darkInput: { backgroundColor: '#1e1e1e', color: '#fff' },
-  refreshBtn: { backgroundColor: '#27ae60', paddingHorizontal: 20, justifyContent: 'center', borderRadius: 16, marginLeft: 10 },
-  refreshText: { color: '#fff', fontWeight: '600' },
-  locationBtn: { alignItems: 'center', padding: 12, marginBottom: 20 },
+  headerContainer: { alignItems: 'center', marginBottom: 24 },
+  headerTitle: { fontSize: 18, color: '#7f8c8d', marginBottom: 4 },
+  cityName: { fontSize: 28, fontWeight: 'bold', color: '#2c3e50' },
+  changeCityText: { fontSize: 16, color: '#3498db', marginTop: 8, textDecorationLine: 'underline' },
+  locationBtn: { alignItems: 'center', padding: 16, marginBottom: 24 },
   locationText: { fontSize: 16, color: '#3498db', fontWeight: '600' },
-  nextPrayer: { fontSize: 18, textAlign: 'center', marginBottom: 20, color: '#2c3e50' },
+  nextPrayer: { fontSize: 20, textAlign: 'center', marginBottom: 24, color: '#2c3e50' },
   bold: { fontWeight: 'bold', color: '#27ae60' },
-  prayerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#fff', padding: 20, borderRadius: 20, marginBottom: 12, elevation: 4 },
-  darkRow: { backgroundColor: '#1e1e1e' },
-  prayerName: { fontSize: 20, fontWeight: 'bold', color: '#2c3e50' },
-  prayerTime: { fontSize: 24, color: '#27ae60', fontWeight: '600' },
-  note: { fontSize: 13, color: '#7f8c8d', textAlign: 'center', marginTop: 20, fontStyle: 'italic' },
+  prayerCard: { 
+    flexDirection: 'row', 
+    justifyContent: 'space-between', 
+    alignItems: 'center', 
+    backgroundColor: '#fff', 
+    padding: 24, 
+    borderRadius: 20, 
+    marginBottom: 16, 
+    elevation: 6,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+  },
+  darkCard: { backgroundColor: '#1e1e1e' },
+  prayerName: { fontSize: 16, fontWeight: 'bold', color: '#2c3e50' },
+  prayerTime: { fontSize: 16, color: '#27ae60', fontWeight: '600', marginTop: 4 },
+  note: { fontSize: 14, color: '#7f8c8d', textAlign: 'center', marginTop: 24, fontStyle: 'italic' },
   darkText: { color: '#fff' },
 });

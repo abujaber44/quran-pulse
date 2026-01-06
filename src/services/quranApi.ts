@@ -24,15 +24,28 @@ export const fetchTranslations = async (chapterId: number) => {
 };
 
 
-export const fetchTafseer = async (suraNumber: number, ayahNumber: number) => {
+export const fetchTafseer = async (
+  surahId: number,
+  ayahNum: number,
+  signal?: AbortSignal
+) => {
   try {
-    const response = await axios.get(
-      `http://api.quran-tafseer.com/tafseer/1/${suraNumber}/${ayahNumber}`,
+    const response = await fetch(
+      `https://cdn.jsdelivr.net/gh/spa5k/tafsir_api@main/tafsir/ar-tafsir-muyassar/${surahId}/${ayahNum}.json`,
+      { signal }
     );
-    return response.data.text || 'Tafseer not available.';
-  } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : String(err);
-    console.error('Tafseer error:', message);
-    return 'Failed to load tafseer. Check your internet connection.';
+    
+    if (!response.ok) {
+      return 'Tafseer not available for this verse.';
+    }
+    
+    const data = await response.json();
+    return data.text || 'Tafseer not available for this verse.';
+  } catch (error: any) {
+    if (error.name === 'AbortError') {
+      throw error; // Re-throw to be caught in toggleTafseer
+    }
+    console.error('Tafseer load error:', error);
+    return 'Failed to load tafseer. Check your connection.';
   }
 };
