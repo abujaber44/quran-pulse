@@ -68,12 +68,12 @@ export default function HomeScreen({ navigation }: any) {
       <View style={styles.container}>
         {/* Header with Settings */}
         <View style={styles.header}>
-          <TouchableOpacity 
+          {/* <TouchableOpacity 
             style={styles.settingsBtn} 
             onPress={() => navigation.navigate('Settings')}
           >
             <Text style={styles.settingsIcon}>⚙</Text>
-          </TouchableOpacity>
+          </TouchableOpacity> */}
 
           <View style={styles.titleContainer}>
             <Text style={styles.title}>Quran Pulse</Text>
@@ -245,7 +245,7 @@ const styles = StyleSheet.create({
   },
   surahInfo: { flexDirection: 'row', alignItems: 'center' },
   surahNumber: { fontSize: 24, fontWeight: 'bold', color: '#3498db', marginRight: 20, width: 50, textAlign: 'center' },
-  surahNameEnglish: { fontSize: 18, color: '#2c3e50', fontWeight: '600' },
-  surahNameArabic: { fontFamily: 'AmiriQuran', fontSize: 28, color: '#2c3e50', marginTop: 4 },
+  surahNameEnglish: { fontSize: 16, color: '#2c3e50', fontWeight: '600' },
+  surahNameArabic: { fontFamily: 'AmiriQuran', fontSize: 24, color: '#2c3e50', marginTop: 4 },
   versesCount: { fontSize: 14, color: '#7f8c8d' },
 });
