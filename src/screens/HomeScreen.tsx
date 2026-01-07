@@ -122,6 +122,14 @@ export default function HomeScreen({ navigation }: any) {
           >
             <Text style={styles.featureButtonText}>Prayer Times & Athan</Text>
           </TouchableOpacity>
+
+          {/* Bookmarks Button */}
+          <TouchableOpacity
+            style={styles.featureButton}
+            onPress={() => navigation.navigate('Bookmarks')}
+          >
+            <Text style={styles.featureButtonText}>Bookmarks  ★</Text>
+          </TouchableOpacity>
         </View>
 
         {/* Surahs List */}
@@ -209,12 +217,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     paddingHorizontal: 16,
     marginBottom: 12,
-    gap: 12,
+    gap: 10,
   },
   featureButton: {
     flex: 1,
     backgroundColor: '#27ae60',
-    paddingVertical: 14,
+    paddingVertical: 16,
     borderRadius: 16,
     alignItems: 'center',
     elevation: 4,
@@ -225,7 +233,7 @@ const styles = StyleSheet.create({
   },
   featureButtonText: {
     color: '#fff',
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '600',
   },
   list: { paddingHorizontal: 16 },

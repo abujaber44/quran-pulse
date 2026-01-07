@@ -17,6 +17,7 @@ import { useSettings } from '../context/SettingsContext';
 import { getGlobalAyahNumber } from '../utils/quranUtils';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
+import { isBookmarked, addBookmark, removeBookmark } from '../services/bookmarkService';
 
 const reciters = [
   { id: 'ar.alafasy', name: 'Mishary Rashid Alafasy' },
@@ -41,6 +42,9 @@ export default function SurahScreen({ route }: any) {
 
   // For cancelling previous tafseer fetch
   const abortControllerRef = useRef<AbortController | null>(null);
+
+  // Track bookmarked ayahs
+  const [bookmarkedAyahs, setBookmarkedAyahs] = useState<Set<string>>(new Set());
 
   const scrollRef = useRef<ScrollView>(null);
   const ayahRefs = useRef<{ [key: number]: View | null }>({});
@@ -91,6 +95,15 @@ export default function SurahScreen({ route }: any) {
         }));
 
         setAyahs(ayahsWithTranslation);
+
+        // Load bookmark status for this surah
+        const bookmarks = new Set<string>();
+        for (const ayah of ayahsWithTranslation) {
+          if (await isBookmarked(surah.id, ayah.verse_number)) {
+            bookmarks.add(`${surah.id}-${ayah.verse_number}`);
+          }
+        }
+        setBookmarkedAyahs(bookmarks);
       } catch (error) {
         console.error('Error loading ayahs or translations:', error);
         const ayahsData = await fetchAyahs(surah.id);
@@ -146,6 +159,23 @@ export default function SurahScreen({ route }: any) {
     }
   }, [currentAyah]);
 
+  useEffect(() => {
+    if (route.params?.initialAyah && ayahs.length > 0) {
+      const index = ayahs.findIndex(a => a.verse_number === route.params.initialAyah);
+      if (index !== -1) {
+        setTimeout(() => {
+          ayahRefs.current[route.params.initialAyah]?.measureLayout(
+            scrollRef.current as any,
+            (x, y) => {
+              scrollRef.current?.scrollTo({ y: y - 150, animated: true });
+            },
+            () => {}
+          );
+        }, 500);
+      }
+    }
+  }, [ayahs]);
+
   const handlePlayAyah = (ayahNum: number) => {
     const global = getGlobalAyahNumber(surah.id, ayahNum, surahs);
     playAyah(surah.id, ayahNum, global);
@@ -194,7 +224,6 @@ export default function SurahScreen({ route }: any) {
 
     try {
       const text = await fetchTafseer(surah.id, ayahNum, controller.signal);
-      // Only update if this is still the current request
       if (!controller.signal.aborted) {
         setCurrentTafseer(text);
       }
@@ -213,6 +242,36 @@ export default function SurahScreen({ route }: any) {
       }
       if (abortControllerRef.current === controller) {
         abortControllerRef.current = null;
+      }
+    }
+  };
+
+  // Toggle bookmark
+  const toggleBookmark = async (ayahNum: number) => {
+    const key = `${surah.id}-${ayahNum}`;
+    const isBookmarked = bookmarkedAyahs.has(key);
+
+    if (isBookmarked) {
+      await removeBookmark(surah.id, ayahNum);
+      setBookmarkedAyahs(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(key);
+        return newSet;
+      });
+      Alert.alert('Removed', 'Ayah removed from bookmarks');
+    } else {
+      const ayah = ayahs.find(a => a.verse_number === ayahNum);
+      if (ayah) {
+        await addBookmark({
+          surahId: surah.id,
+          surahName: surah.name_simple,
+          ayahNum: ayah.verse_number,
+          ayahText: ayah.text_uthmani,
+          translation: ayah.translation,
+          timestamp: Date.now(),
+        });
+        setBookmarkedAyahs(prev => new Set(prev).add(key));
+        Alert.alert('Saved', 'Ayah added to bookmarks');
       }
     }
   };
@@ -268,44 +327,61 @@ export default function SurahScreen({ route }: any) {
         </View>
 
         <ScrollView ref={scrollRef} contentContainerStyle={styles.scrollContent}>
-          {ayahs.map((ayah) => (
-            <TouchableOpacity
-              key={ayah.verse_number}
+          {ayahs.map((ayah) => {
+            const isBookmarked = bookmarkedAyahs.has(`${surah.id}-${ayah.verse_number}`);
+
+            return (
+              <TouchableOpacity
+                key={ayah.verse_number}
               ref={(ref) => { ayahRefs.current[ayah.verse_number] = ref; }}
-              style={[
-                styles.ayahCard,
-                isDark && styles.darkAyahCard,
-                currentAyah?.surah === surah.id && currentAyah?.ayah === ayah.verse_number && styles.playingCard,
-              ]}
-              onPress={() => handlePlayAyah(ayah.verse_number)}
-            >
-              <Text style={[styles.ayahText, { fontSize: settings.arabicFontSize }, isDark && styles.darkText]}>
-                {ayah.text_uthmani}
-              </Text>
+                style={[
+                  styles.ayahCard,
+                  isDark && styles.darkAyahCard,
+                  currentAyah?.surah === surah.id && currentAyah?.ayah === ayah.verse_number && styles.playingCard,
+                ]}
+                onPress={() => handlePlayAyah(ayah.verse_number)}
+              >
+                {/* Bookmark Button - Top Left */}
+                <TouchableOpacity 
+                  style={styles.bookmarkBtn}
+                  onPress={() => toggleBookmark(ayah.verse_number)}
+                >
+                  <Text style={[
+                    styles.bookmarkIcon,
+                    isBookmarked && styles.bookmarkedIcon
+                  ]}>
+                    {isBookmarked ? '★' : '☆'}
+                  </Text>
+                </TouchableOpacity>
 
-              <Text style={[styles.translationText, isDark && styles.darkText]}>
-                {ayah.translation}
-              </Text>
+                <Text style={[styles.ayahText, { fontSize: settings.arabicFontSize }, isDark && styles.darkText]}>
+                  {ayah.text_uthmani}
+                </Text>
 
-              <TouchableOpacity onPress={() => toggleTafseer(ayah.verse_number)} style={styles.tafseerToggleBtn}>
-                <Text style={[styles.tafseerToggle, isDark && styles.darkText]}>
-                  {expandedTafseer === ayah.verse_number 
-                    ? (loadingTafseer ? 'Loading...' : '↑ Hide Tafseer') 
-                    : '↓ Show Tafseer'}
+                <Text style={[styles.translationText, isDark && styles.darkText]}>
+                  {ayah.translation}
+                </Text>
+
+                <TouchableOpacity onPress={() => toggleTafseer(ayah.verse_number)} style={styles.tafseerToggleBtn}>
+                  <Text style={[styles.tafseerToggle, isDark && styles.darkText]}>
+                    {expandedTafseer === ayah.verse_number 
+                      ? (loadingTafseer ? 'Loading...' : '↑ Hide Tafseer') 
+                      : '↓ Show Tafseer'}
+                  </Text>
+                </TouchableOpacity>
+
+                {expandedTafseer === ayah.verse_number && (
+                  <Text style={[styles.tafseerText, isDark && styles.darkText]}>
+                    {currentTafseer}
+                  </Text>
+                )}
+
+                <Text style={[styles.ayahNumberBottom, isDark && styles.darkText]}>
+                  {ayah.verse_number}
                 </Text>
               </TouchableOpacity>
-
-              {expandedTafseer === ayah.verse_number && (
-                <Text style={[styles.tafseerText, isDark && styles.darkText]}>
-                  {currentTafseer}
-                </Text>
-              )}
-
-              <Text style={[styles.ayahNumberBottom, isDark && styles.darkText]}>
-                {ayah.verse_number}
-              </Text>
-            </TouchableOpacity>
-          ))}
+            );
+          })}
           <View style={{ height: 130 }} />
         </ScrollView>
 
@@ -507,5 +583,19 @@ const styles = StyleSheet.create({
     backgroundColor: '#f0f4f8',
     padding: 14,
     borderRadius: 12,
+  },
+  bookmarkBtn: {
+    position: 'absolute',
+    top: 7,
+    left: 2,  
+    zIndex: 10,
+    padding: 8,
+  },
+  bookmarkIcon: {
+    fontSize: 26,
+    color: '#bdc3c7', 
+  },
+  bookmarkedIcon: {
+    color: '#f1c40f',
   },
 });
