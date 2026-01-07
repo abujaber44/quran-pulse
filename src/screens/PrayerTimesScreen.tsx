@@ -247,7 +247,7 @@ export default function PrayerTimesScreen() {
             'Enter city name:',
             [
               { text: 'Cancel', style: 'cancel' },
-              { text: 'Update', onPress: handleCityChange },
+              { text: 'Update', onPress: (value?: string) => value && handleCityChange(value) },
             ],
             'plain-text',
             city
