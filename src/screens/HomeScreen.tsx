@@ -128,7 +128,7 @@ export default function HomeScreen({ navigation }: any) {
             style={styles.featureButton}
             onPress={() => navigation.navigate('Bookmarks')}
           >
-            <Text style={styles.featureButtonText}>Bookmarks ❤️</Text>
+            <Text style={styles.featureButtonText}>Bookmarks  ★</Text>
           </TouchableOpacity>
         </View>
 
