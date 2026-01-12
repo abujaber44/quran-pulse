@@ -12,6 +12,7 @@ import SettingsScreen from './src/screens/SettingsScreen';
 import AsmaAlHusnaScreen from './src/screens/AsmaAlHusnaScreen';
 import PrayerTimesScreen from './src/screens/PrayerTimesScreen';
 import BookmarksScreen from './src/screens/BookmarksScreen';
+import QuranPlayerScreen from './src/screens/QuranPlayerScreen'; // ← Added
 
 const Stack = createNativeStackNavigator();
 
@@ -66,6 +67,12 @@ export default function App() {
               name="Bookmarks"
               component={BookmarksScreen}
               options={{ title: 'Bookmarks' }}
+            />
+            {/* New: Quran Player Screen */}
+            <Stack.Screen
+              name="QuranPlayer"
+              component={QuranPlayerScreen}
+              options={{ title: 'Listen to Quran' }}
             />
           </Stack.Navigator>
         </NavigationContainer>

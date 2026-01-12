@@ -11,7 +11,9 @@ import {
   TextInput,
   KeyboardAvoidingView,
   Platform,
+  ScrollView, // ← Added ScrollView import
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import * as Location from 'expo-location';
 import * as Notifications from 'expo-notifications';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -24,7 +26,7 @@ interface Prayer {
 }
 
 const CITY_STORAGE_KEY = 'prayer_city';
-const PRAYER_PREFS_KEY = 'prayer_athan_prefs'; // For persisting toggle state
+const PRAYER_PREFS_KEY = 'prayer_athan_prefs';
 const DEFAULT_CITY = 'Makkah';
 
 export default function PrayerTimesScreen() {
@@ -164,7 +166,6 @@ export default function PrayerTimesScreen() {
     setNextPrayer('Fajr (tomorrow)');
   };
 
-  // Your working notification scheduling (kept exactly as is)
   const scheduleAthanNotifications = async (prayerList: Prayer[]) => {
     await Notifications.cancelAllScheduledNotificationsAsync();
 
@@ -206,7 +207,6 @@ export default function PrayerTimesScreen() {
     updated[index].enabled = !updated[index].enabled;
     setPrayers(updated);
 
-    // Save toggle preferences
     const prefs = updated.reduce((acc, p) => {
       acc[p.name] = p.enabled;
       return acc;
@@ -236,68 +236,82 @@ export default function PrayerTimesScreen() {
   }
 
   return (
-    <KeyboardAvoidingView style={[styles.container, isDark && styles.darkBg]} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-      {/* Header: Athan Times for City */}
-      <View style={styles.headerContainer}>
-        <Text style={[styles.headerTitle, isDark && styles.darkText]}>Athan Times for</Text>
-        <Text style={[styles.cityName, isDark && styles.darkText]}>{city}</Text>
-        <TouchableOpacity onPress={() => {
-          Alert.prompt(
-            'Change City',
-            'Enter city name:',
-            [
-              { text: 'Cancel', style: 'cancel' },
-              { text: 'Update', onPress: (value?: string) => value && handleCityChange(value) },
-            ],
-            'plain-text',
-            city
-          );
-        }}>
-          <Text style={styles.changeCityText}>Change City</Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* Use My Location */}
-      <TouchableOpacity style={styles.locationBtn} onPress={getLocationAndCity} disabled={fetchingLocation}>
-        <Text style={styles.locationText}>
-          {fetchingLocation ? 'Detecting location...' : '📍 Use My Location'}
-        </Text>
-      </TouchableOpacity>
-
-      {/* Next Prayer */}
-      <Text style={[styles.nextPrayer, isDark && styles.darkText]}>
-        Next prayer: <Text style={styles.bold}>{nextPrayer}</Text>
-      </Text>
-
-      {/* Prayer Times Cards */}
-      {prayers.map((prayer, i) => (
-        <View key={i} style={[styles.prayerCard, isDark && styles.darkCard]}>
-          <View>
-            <Text style={[styles.prayerName, isDark && styles.darkText]}>{prayer.name}</Text>
-            <Text style={[styles.prayerTime, isDark && styles.darkText]}>{prayer.time}</Text>
+    <SafeAreaView style={[styles.container, isDark && styles.darkBg]}>
+      <KeyboardAvoidingView 
+        style={{ flex: 1 }} 
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      >
+        <ScrollView 
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+        >
+          {/* Header: Athan Times for City */}
+          <View style={styles.headerContainer}>
+            <Text style={[styles.headerTitle, isDark && styles.darkText]}>Athan Times for</Text>
+            <Text style={[styles.cityName, isDark && styles.darkText]}>{city}</Text>
+            <TouchableOpacity onPress={() => {
+              Alert.prompt(
+                'Change City',
+                'Enter city name:',
+                [
+                  { text: 'Cancel', style: 'cancel' },
+                  { text: 'Update', onPress: (value?: string) => value && handleCityChange(value) },
+                ],
+                'plain-text',
+                city
+              );
+            }}>
+              <Text style={styles.changeCityText}>Change City</Text>
+            </TouchableOpacity>
           </View>
-          <Switch
-            value={prayer.enabled}
-            onValueChange={() => togglePrayer(i)}
-            trackColor={{ false: '#ccc', true: '#27ae60' }}
-            thumbColor={prayer.enabled ? '#fff' : '#f4f3f4'}
-          />
-        </View>
-      ))}
 
-      {/* Note */}
-      <Text style={[styles.note, isDark && styles.darkText]}>
-        Athan will play at prayer time even if app is closed
-      </Text>
-    </KeyboardAvoidingView>
+          {/* Use My Location */}
+          <TouchableOpacity style={styles.locationBtn} onPress={getLocationAndCity} disabled={fetchingLocation}>
+            <Text style={styles.locationText}>
+              {fetchingLocation ? 'Detecting location...' : '📍 Use My Location'}
+            </Text>
+          </TouchableOpacity>
+
+          {/* Next Prayer */}
+          <Text style={[styles.nextPrayer, isDark && styles.darkText]}>
+            Next prayer: <Text style={styles.bold}>{nextPrayer}</Text>
+          </Text>
+
+          {/* Prayer Times Cards */}
+          {prayers.map((prayer, i) => (
+            <View key={i} style={[styles.prayerCard, isDark && styles.darkCard]}>
+              <View>
+                <Text style={[styles.prayerName, isDark && styles.darkText]}>{prayer.name}</Text>
+                <Text style={[styles.prayerTime, isDark && styles.darkText]}>{prayer.time}</Text>
+              </View>
+              <Switch
+                value={prayer.enabled}
+                onValueChange={() => togglePrayer(i)}
+                trackColor={{ false: '#ccc', true: '#27ae60' }}
+                thumbColor={prayer.enabled ? '#fff' : '#f4f3f4'}
+              />
+            </View>
+          ))}
+
+          {/* Note */}
+          <Text style={[styles.note, isDark && styles.darkText]}>
+            Athan will play at prayer time even if app is closed
+          </Text>
+
+          {/* Extra space at bottom */}
+          <View style={{ height: 40 }} />
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 16, backgroundColor: '#f8f9fa' },
+  container: { flex: 1, backgroundColor: '#f8f9fa' },
   darkBg: { backgroundColor: '#121212' },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   loadingText: { marginTop: 16, fontSize: 16, color: '#2c3e50' },
+  scrollContent: { padding: 16, paddingBottom: 40 }, // ← Enables scrolling when needed
   headerContainer: { alignItems: 'center', marginBottom: 24 },
   headerTitle: { fontSize: 18, color: '#7f8c8d', marginBottom: 4 },
   cityName: { fontSize: 28, fontWeight: 'bold', color: '#2c3e50' },
