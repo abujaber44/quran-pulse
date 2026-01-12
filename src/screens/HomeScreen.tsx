@@ -130,6 +130,14 @@ export default function HomeScreen({ navigation }: any) {
           >
             <Text style={styles.featureButtonText}>Bookmarks  ★</Text>
           </TouchableOpacity>
+
+          {/* New: Quran Player Button */}
+          <TouchableOpacity
+            style={styles.featureButton}
+            onPress={() => navigation.navigate('QuranPlayer')}
+          >
+            <Text style={styles.featureButtonText}>Listen to Quran</Text>
+          </TouchableOpacity>
         </View>
 
         {/* Surahs List */}
@@ -215,12 +223,14 @@ const styles = StyleSheet.create({
   },
   featureButtonsContainer: {
     flexDirection: 'row',
+    flexWrap: 'wrap', // ← Allows wrapping on small screens
     paddingHorizontal: 16,
     marginBottom: 12,
     gap: 10,
   },
   featureButton: {
     flex: 1,
+    minWidth: 140, // Ensures buttons don't get too narrow
     backgroundColor: '#27ae60',
     paddingVertical: 16,
     borderRadius: 16,
@@ -230,11 +240,13 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
+    marginBottom: 10,
   },
   featureButtonText: {
     color: '#fff',
     fontSize: 14,
     fontWeight: '600',
+    textAlign: 'center',
   },
   list: { paddingHorizontal: 16 },
   surahCard: { 
