@@ -12,7 +12,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { fetchSurahs } from '../services/quranApi';
 import { Surah } from '../types';
 
-export default function HomeScreen({ navigation }: any) {
+export default function MemorizeUnderstandScreen({ navigation }: any) {
   const [surahs, setSurahs] = useState<Surah[]>([]);
   const [filteredSurahs, setFilteredSurahs] = useState<Surah[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
@@ -66,18 +66,17 @@ export default function HomeScreen({ navigation }: any) {
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.container}>
-        {/* Header with Settings */}
-        <View style={styles.header}>
-          {/* <TouchableOpacity 
-            style={styles.settingsBtn} 
-            onPress={() => navigation.navigate('Settings')}
-          >
-            <Text style={styles.settingsIcon}>⚙</Text>
-          </TouchableOpacity> */}
+        {/* <TouchableOpacity 
+          style={styles.backButton}
+          onPress={() => navigation.navigate('Landing')}
+        >
+          <Text style={styles.backIcon}>← Home</Text>
+        </TouchableOpacity> */}
 
+        <View style={styles.header}>
           <View style={styles.titleContainer}>
-            <Text style={styles.title}>Quran Pulse</Text>
-            <Text style={styles.subtitle}>Memorize • Recite • Understand</Text>
+            <Text style={styles.title}>Memorize & Understand</Text>
+            <Text style={styles.subtitle}>Explore the Quran to memorize and reflect</Text>
           </View>
         </View>
 
@@ -103,41 +102,6 @@ export default function HomeScreen({ navigation }: any) {
               </TouchableWithoutFeedback>
             )}
           </View>
-        </View>
-
-        {/* Feature Buttons */}
-        <View style={styles.featureButtonsContainer}>
-          {/* Asma Al-Husna Button */}
-          <TouchableOpacity
-            style={styles.featureButton}
-            onPress={() => navigation.navigate('AsmaAlHusna')}
-          >
-            <Text style={styles.featureButtonText}>Asma Al-Husna</Text>
-          </TouchableOpacity>
-
-          {/* Prayer Times Button */}
-          <TouchableOpacity
-            style={styles.featureButton}
-            onPress={() => navigation.navigate('PrayerTimes')}
-          >
-            <Text style={styles.featureButtonText}>Prayer Times & Athan</Text>
-          </TouchableOpacity>
-
-          {/* Bookmarks Button */}
-          <TouchableOpacity
-            style={styles.featureButton}
-            onPress={() => navigation.navigate('Bookmarks')}
-          >
-            <Text style={styles.featureButtonText}>Bookmarks  ★</Text>
-          </TouchableOpacity>
-
-          {/* New: Quran Player Button */}
-          <TouchableOpacity
-            style={styles.featureButton}
-            onPress={() => navigation.navigate('QuranPlayer')}
-          >
-            <Text style={styles.featureButtonText}>Listen to Quran</Text>
-          </TouchableOpacity>
         </View>
 
         {/* Surahs List */}
@@ -268,4 +232,12 @@ const styles = StyleSheet.create({
   surahNameEnglish: { fontSize: 16, color: '#2c3e50', fontWeight: '600' },
   surahNameArabic: { fontFamily: 'AmiriQuran', fontSize: 24, color: '#2c3e50', marginTop: 4 },
   versesCount: { fontSize: 14, color: '#7f8c8d' },
+  backButton: { 
+    padding: 6, 
+    alignSelf: 'flex-start', // ← Align left
+    marginTop: 40,
+    marginLeft: 16,
+    marginBottom: 20, // ← Increased space below so header appears clearly below
+  },
+  backIcon: { fontSize: 18, color: '#3498db', fontWeight: '600' },
 });
