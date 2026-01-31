@@ -1,8 +1,7 @@
 // App.tsx
 import React, { useEffect, useState } from 'react';
-import { NavigationContainer } from '@react-navigation/native';
+import { NavigationContainer, CommonActions, NavigationProp, ParamListBase } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { CommonActions } from '@react-navigation/native';
 import { TouchableOpacity, Text } from 'react-native';
 import * as Font from 'expo-font';
 
@@ -21,7 +20,7 @@ import QuranPlayerScreen from './src/screens/QuranPlayerScreen';
 const Stack = createNativeStackNavigator();
 
 // Reusable custom back button (blue text, "← Home")
-const CustomBackButton = ({ navigation }) => (
+const CustomBackButton = ({ navigation }: { navigation: NavigationProp<ParamListBase> }) => (
   <TouchableOpacity 
     style={{
       paddingVertical: 8,
@@ -62,7 +61,7 @@ export default function App() {
             <Stack.Screen
               name="Landing"
               component={LandingScreen}
-              options={{ headerShown: false }}
+              options={{ headerShown: false } as any}
             />
             <Stack.Screen
               name="MemorizeUnderstand"
@@ -75,7 +74,7 @@ export default function App() {
             <Stack.Screen
               name="Surah"
               component={SurahScreen}
-              options={{ headerShown: false }}
+              options={{ headerShown: false } as any}
             />
             <Stack.Screen
               name="Settings"
