@@ -1,4 +1,3 @@
-// App.tsx
 import React, { useEffect, useState } from 'react';
 import { NavigationContainer, CommonActions, NavigationProp, ParamListBase } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
@@ -19,15 +18,15 @@ import QuranPlayerScreen from './src/screens/QuranPlayerScreen';
 
 const Stack = createNativeStackNavigator();
 
-// Reusable custom back button (blue text, "← Home")
+
 const CustomBackButton = ({ navigation }: { navigation: NavigationProp<ParamListBase> }) => (
   <TouchableOpacity 
     style={{
       paddingVertical: 8,
       paddingHorizontal: 16,
-      borderWidth: 1,
-      borderColor: '#3498db',        // Blue border to match text
-      borderRadius: 16,
+      //borderWidth: 1,
+      //borderColor: '#3498db',        // Blue border to match text
+      //borderRadius: 16,
       alignItems: 'center',
     }}
     onPress={() => navigation.dispatch(CommonActions.goBack())}
