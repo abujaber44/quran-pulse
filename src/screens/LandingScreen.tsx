@@ -9,6 +9,7 @@ type RootStackParamList = {
   PrayerTimes: undefined;
   Bookmarks: undefined;
   QuranPlayer: undefined;
+  Calendar: undefined;
 };
 
 export default function LandingScreen() {
@@ -60,6 +61,10 @@ export default function LandingScreen() {
 
         <TouchableOpacity style={styles.button} onPress={() => navigation.navigate('QuranPlayer')}>
           <Text style={styles.buttonText}>Listen to Quran</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity style={styles.button} onPress={() => navigation.navigate('Calendar')}>
+          <Text style={styles.buttonText}>Islamic Calendar</Text>
         </TouchableOpacity>
       </View>
     </View>
