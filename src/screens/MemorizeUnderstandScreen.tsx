@@ -64,7 +64,7 @@ export default function MemorizeUnderstandScreen({ navigation }: any) {
   );
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    //<SafeAreaView style={styles.safeArea}>
       <View style={styles.container}>
         {/* <TouchableOpacity 
           style={styles.backButton}
@@ -113,7 +113,7 @@ export default function MemorizeUnderstandScreen({ navigation }: any) {
           showsVerticalScrollIndicator={false}
         />
       </View>
-    </SafeAreaView>
+    //</SafeAreaView>
   );
 }
 

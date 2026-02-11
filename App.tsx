@@ -15,6 +15,7 @@ import AsmaAlHusnaScreen from './src/screens/AsmaAlHusnaScreen';
 import PrayerTimesScreen from './src/screens/PrayerTimesScreen';
 import BookmarksScreen from './src/screens/BookmarksScreen';
 import QuranPlayerScreen from './src/screens/QuranPlayerScreen';
+import CalendarScreen from './src/screens/CalendarScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -112,6 +113,14 @@ export default function App() {
               component={QuranPlayerScreen}
               options={({ navigation }) => ({
                 title: 'Listen to Quran',
+                headerLeft: () => <CustomBackButton navigation={navigation} />,
+              })}
+            />
+            <Stack.Screen
+              name="Calendar"
+              component={CalendarScreen}
+              options={({ navigation }) => ({
+                title: 'Islamic Calendar',
                 headerLeft: () => <CustomBackButton navigation={navigation} />,
               })}
             />
