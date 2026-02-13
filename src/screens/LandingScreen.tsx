@@ -36,15 +36,20 @@ export default function LandingScreen() {
         </Text>
 
         <Text style={styles.description}>
-          Quran Pulse is your companion to deeply connect with the Word of Allah.  
-          Listen to beautiful recitations, reflect with clear tafseer, memorize with ease,  
-          and understand the meanings — all in one peaceful place.
+          Quran Pulse is your peaceful companion to connect deeply with the Word of Allah.
+          Listen to beautiful recitations, reflect through clear tafseer, memorize and understand ayah by ayah,
+          explore the 99 Beautiful Names of Allah, follow daily prayer times with Athan reminders,
+          keep your favorite verses in bookmarks, and stay mindful of the Islamic calendar — all in one serene place.
         </Text>
       </Animated.View>
 
       <View style={styles.buttonContainer}>
         <TouchableOpacity style={styles.button} onPress={() => navigation.navigate('MemorizeUnderstand')}>
           <Text style={styles.buttonText}>Memorize & Understand</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity style={styles.button} onPress={() => navigation.navigate('QuranPlayer')}>
+          <Text style={styles.buttonText}>Listen to Quran</Text>
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.button} onPress={() => navigation.navigate('AsmaAlHusna')}>
@@ -55,17 +60,14 @@ export default function LandingScreen() {
           <Text style={styles.buttonText}>Prayer Times & Athan</Text>
         </TouchableOpacity>
 
+        <TouchableOpacity style={styles.button} onPress={() => navigation.navigate('Calendar')}>
+          <Text style={styles.buttonText}>Islamic Calendar</Text>
+        </TouchableOpacity>
+
         <TouchableOpacity style={styles.button} onPress={() => navigation.navigate('Bookmarks')}>
           <Text style={styles.buttonText}>My Bookmarks</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.button} onPress={() => navigation.navigate('QuranPlayer')}>
-          <Text style={styles.buttonText}>Listen to Quran</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.button} onPress={() => navigation.navigate('Calendar')}>
-          <Text style={styles.buttonText}>Islamic Calendar</Text>
-        </TouchableOpacity>
       </View>
     </View>
   );

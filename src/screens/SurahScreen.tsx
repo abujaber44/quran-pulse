@@ -288,7 +288,7 @@ export default function SurahScreen({ route }: any) {
           </TouchableOpacity>
 
           <View style={styles.titleWrapper}>
-            <Text style={[styles.surahArabic, { fontSize: settings.arabicFontSize }]}>{surah.name_arabic}</Text>
+            <Text style={[styles.surahArabic, { fontSize: 36 }]}>{surah.name_arabic}</Text>
             <Text style={[styles.surahEnglish, isDark && styles.darkText]}>({surah.translated_name.name})</Text>
           </View>
         </View>
@@ -333,7 +333,7 @@ export default function SurahScreen({ route }: any) {
             return (
               <TouchableOpacity
                 key={ayah.verse_number}
-              ref={(ref) => { ayahRefs.current[ayah.verse_number] = ref; }}
+                ref={(ref) => { ayahRefs.current[ayah.verse_number] = ref; }}
                 style={[
                   styles.ayahCard,
                   isDark && styles.darkAyahCard,
@@ -354,7 +354,7 @@ export default function SurahScreen({ route }: any) {
                   </Text>
                 </TouchableOpacity>
 
-                <Text style={[styles.ayahText, { fontSize: settings.arabicFontSize }, isDark && styles.darkText]}>
+                <Text style={[styles.ayahText, { fontSize: 24 }, isDark && styles.darkText]}>
                   {ayah.text_uthmani}
                 </Text>
 
@@ -527,7 +527,7 @@ const styles = StyleSheet.create({
   ayahCard: { backgroundColor: '#fff', padding: 28, marginBottom: 16, borderRadius: 20, elevation: 6, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.1, shadowRadius: 8, position: 'relative' },
   darkAyahCard: { backgroundColor: '#1e1e1e' },
   playingCard: { backgroundColor: '#e8f5e9', borderLeftWidth: 6, borderLeftColor: '#27ae60' },
-  ayahText: { fontFamily: 'AmiriQuran', lineHeight: 56, textAlign: 'right', color: '#2c3e50', fontSize: 32 },
+  ayahText: { fontFamily: 'AmiriQuran', lineHeight: 56, textAlign: 'right', color: '#2c3e50', fontSize: 24 }, // ← Hardcoded smaller size (was 32)
   ayahNumberBottom: { position: 'absolute', bottom: 12, left: 16, fontSize: 18, color: '#3498db', backgroundColor: '#fff', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20, fontWeight: 'bold' },
   playerContainer: { position: 'absolute', bottom: 0, left: 0, right: 0, paddingHorizontal: 16, paddingBottom: 20 },
   darkPlayerContainer: { backgroundColor: 'transparent' },

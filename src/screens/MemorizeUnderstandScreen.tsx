@@ -79,6 +79,11 @@ export default function MemorizeUnderstandScreen({ navigation }: any) {
             <Text style={styles.subtitle}>Explore the Quran to memorize and reflect</Text>
           </View>
         </View>
+        <View style={styles.explanation}>
+                <Text style={styles.explanationText}>
+                  A dedicated space to memorize and deeply understand the Quran. Listen, read, reflect, and repeat — ayah by ayah — until the words of Allah settle firmly in your heart and mind.
+                </Text>
+          </View>
 
         {/* Search Bar with Clear (×) Button */}
         <View style={styles.searchContainer}>
@@ -240,4 +245,17 @@ const styles = StyleSheet.create({
     marginBottom: 20, // ← Increased space below so header appears clearly below
   },
   backIcon: { fontSize: 18, color: '#3498db', fontWeight: '600' },
+  explanation: {
+  paddingHorizontal: 16,
+  paddingVertical: 12,
+  backgroundColor: '#e8f5e9',
+  borderRadius: 12,
+  marginBottom: 16,
+ },
+ explanationText: {
+  fontSize: 14,
+  color: '#2c3e50',
+  textAlign: 'center',
+  lineHeight: 20,
+ },
 });

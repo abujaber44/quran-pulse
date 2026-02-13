@@ -266,6 +266,13 @@ export default function QuranPlayerScreen() {
   return (
     <View style={[styles.container, isDark && styles.darkContainer]}>
       {/* Reciter Selector */}
+      <Text style={styles.title}>Listen to Quran</Text>
+      
+            <View style={styles.explanation}>
+              <Text style={styles.explanationText}>
+                Listen to the beautiful recitation of the Quran with your favorite reciters. Let the words of Allah soothe your soul, guide your day, and bring tranquility to your heart.
+              </Text>
+            </View>
       <TouchableOpacity
         style={styles.reciterSelector}
         onPress={() => setReciterModalVisible(true)}
@@ -471,4 +478,26 @@ const styles = StyleSheet.create({
   reciterModalText: { fontSize: 16 },
   modalClose: { textAlign: 'center', padding: 14, color: '#e74c3c', fontWeight: 'bold' },
   darkText: { color: '#fff' },
+  explanation: {
+  paddingHorizontal: 16,
+  paddingVertical: 12,
+  backgroundColor: '#e8f5e9',
+  borderRadius: 12,
+  marginBottom: 16,
+ },
+ explanationText: {
+  fontSize: 14,
+  color: '#2c3e50',
+  textAlign: 'center',
+  lineHeight: 20,
+ },
+ title: {
+  fontSize: 30,
+  fontWeight: '700',          // slightly heavier than 'bold'
+  color: '#1a3c34',           // deeper, richer green-teal (Islamic feel)
+  textAlign: 'center',
+  marginVertical: 20,
+  letterSpacing: 0.5,         // subtle spacing for elegance
+  fontFamily: 'AmiriQuran',   // if you want Quranic font (optional)
+},
 });

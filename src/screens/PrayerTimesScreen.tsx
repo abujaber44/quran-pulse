@@ -236,7 +236,7 @@ export default function PrayerTimesScreen() {
   }
 
   return (
-    <SafeAreaView style={[styles.container, isDark && styles.darkBg]}>
+    //<SafeAreaView style={[styles.container, isDark && styles.darkBg]}>
       <KeyboardAvoidingView 
         style={{ flex: 1 }} 
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -247,6 +247,13 @@ export default function PrayerTimesScreen() {
         >
           {/* Header: Athan Times for City */}
           <View style={styles.headerContainer}>
+            <Text style={styles.title}>Prayer Times & Athan</Text>
+            
+                  <View style={styles.explanation}>
+                    <Text style={styles.explanationText}>
+                      Stay connected to your daily prayers with accurate athan times, Qibla direction, and reminders. Let each prayer be a moment of peace, gratitude, and renewal in your journey with Allah.
+                    </Text>
+                  </View>
             <Text style={[styles.headerTitle, isDark && styles.darkText]}>Athan Times for</Text>
             <Text style={[styles.cityName, isDark && styles.darkText]}>{city}</Text>
             <TouchableOpacity onPress={() => {
@@ -302,7 +309,7 @@ export default function PrayerTimesScreen() {
           <View style={{ height: 40 }} />
         </ScrollView>
       </KeyboardAvoidingView>
-    </SafeAreaView>
+    //</SafeAreaView>
   );
 }
 
@@ -339,4 +346,26 @@ const styles = StyleSheet.create({
   prayerTime: { fontSize: 16, color: '#27ae60', fontWeight: '600', marginTop: 4 },
   note: { fontSize: 14, color: '#7f8c8d', textAlign: 'center', marginTop: 24, fontStyle: 'italic' },
   darkText: { color: '#fff' },
+      explanation: {
+  paddingHorizontal: 16,
+  paddingVertical: 12,
+  backgroundColor: '#e8f5e9',
+  borderRadius: 12,
+  marginBottom: 16,
+ },
+ explanationText: {
+  fontSize: 14,
+  color: '#2c3e50',
+  textAlign: 'center',
+  lineHeight: 20,
+ },
+ title: {
+  fontSize: 30,
+  fontWeight: '700',          // slightly heavier than 'bold'
+  color: '#1a3c34',           // deeper, richer green-teal (Islamic feel)
+  textAlign: 'center',
+  marginVertical: 20,
+  letterSpacing: 0.5,         // subtle spacing for elegance
+  fontFamily: 'AmiriQuran',   // if you want Quranic font (optional)
+},
 });

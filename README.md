@@ -2,59 +2,59 @@
 
 **Feel the Pulse of the Quran – Memorize • Recite • Understand**
 
-Quran Pulse is a modern, elegant, and spiritually enriching Quran companion app designed to help you connect deeply with the Word of Allah.
+Quran Pulse is a peaceful, modern companion app to help you connect deeply with the Word of Allah — through recitation, reflection, memorization, and understanding — all in one serene place.
 
 ### ✨ Features
 
-- **Complete Quran** with clear Uthmani script
-- **Beautiful English translation** (Abdel Haleem)
-- **On-demand Tafseer** (التفسير الميسر – clear Arabic explanation)
-- **High-quality audio recitation** with multiple world-renowned reciters:
+- **Complete Quran** with beautiful Uthmani script
+- **Clear English translation** (Abdel Haleem)
+- **On-demand Tafseer** (التفسير الميسر – simple Arabic explanation)
+- **High-quality audio recitations** with multiple renowned reciters:
   - Mishary Rashid Alafasy
   - Mahmoud Khalil Al-Husary
   - Muhammad Siddiq Al-Minshawi
   - And more
-- **Auto-scroll** while listening
-- **Repeat mode** (single ayah or range) for memorization
+- **Auto-scroll** during playback
+- **Repeat mode** (single ayah or custom range) for memorization
 - **Memorization mode** support
-- **99 Names of Allah (Asma Al-Husna)** – beautiful display with meaning and transliteration
-- **Prayer Times & Athan** – accurate timings with full Athan audio alerts (even when app is closed)
-- **Dark mode** for comfortable night reading
-- **Offline-first design** (audio streaming with future download support)
-- **Clean, minimalist, spiritual UI** with attention to Arabic typography
+- **99 Names of Allah (Asma Al-Husna)** – elegant display with meaning and transliteration
+- **Prayer Times & Athan** – accurate timings and full Athan audio alerts (even when app is closed)
+- **Islamic Calendar** – full Hijri month view with corresponding Gregorian dates
+- **Bookmarks** – save and revisit your favorite ayahs anytime
+- **Offline-first design** (streaming + future download support)
+- **Clean, spiritual UI** with focus on Arabic typography
 
 ### 🕌 Prayer Times & Athan
-- Accurate prayer times using Aladhan API
-- Full Athan audio played at each prayer time (even when app is closed or phone is locked)
-- Toggle individual prayers on/off
-- Auto-detect location or manually enter city
+- Accurate prayer times via Aladhan API
+- Full Athan audio played at prayer time (even when app is closed or phone is locked)
+- Toggle individual prayer alerts on/off
+- Auto-detect location or manually set city
 - Next prayer highlighted
 
 ### 📿 Asma Al-Husna
 - All 99 Beautiful Names of Allah
 - Arabic calligraphy, transliteration, and English meaning
-- Elegant card design matching the app theme
+- Serene card design matching the app theme
 
 ### 🎨 Design Philosophy
-- Inspired by peace, light, and spiritual focus
-- Uses calming greens and blues with golden accents
-- Amiri Quran font for authentic Arabic feel
-- Smooth animations and thoughtful user experience
+- Inspired by tranquility, light, and closeness to Allah
+- Calming greens and deep blues with golden accents
+- Amiri Quran font for authentic Arabic beauty
+- Smooth animations and thoughtful, heart-centered UX
 
 ### 🛠 Tech Stack
-- React Native with Expo (managed workflow)
+- React Native + Expo (managed workflow)
 - Context API for state management
 - Expo Notifications for Athan alerts
 - Expo Audio for recitation playback
-- Aladhan API for prayer times
+- Aladhan API for prayer times, Qibla, and Islamic calendar
 - Quran.com & open tafseer sources
 
 ### 🚀 Coming Soon
 - Offline audio download
-- Bookmarks & notes
 - Juz/Para navigation
-- Daily ayah reminder
-- Hifz tracking
+- Daily ayah reminders
+- Hifz progress tracking
 
 ### 🙏 Dua
 May Allah accept this effort as sincere for His sake, make it a means of guidance and closeness to Him for all who use it, and grant us all the ability to live by the Quran. Ameen.

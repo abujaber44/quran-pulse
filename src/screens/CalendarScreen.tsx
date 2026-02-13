@@ -295,12 +295,14 @@ const styles = StyleSheet.create({
     paddingBottom: 40, // Extra space at bottom for legend & Hadith
     alignItems: 'center', // ← Centers all content horizontally
   },
-  title: { 
-    fontSize: 28, 
-    fontWeight: 'bold', 
-    color: '#2c3e50', 
-    textAlign: 'center', 
-    marginVertical: 16 
+  title: {
+  fontSize: 30,
+  fontWeight: '700',          // slightly heavier than 'bold'
+  color: '#1a3c34',           // deeper, richer green-teal (Islamic feel)
+  textAlign: 'center',
+  marginVertical: 20,
+  letterSpacing: 0.5,         // subtle spacing for elegance
+  fontFamily: 'AmiriQuran',   // if you want Quranic font (optional)
   },
   navigation: { 
     flexDirection: 'row', 
