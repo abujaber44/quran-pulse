@@ -113,14 +113,23 @@ export default function BookmarksScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
+    //<SafeAreaView style={styles.container}>
+    <View style={styles.container}>
+      <Text style={styles.title}>My Bookmarks</Text>
+      
+            <View style={styles.explanation}>
+              <Text style={styles.explanationText}>
+                Your personal collection of cherished ayahs, moments of reflection, and verses that touched your heart. Return here anytime to revisit what inspires and strengthens your connection with the Quran.
+              </Text>
+            </View>
       <FlatList
         data={bookmarks}
         keyExtractor={(item) => `${item.surahId}-${item.ayahNum}`}
         renderItem={renderItem}
         contentContainerStyle={styles.list}
       />
-    </SafeAreaView>
+      </View>
+    //</SafeAreaView>
   );
 }
 
@@ -187,4 +196,26 @@ const styles = StyleSheet.create({
     color: '#2c3e50',
     textAlign: 'center',
   },
+    explanation: {
+  paddingHorizontal: 16,
+  paddingVertical: 12,
+  backgroundColor: '#e8f5e9',
+  borderRadius: 12,
+  marginBottom: 16,
+ },
+ explanationText: {
+  fontSize: 14,
+  color: '#2c3e50',
+  textAlign: 'center',
+  lineHeight: 20,
+ },
+ title: {
+  fontSize: 30,
+  fontWeight: '700',          // slightly heavier than 'bold'
+  color: '#1a3c34',           // deeper, richer green-teal (Islamic feel)
+  textAlign: 'center',
+  marginVertical: 20,
+  letterSpacing: 0.5,         // subtle spacing for elegance
+  fontFamily: 'AmiriQuran',   // if you want Quranic font (optional)
+},
 });

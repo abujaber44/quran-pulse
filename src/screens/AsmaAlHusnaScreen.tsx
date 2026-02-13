@@ -1,3 +1,4 @@
+// src/screens/AsmaAlHusnaScreen.tsx
 import React, { useEffect, useState } from 'react';
 import {
   View,
@@ -9,7 +10,6 @@ import {
   TouchableWithoutFeedback,
 } from 'react-native';
 import { useSettings } from '../context/SettingsContext';
-import { SafeAreaView } from 'react-native-safe-area-context';
 
 interface AllahName {
   number: number;
@@ -94,26 +94,34 @@ export default function AsmaAlHusnaScreen() {
 
   if (loading) {
     return (
-      <SafeAreaView style={[styles.container, isDark && styles.darkContainer]}>
+      <View style={[styles.container, isDark && styles.darkContainer]}>
         <ActivityIndicator size="large" color="#27ae60" />
         <Text style={[styles.loadingText, isDark && styles.darkText]}>
           Loading Asma Al-Husna...
         </Text>
-      </SafeAreaView>
+      </View>
     );
   }
 
   if (error) {
     return (
-      <SafeAreaView style={[styles.container, isDark && styles.darkContainer]}>
+      <View style={[styles.container, isDark && styles.darkContainer]}>
         <Text style={[styles.errorText, isDark && styles.darkText]}>{error}</Text>
-      </SafeAreaView>
+      </View>
     );
   }
 
   return (
-    <SafeAreaView style={[styles.container, isDark && styles.darkContainer]}>
+    <View style={[styles.container, isDark && styles.darkContainer]}>
       {/* Search Bar */}
+      <Text style={styles.title}>Asma'a Allah Al-Husna</Text>
+
+      <View style={styles.explanation}>
+        <Text style={styles.explanationText}>
+          Explore the 99 Beautiful Names of Allah — each name a reflection of His perfect attributes. Reflect, remember, and draw closer to your Creator through His divine names.
+        </Text>
+      </View>
+
       <View style={styles.searchContainer}>
         <View style={[styles.searchWrapper, isDark && styles.darkSearchWrapper]}>
           <TextInput
@@ -144,7 +152,7 @@ export default function AsmaAlHusnaScreen() {
         contentContainerStyle={styles.list}
         showsVerticalScrollIndicator={false}
       />
-    </SafeAreaView>
+    </View>
   );
 }
 
@@ -152,6 +160,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#f8f9fa',
+    padding: 10,
   },
   darkContainer: {
     backgroundColor: '#121212',
@@ -259,4 +268,26 @@ const styles = StyleSheet.create({
   darkText: {
     color: '#fff',
   },
+  explanation: {
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    backgroundColor: '#e8f5e9',
+    borderRadius: 12,
+    marginBottom: 16,
+  },
+  explanationText: {
+    fontSize: 14,
+    color: '#2c3e50',
+    textAlign: 'center',
+    lineHeight: 20,
+  },
+  title: {
+  fontSize: 30,
+  fontWeight: '700',          // slightly heavier than 'bold'
+  color: '#1a3c34',           // deeper, richer green-teal (Islamic feel)
+  textAlign: 'center',
+  marginVertical: 20,
+  letterSpacing: 0.5,         // subtle spacing for elegance
+  fontFamily: 'AmiriQuran',   // if you want Quranic font (optional)
+},
 });
