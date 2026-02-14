@@ -1,5 +1,7 @@
 # Quran Pulse 📖🕌
 
+[![GitHub Release](https://img.shields.io/github/v/release/abujaber44/quran-pulse?color=27ae60&label=Latest%20Release)](https://github.com/abujaber44/quran-pulse/releases)
+
 **Feel the Pulse of the Quran – Memorize • Recite • Understand**
 
 Quran Pulse is a peaceful, modern companion app to help you connect deeply with the Word of Allah — through recitation, reflection, memorization, and understanding — all in one serene place.
