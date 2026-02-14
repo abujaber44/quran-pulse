@@ -20,6 +20,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.quranpulse.app",
+      "privacyPolicyUrl": "https://abujaber44.github.io/quran-pulse/privacy/",
       "infoPlist": {
         "NSMicrophoneUsageDescription": "This app uses audio to play Quran recitation.",
         "UIBackgroundModes": [
@@ -35,6 +36,7 @@
         "backgroundColor": "#ffffff"
       },
       "package": "com.quranpulse.app",
+      "privacyPolicyUrl": "https://abujaber44.github.io/quran-pulse/privacy/",
       "permissions": [
         "android.permission.RECORD_AUDIO",
         "android.permission.MODIFY_AUDIO_SETTINGS",
