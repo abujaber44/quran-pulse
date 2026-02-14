@@ -68,12 +68,6 @@ Quran Pulse is a peaceful, modern companion app to help you connect deeply with 
 - Aladhan API for prayer times, Qibla, and Islamic calendar
 - Quran.com & open tafseer sources
 
-### 🚀 Coming Soon
-- Offline audio download
-- Juz/Para navigation
-- Daily ayah reminders
-- Hifz progress tracking
-
 ### 🙏 Dua
 May Allah accept this effort as sincere for His sake, make it a means of guidance and closeness to Him for all who use it, and grant us all the ability to live by the Quran. Ameen.
 
