@@ -13,7 +13,7 @@ import {
 } from 'react-native';
 import Slider from '@react-native-community/slider';
 import { Audio } from 'expo-av';
-import AsyncStorage from '@react-native-async-storage/async-storage'; // ← Added import
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useSettings } from '../context/SettingsContext';
 import { fetchSurahs } from '../services/quranApi';
 import { getSurahAudioUrl } from '../services/quranApi';
@@ -159,6 +159,17 @@ export default function QuranPlayerScreen() {
       const url = getSurahAudioUrl(selectedReciter.id, selectedSurah.id);
       console.log('🎵 Playing Audio URL:', url);
 
+      // Set audio mode for background playback (critical for locked screen)
+      await Audio.setAudioModeAsync({
+        playsInSilentModeIOS: true,                // Required for iOS silent switch
+        staysActiveInBackground: true,             // Key: allows playback when locked/background
+        interruptionModeIOS: 1,                    // 1 = duck others (safe default)
+        interruptionModeAndroid: 1,                // 1 = duck others (safe default)
+        shouldDuckAndroid: true,                   // Lower other audio when playing
+        playThroughEarpieceAndroid: false,         // Use speaker, not earpiece
+        allowsRecordingIOS: false,
+      });
+
       const { sound: newSound } = await Audio.Sound.createAsync(
         { uri: url },
         { shouldPlay: true },
@@ -268,11 +279,12 @@ export default function QuranPlayerScreen() {
       {/* Reciter Selector */}
       <Text style={styles.title}>Listen to Quran</Text>
       
-            <View style={styles.explanation}>
-              <Text style={styles.explanationText}>
-                Listen to the beautiful recitation of the Quran with your favorite reciters. Let the words of Allah soothe your soul, guide your day, and bring tranquility to your heart.
-              </Text>
-            </View>
+      <View style={styles.explanation}>
+        <Text style={styles.explanationText}>
+          Listen to the beautiful recitation of the Quran with your favorite reciters. Let the words of Allah soothe your soul, guide your day, and bring tranquility to your heart.
+        </Text>
+      </View>
+
       <TouchableOpacity
         style={styles.reciterSelector}
         onPress={() => setReciterModalVisible(true)}
@@ -479,25 +491,25 @@ const styles = StyleSheet.create({
   modalClose: { textAlign: 'center', padding: 14, color: '#e74c3c', fontWeight: 'bold' },
   darkText: { color: '#fff' },
   explanation: {
-  paddingHorizontal: 16,
-  paddingVertical: 12,
-  backgroundColor: '#e8f5e9',
-  borderRadius: 12,
-  marginBottom: 16,
- },
- explanationText: {
-  fontSize: 14,
-  color: '#2c3e50',
-  textAlign: 'center',
-  lineHeight: 20,
- },
- title: {
-  fontSize: 30,
-  fontWeight: '700',          // slightly heavier than 'bold'
-  color: '#1a3c34',           // deeper, richer green-teal (Islamic feel)
-  textAlign: 'center',
-  marginVertical: 20,
-  letterSpacing: 0.5,         // subtle spacing for elegance
-  fontFamily: 'AmiriQuran',   // if you want Quranic font (optional)
-},
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    backgroundColor: '#e8f5e9',
+    borderRadius: 12,
+    marginBottom: 16,
+  },
+  explanationText: {
+    fontSize: 14,
+    color: '#2c3e50',
+    textAlign: 'center',
+    lineHeight: 20,
+  },
+  title: {
+    fontSize: 30,
+    fontWeight: '700',          // slightly heavier than 'bold'
+    color: '#1a3c34',           // deeper, richer green-teal (Islamic feel)
+    textAlign: 'center',
+    marginVertical: 20,
+    letterSpacing: 0.5,         // subtle spacing for elegance
+    fontFamily: 'AmiriQuran',   // if you want Quranic font (optional)
+  },
 });
