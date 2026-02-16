@@ -29,7 +29,7 @@
         "EXPO_PUBLIC_APP_ENV": "production"
       },
       "android": {
-        "buildType": "aab"  
+        "buildType": "app-bundle"  
       },
       "ios": {
         "autoIncrement": true
