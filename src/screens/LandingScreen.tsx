@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Animated } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Animated, ScrollView } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import type { StackNavigationProp } from '@react-navigation/stack';
 
@@ -26,49 +26,54 @@ export default function LandingScreen() {
 
   return (
     <View style={styles.container}>
-      <Animated.Text style={[styles.title, { opacity: fadeAnim }]}>
-        Quran Pulse
-      </Animated.Text>
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+      >
+        <Animated.Text style={[styles.title, { opacity: fadeAnim }]}>
+          Quran Pulse
+        </Animated.Text>
 
-      <Animated.View style={{ opacity: fadeAnim, alignItems: 'center' }}>
-        <Text style={styles.subtitle}>
-          Memorize • Recite • Understand
-        </Text>
+        <Animated.View style={{ opacity: fadeAnim, alignItems: 'center' }}>
+          <Text style={styles.subtitle}>
+            Memorize • Recite • Understand
+          </Text>
 
-        <Text style={styles.description}>
-          Quran Pulse is your peaceful companion to connect deeply with the Word of Allah.
-          Listen to beautiful recitations, reflect through clear tafseer, memorize and understand ayah by ayah,
-          explore the 99 Beautiful Names of Allah, follow daily prayer times with Athan reminders,
-          keep your favorite verses in bookmarks, and stay mindful of the Islamic calendar — all in one serene place.
-        </Text>
-      </Animated.View>
+          <Text style={styles.description}>
+            Quran Pulse is your peaceful companion to connect deeply with the Word of Allah.
+            Listen to beautiful recitations, reflect through clear tafseer, memorize and understand ayah by ayah,
+            explore the 99 Beautiful Names of Allah, follow daily prayer times with Athan reminders,
+            keep your favorite verses in bookmarks, and stay mindful of the Islamic calendar — all in one serene place.
+          </Text>
+        </Animated.View>
 
-      <View style={styles.buttonContainer}>
-        <TouchableOpacity style={styles.button} onPress={() => navigation.navigate('MemorizeUnderstand')}>
-          <Text style={styles.buttonText}>Memorize & Understand</Text>
-        </TouchableOpacity>
+        <View style={styles.buttonContainer}>
+          <TouchableOpacity style={styles.button} onPress={() => navigation.navigate('MemorizeUnderstand')}>
+            <Text style={styles.buttonText}>Memorize & Understand</Text>
+          </TouchableOpacity>
 
-        <TouchableOpacity style={styles.button} onPress={() => navigation.navigate('QuranPlayer')}>
-          <Text style={styles.buttonText}>Listen to Quran</Text>
-        </TouchableOpacity>
+          <TouchableOpacity style={styles.button} onPress={() => navigation.navigate('QuranPlayer')}>
+            <Text style={styles.buttonText}>Listen to Quran</Text>
+          </TouchableOpacity>
 
-        <TouchableOpacity style={styles.button} onPress={() => navigation.navigate('AsmaAlHusna')}>
-          <Text style={styles.buttonText}>Asma'a Allah Al-Husna</Text>
-        </TouchableOpacity>
+          <TouchableOpacity style={styles.button} onPress={() => navigation.navigate('AsmaAlHusna')}>
+            <Text style={styles.buttonText}>Asma'a Allah Al-Husna</Text>
+          </TouchableOpacity>
 
-        <TouchableOpacity style={styles.button} onPress={() => navigation.navigate('PrayerTimes')}>
-          <Text style={styles.buttonText}>Prayer Times & Athan</Text>
-        </TouchableOpacity>
+          <TouchableOpacity style={styles.button} onPress={() => navigation.navigate('PrayerTimes')}>
+            <Text style={styles.buttonText}>Prayer Times & Athan</Text>
+          </TouchableOpacity>
 
-        <TouchableOpacity style={styles.button} onPress={() => navigation.navigate('Calendar')}>
-          <Text style={styles.buttonText}>Islamic Calendar</Text>
-        </TouchableOpacity>
+          <TouchableOpacity style={styles.button} onPress={() => navigation.navigate('Calendar')}>
+            <Text style={styles.buttonText}>Islamic Calendar</Text>
+          </TouchableOpacity>
 
-        <TouchableOpacity style={styles.button} onPress={() => navigation.navigate('Bookmarks')}>
-          <Text style={styles.buttonText}>My Bookmarks</Text>
-        </TouchableOpacity>
-
-      </View>
+          <TouchableOpacity style={styles.button} onPress={() => navigation.navigate('Bookmarks')}>
+            <Text style={styles.buttonText}>My Bookmarks</Text>
+          </TouchableOpacity>
+        </View>
+      </ScrollView>
     </View>
   );
 }
@@ -77,9 +82,13 @@ const styles = StyleSheet.create({
   container: { 
     flex: 1, 
     backgroundColor: '#2c3e50', 
-    justifyContent: 'center', 
-    alignItems: 'center', 
-    paddingHorizontal: 24 
+  },
+  scrollContent: {
+    flexGrow: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 24,
+    paddingVertical: 40, // extra padding for better scroll feel
   },
   title: { 
     fontSize: 52, 
