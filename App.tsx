@@ -67,7 +67,7 @@ export default function App() {
               name="MemorizeUnderstand"
               component={MemorizeUnderstandScreen}
               options={({ navigation }) => ({
-                title: 'Memorize & Understand',
+                title: 'Quran Pulse',
                 headerLeft: () => <CustomBackButton navigation={navigation} />,
               })}
             />
@@ -80,7 +80,7 @@ export default function App() {
               name="Settings"
               component={SettingsScreen}
               options={({ navigation }) => ({
-                title: 'Settings',
+                title: 'Quran Pulse',
                 headerLeft: () => <CustomBackButton navigation={navigation} />,
               })}
             />
@@ -88,7 +88,7 @@ export default function App() {
               name="AsmaAlHusna" 
               component={AsmaAlHusnaScreen} 
               options={({ navigation }) => ({
-                title: 'Asma Al-Husna',
+                title: 'Quran Pulse',
                 headerLeft: () => <CustomBackButton navigation={navigation} />,
               })}
             />
@@ -96,7 +96,7 @@ export default function App() {
               name="PrayerTimes"
               component={PrayerTimesScreen}
               options={({ navigation }) => ({
-                title: 'Prayer Times',
+                title: 'Quran Pulse',
                 headerLeft: () => <CustomBackButton navigation={navigation} />,
               })}
             />
@@ -104,7 +104,7 @@ export default function App() {
               name="Bookmarks"
               component={BookmarksScreen}
               options={({ navigation }) => ({
-                title: 'Bookmarks',
+                title: 'Quran Pulse',
                 headerLeft: () => <CustomBackButton navigation={navigation} />,
               })}
             />
@@ -112,7 +112,7 @@ export default function App() {
               name="QuranPlayer"
               component={QuranPlayerScreen}
               options={({ navigation }) => ({
-                title: 'Listen to Quran',
+                title: 'Quran Pulse',
                 headerLeft: () => <CustomBackButton navigation={navigation} />,
               })}
             />
@@ -120,7 +120,7 @@ export default function App() {
               name="Calendar"
               component={CalendarScreen}
               options={({ navigation }) => ({
-                title: 'Islamic Calendar',
+                title: 'Quran Pulse',
                 headerLeft: () => <CustomBackButton navigation={navigation} />,
               })}
             />

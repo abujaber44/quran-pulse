@@ -1,9 +1,10 @@
+// src/context/AudioContext.tsx
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Alert } from 'react-native';
 import { Audio } from 'expo-av';
 import { getReciter, saveReciter } from '../services/storage';
 import { getGlobalAyahNumber } from '../utils/quranUtils';
-import { useSettings } from './SettingsContext'; // ← Import settings
+import { useSettings } from './SettingsContext';
 
 interface Reciter {
   id: string;
@@ -40,6 +41,7 @@ interface AudioContextType {
   setRepeatRange: (start: number, end: number) => void;
   toggleMemorizationMode: () => void;
   downloadSurah: (surahId: number, totalVerses: number, surahs: any[]) => Promise<void>;
+  stopListening: () => Promise<void>; // ← New: exit listening mode
 }
 
 const AudioContext = createContext<AudioContextType | undefined>(undefined);
@@ -56,7 +58,7 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
   const setRepeatRange = (start: number, end: number) => setRepeatRangeState({ start, end });
   const [memorizationMode, setMemorizationMode] = useState(false);
 
-  const { settings } = useSettings(); // ← Get global settings
+  const { settings } = useSettings();
 
   const toggleMemorizationMode = () => setMemorizationMode(prev => !prev);
 
@@ -68,7 +70,7 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
       interruptionModeAndroid: 1,
       shouldDuckAndroid: true,
       playThroughEarpieceAndroid: false,
-      staysActiveInBackground: false,
+      staysActiveInBackground: true, // ← Enable background playback
     }).catch(e => console.warn('Audio mode setup failed:', e));
   }, []);
 
@@ -112,7 +114,6 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
             if (repeatMode === 'single') {
               newSound.replayAsync();
             } else if (memorizationMode) {
-              // Use the saved pause length from settings
               setTimeout(() => {
                 newSound.setPositionAsync(0);
                 newSound.playAsync();
@@ -158,6 +159,19 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
     Alert.alert('Coming Soon', 'Offline download feature will be added in the next update.');
   };
 
+  // New: Stop listening and clear state
+  const stopListening = async () => {
+    if (sound) {
+      await sound.stopAsync();
+      await sound.unloadAsync();
+    }
+    setSound(null);
+    setIsPlaying(false);
+    setCurrentAyah(null);
+    setPositionMillis(0);
+    setDurationMillis(0);
+  };
+
   useEffect(() => {
     return () => {
       if (sound) {
@@ -186,6 +200,7 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
         setRepeatRange,
         toggleMemorizationMode,
         downloadSurah,
+        stopListening, // ← Exposed to all screens
       }}
     >
       {children}

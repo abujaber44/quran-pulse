@@ -69,6 +69,7 @@ export default function SurahScreen({ route }: any) {
     toggleMemorizationMode,
     downloadSurah,
     sound,
+    stopListening, // ← New: from AudioContext
   } = useAudio();
 
   const { settings } = useSettings();
@@ -116,13 +117,6 @@ export default function SurahScreen({ route }: any) {
 
     loadData();
   }, [surah.id]);
-
-  // Auto-play first ayah
-  useEffect(() => {
-    if (settings.autoPlayOnStart && ayahs.length > 0 && !currentAyah) {
-      handlePlayAyah(1);
-    }
-  }, [ayahs.length, settings.autoPlayOnStart]);
 
   // Auto next ayah
   useEffect(() => {
@@ -385,10 +379,18 @@ export default function SurahScreen({ route }: any) {
           <View style={{ height: 130 }} />
         </ScrollView>
 
-        {/* Player */}
+        {/* Player with X Button to exit listening */}
         {currentAyah && currentAyah.surah === surah.id && (
           <View style={[styles.playerContainer, isDark && styles.darkPlayerContainer]}>
             <View style={[styles.playerCard, isDark && styles.darkPlayerCard]}>
+              {/* X Button to stop listening and hide player */}
+              <TouchableOpacity 
+                style={styles.exitButton}
+                onPress={stopListening}
+              >
+                <Text style={styles.exitIcon}>×</Text>
+              </TouchableOpacity>
+
               <View style={styles.playerHeader}>
                 <Text style={styles.playerAyahNumber}>{currentAyah.ayah}</Text>
                 <Text style={[styles.playerTitle, isDark && styles.darkText]}>Currently Playing</Text>
@@ -527,7 +529,7 @@ const styles = StyleSheet.create({
   ayahCard: { backgroundColor: '#fff', padding: 28, marginBottom: 16, borderRadius: 20, elevation: 6, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.1, shadowRadius: 8, position: 'relative' },
   darkAyahCard: { backgroundColor: '#1e1e1e' },
   playingCard: { backgroundColor: '#e8f5e9', borderLeftWidth: 6, borderLeftColor: '#27ae60' },
-  ayahText: { fontFamily: 'AmiriQuran', lineHeight: 56, textAlign: 'right', color: '#2c3e50', fontSize: 24 }, // ← Hardcoded smaller size (was 32)
+  ayahText: { fontFamily: 'AmiriQuran', lineHeight: 56, textAlign: 'right', color: '#2c3e50', fontSize: 24 },
   ayahNumberBottom: { position: 'absolute', bottom: 12, left: 16, fontSize: 18, color: '#3498db', backgroundColor: '#fff', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20, fontWeight: 'bold' },
   playerContainer: { position: 'absolute', bottom: 0, left: 0, right: 0, paddingHorizontal: 16, paddingBottom: 20 },
   darkPlayerContainer: { backgroundColor: 'transparent' },
@@ -597,5 +599,20 @@ const styles = StyleSheet.create({
   },
   bookmarkedIcon: {
     color: '#f1c40f',
+  },
+  // New: Exit button on player card
+  exitButton: {
+    position: 'absolute',
+    top: 12,
+    right: 12,
+    zIndex: 10,
+    padding: 8,
+    backgroundColor: 'rgba(0,0,0,0.1)',
+    borderRadius: 20,
+  },
+  exitIcon: {
+    fontSize: 24,
+    color: '#e74c3c',
+    fontWeight: 'bold',
   },
 });
