@@ -27,6 +27,7 @@
     "expo-notifications": "^0.32.15",
     "expo-sensors": "~15.0.8",
     "expo-status-bar": "~3.0.8",
+    "lodash.debounce": "^4.0.8",
     "react": "19.1.0",
     "react-native": "0.81.5",
     "react-native-compass-heading": "^2.0.2",
@@ -37,6 +38,7 @@
   },
   "devDependencies": {
     "@babel/core": "^7.20.0",
+    "@types/lodash.debounce": "^4.0.9",
     "@types/react": "~19.1.10",
     "typescript": "~5.9.2"
   },
