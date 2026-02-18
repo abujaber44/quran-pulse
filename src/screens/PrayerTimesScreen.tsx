@@ -180,11 +180,13 @@ export default function PrayerTimesScreen() {
         findNextPrayer(prayerList);
         await scheduleAthanNotifications(prayerList);
         setCity(cityName);
+        saveCity(cityName);
       } else {
         Alert.alert(
           'Invalid City',
           `No prayer times found for "${cityName}". Please select a valid city from suggestions or try a major city near you.`
         );
+        setSearchInput(''); 
       }
     } catch (err) {
       Alert.alert('Network Error', 'Unable to fetch prayer times. Please check your internet connection.');
