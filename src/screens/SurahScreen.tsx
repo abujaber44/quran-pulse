@@ -39,6 +39,7 @@ export default function SurahScreen({ route }: any) {
   const [expandedTafseer, setExpandedTafseer] = useState<number | null>(null);
   const [currentTafseer, setCurrentTafseer] = useState<string>('');
   const [loadingTafseer, setLoadingTafseer] = useState(false);
+  const [expandedTranslation, setExpandedTranslation] = useState<number | null>(null); // New: for translation
 
   // For cancelling previous tafseer fetch
   const abortControllerRef = useRef<AbortController | null>(null);
@@ -240,6 +241,15 @@ export default function SurahScreen({ route }: any) {
     }
   };
 
+  // New: Toggle translation (similar to toggleTafseer)
+  const toggleTranslation = (ayahNum: number) => {
+    if (expandedTranslation === ayahNum) {
+      setExpandedTranslation(null);
+    } else {
+      setExpandedTranslation(ayahNum);
+    }
+  };
+
   // Toggle bookmark
   const toggleBookmark = async (ayahNum: number) => {
     const key = `${surah.id}-${ayahNum}`;
@@ -352,17 +362,30 @@ export default function SurahScreen({ route }: any) {
                   {ayah.text_uthmani}
                 </Text>
 
-                <Text style={[styles.translationText, isDark && styles.darkText]}>
-                  {ayah.translation}
-                </Text>
+                {/* Bottom toggles: Translation left, Tafseer right */}
+                <View style={styles.bottomToggles}>
+                  <TouchableOpacity onPress={() => toggleTranslation(ayah.verse_number)} style={styles.tafseerToggleBtn}>
+                    <Text style={[styles.tafseerToggle, isDark && styles.darkText]}>
+                      {expandedTranslation === ayah.verse_number 
+                        ? '↑ Hide Translation' 
+                        : '↓ Show Translation'}
+                    </Text>
+                  </TouchableOpacity>
 
-                <TouchableOpacity onPress={() => toggleTafseer(ayah.verse_number)} style={styles.tafseerToggleBtn}>
-                  <Text style={[styles.tafseerToggle, isDark && styles.darkText]}>
-                    {expandedTafseer === ayah.verse_number 
-                      ? (loadingTafseer ? 'Loading...' : '↑ Hide Tafseer') 
-                      : '↓ Show Tafseer'}
+                  <TouchableOpacity onPress={() => toggleTafseer(ayah.verse_number)} style={styles.tafseerToggleBtn}>
+                    <Text style={[styles.tafseerToggle, isDark && styles.darkText]}>
+                      {expandedTafseer === ayah.verse_number 
+                        ? (loadingTafseer ? 'Loading...' : '↑ Hide Tafseer') 
+                        : '↓ Show Tafseer'}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+
+                {expandedTranslation === ayah.verse_number && (
+                  <Text style={[styles.translationText, isDark && styles.darkText]}>
+                    {ayah.translation}
                   </Text>
-                </TouchableOpacity>
+                )}
 
                 {expandedTafseer === ayah.verse_number && (
                   <Text style={[styles.tafseerText, isDark && styles.darkText]}>
@@ -530,7 +553,7 @@ const styles = StyleSheet.create({
   darkAyahCard: { backgroundColor: '#1e1e1e' },
   playingCard: { backgroundColor: '#e8f5e9', borderLeftWidth: 6, borderLeftColor: '#27ae60' },
   ayahText: { fontFamily: 'AmiriQuran', lineHeight: 56, textAlign: 'right', color: '#2c3e50', fontSize: 24 },
-  ayahNumberBottom: { position: 'absolute', bottom: 12, left: 16, fontSize: 18, color: '#3498db', backgroundColor: '#fff', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20, fontWeight: 'bold' },
+  ayahNumberBottom: { position: 'absolute', bottom: 12, left: 16, fontSize: 14, color: '#3498db', backgroundColor: '#fff', paddingHorizontal: 6, paddingVertical: 6, borderRadius: 12, fontWeight: 'bold' },
   playerContainer: { position: 'absolute', bottom: 0, left: 0, right: 0, paddingHorizontal: 16, paddingBottom: 20 },
   darkPlayerContainer: { backgroundColor: 'transparent' },
   playerCard: { backgroundColor: '#fff', borderRadius: 20, padding: 12, elevation: 12, shadowColor: '#000', shadowOffset: { width: 0, height: -6 }, shadowOpacity: 0.15, shadowRadius: 12 },
@@ -566,7 +589,7 @@ const styles = StyleSheet.create({
   },
   tafseerToggleBtn: {
     marginTop: 16,
-    alignSelf: 'flex-end',
+    alignSelf: 'flex-start', // ← Changed to left for translation
     paddingHorizontal: 16,
     paddingVertical: 6
   },
@@ -599,6 +622,13 @@ const styles = StyleSheet.create({
   },
   bookmarkedIcon: {
     color: '#f1c40f',
+  },
+  // New: Bottom toggles container for alignment
+  bottomToggles: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 16,
+    paddingHorizontal: 16,
   },
   // New: Exit button on player card
   exitButton: {

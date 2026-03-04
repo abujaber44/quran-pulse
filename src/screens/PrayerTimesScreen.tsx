@@ -303,7 +303,7 @@ export default function PrayerTimesScreen() {
           
           <View style={styles.explanation}>
             <Text style={styles.explanationText}>
-              Stay connected to your daily prayers with accurate athan times, Qibla direction, and reminders. Let each prayer be a moment of peace, gratitude, and renewal in your journey with Allah.
+              Stay connected to your daily prayers with accurate athan times and reminders. Let each prayer be a moment of peace, gratitude, and renewal in your journey with Allah.
             </Text>
           </View>
 
