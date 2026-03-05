@@ -12,9 +12,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { UI_COLORS, UI_RADII, UI_SHADOWS } from '../theme/ui';
-
-
-const publicHadithKey='$2y$10$lIz3MVDZTOL4NNpxnHQtq6CfeXSYjTwpVDa2oKBeAk51PxSvXS6'
+import { fetchRandomDailyHadith, DailyHadith } from '../services/hadithService';
 
 const API_BASE = 'https://api.aladhan.com/v1';
 
@@ -33,10 +31,10 @@ type CalendarDay = {
   };
 };
 
-type DailyHadith = {
-  arabic: string;
-  english: string;
-  source: string;
+const FALLBACK_HADITH: DailyHadith = {
+  arabic: 'خَيْرُكُمْ مَنْ تَعَلَّمَ الْقُرْآنَ وَعَلَّمَهُ',
+  english: 'The best among you are those who learn the Quran and teach it.',
+  source: 'Sahih al-Bukhari',
 };
 
 export default function CalendarScreen() {
@@ -92,34 +90,17 @@ export default function CalendarScreen() {
         return;
       }
 
-      // Fetch new Hadith from hadithapi.com
-      const response = await axios.get(`https://hadithapi.com/public/api/hadiths?apiKey=${publicHadithKey}`);
-
-      if (response.data.status === 200 && response.data.hadiths.data.length > 0) {
-        // Select a RANDOM Hadith from the list
-        const randomIndex = Math.floor(Math.random() * response.data.hadiths.data.length);
-        const hadith = response.data.hadiths.data[randomIndex];
-
-        const formatted = {
-          arabic: hadith.hadithArabic || 'No Arabic text available',
-          english: hadith.hadithEnglish || 'No English text available',
-          source: hadith.book?.bookName || 'Unknown source',
-        };
-
-        setDailyHadith(formatted);
-
-        // Cache for today
-        await AsyncStorage.setItem('dailyHadith', JSON.stringify(formatted));
+      const hadith = await fetchRandomDailyHadith();
+      if (hadith) {
+        setDailyHadith(hadith);
+        await AsyncStorage.setItem('dailyHadith', JSON.stringify(hadith));
         await AsyncStorage.setItem('dailyHadithDate', today);
+      } else {
+        setDailyHadith(FALLBACK_HADITH);
       }
     } catch (error) {
       console.error('Hadith fetch error:', error);
-      // Fallback Hadith if API fails
-      setDailyHadith({
-        arabic: 'خَيْرُكُمْ مَنْ تَعَلَّمَ الْقُرْآنَ وَعَلَّمَهُ',
-        english: 'The best among you are those who learn the Quran and teach it.',
-        source: 'Sahih al-Bukhari'
-      });
+      setDailyHadith(FALLBACK_HADITH);
     }
   };
 
