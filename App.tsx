@@ -3,6 +3,7 @@ import { NavigationContainer, CommonActions, NavigationProp, ParamListBase } fro
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { TouchableOpacity, Text } from 'react-native';
 import * as Font from 'expo-font';
+import * as Notifications from 'expo-notifications';
 
 import { AudioProvider } from './src/context/AudioContext';
 import { SettingsProvider } from './src/context/SettingsContext';
@@ -18,6 +19,15 @@ import QuranPlayerScreen from './src/screens/QuranPlayerScreen';
 import CalendarScreen from './src/screens/CalendarScreen';
 
 const Stack = createNativeStackNavigator();
+
+Notifications.setNotificationHandler({
+  handleNotification: async () => ({
+    shouldShowBanner: true,
+    shouldShowList: true,
+    shouldPlaySound: true,
+    shouldSetBadge: false,
+  }),
+});
 
 
 const CustomBackButton = ({ navigation }: { navigation: NavigationProp<ParamListBase> }) => (

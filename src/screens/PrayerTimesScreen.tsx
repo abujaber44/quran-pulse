@@ -28,6 +28,7 @@ interface Prayer {
 const CITY_STORAGE_KEY = 'prayer_city';
 const PRAYER_PREFS_KEY = 'prayer_athan_prefs';
 const DEFAULT_CITY = 'Makkah';
+const ATHAN_CHANNEL_ID = 'athan-alerts-v2';
 
 export default function PrayerTimesScreen() {
   const [prayers, setPrayers] = useState<Prayer[]>([]);
@@ -79,6 +80,22 @@ export default function PrayerTimesScreen() {
     requestPermissions();
   }, []);
 
+  const setupAndroidNotificationChannel = async () => {
+    if (Platform.OS !== 'android') return;
+
+    await Notifications.setNotificationChannelAsync(ATHAN_CHANNEL_ID, {
+      name: 'Athan Alerts',
+      description: 'Prayer time notifications with Athan sound',
+      importance: Notifications.AndroidImportance.MAX,
+      vibrationPattern: [0, 250, 250, 250],
+      lightColor: '#27ae60',
+      enableLights: true,
+      enableVibrate: true,
+      lockscreenVisibility: Notifications.AndroidNotificationVisibility.PUBLIC,
+      sound: 'athan.mp3',
+    });
+  };
+
   const loadSavedData = async () => {
     try {
       const savedCity = await AsyncStorage.getItem(CITY_STORAGE_KEY);
@@ -116,6 +133,7 @@ export default function PrayerTimesScreen() {
   };
 
   const requestPermissions = async () => {
+    await setupAndroidNotificationChannel();
     const { status } = await Notifications.requestPermissionsAsync();
     if (status !== 'granted') {
       Alert.alert('Permission required', 'Please enable notifications for Athan alerts');
@@ -237,6 +255,7 @@ export default function PrayerTimesScreen() {
           trigger: {
             type: Notifications.SchedulableTriggerInputTypes.DATE,
             date: triggerDate,
+            channelId: ATHAN_CHANNEL_ID,
           },
         });
       } catch (error) {
