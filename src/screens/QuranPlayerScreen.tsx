@@ -12,7 +12,7 @@ import {
   TouchableWithoutFeedback,
 } from 'react-native';
 import Slider from '@react-native-community/slider';
-import { Audio } from 'expo-av';
+import { useAudioPlayer, useAudioPlayerStatus, setAudioModeAsync } from 'expo-audio';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useSettings } from '../context/SettingsContext';
 import { fetchSurahs } from '../services/quranApi';
@@ -52,12 +52,10 @@ export default function QuranPlayerScreen() {
   const [reciterModalVisible, setReciterModalVisible] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
 
-  const [sound, setSound] = useState<Audio.Sound | null>(null);
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [positionMillis, setPositionMillis] = useState(0);
-  const [durationMillis, setDurationMillis] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
   const flatListRef = useRef<FlatList>(null);
+  const player = useAudioPlayer(null, { updateInterval: 250 });
+  const playerStatus = useAudioPlayerStatus(player);
 
   const { settings } = useSettings();
   const isDark = settings.isDarkMode;
@@ -131,53 +129,69 @@ export default function QuranPlayerScreen() {
     }
   }, [selectedSurah, surahs]);
 
+  // Configure background playback behavior
+  useEffect(() => {
+    setAudioModeAsync({
+      playsInSilentMode: true,
+      shouldPlayInBackground: true,
+      interruptionMode: 'duckOthers',
+      shouldRouteThroughEarpiece: false,
+      allowsRecording: false,
+    }).catch((error) => {
+      console.error('Failed to configure audio mode:', error);
+    });
+  }, []);
+
   // Load and play audio when surah or reciter changes
   useEffect(() => {
     if (selectedSurah) {
-      loadAndPlayAudio();
+      void loadAndPlayAudio();
     }
   }, [selectedSurah, selectedReciter]);
 
-  // Cleanup
+  // Activate lock-screen controls for current surah
+  useEffect(() => {
+    if (!selectedSurah) {
+      return;
+    }
+
+    player.setActiveForLockScreen(
+      true,
+      {
+        title: `${selectedSurah.id}. ${selectedSurah.name_simple}`,
+        artist: selectedReciter.name,
+        albumTitle: 'Quran Pulse',
+      },
+      {
+        showSeekBackward: true,
+        showSeekForward: true,
+      }
+    );
+  }, [player, selectedSurah, selectedReciter]);
+
+  // Auto-next when playback reaches end
+  useEffect(() => {
+    if (playerStatus.didJustFinish) {
+      handleNext();
+    }
+  }, [playerStatus.didJustFinish]);
+
+  // Cleanup lock-screen controls
   useEffect(() => {
     return () => {
-      if (sound) {
-        sound.unloadAsync();
-      }
+      player.clearLockScreenControls();
     };
-  }, [sound]);
+  }, [player]);
 
   const loadAndPlayAudio = async () => {
     if (!selectedSurah) return;
-
-    if (sound) {
-      await sound.unloadAsync();
-    }
 
     setIsLoading(true);
     try {
       const url = getSurahAudioUrl(selectedReciter.id, selectedSurah.id);
       console.log('🎵 Playing Audio URL:', url);
-
-      // Set audio mode for background playback (critical for locked screen)
-      await Audio.setAudioModeAsync({
-        playsInSilentModeIOS: true,                // Required for iOS silent switch
-        staysActiveInBackground: true,             // Key: allows playback when locked/background
-        interruptionModeIOS: 1,                    // 1 = duck others (safe default)
-        interruptionModeAndroid: 1,                // 1 = duck others (safe default)
-        shouldDuckAndroid: true,                   // Lower other audio when playing
-        playThroughEarpieceAndroid: false,         // Use speaker, not earpiece
-        allowsRecordingIOS: false,
-      });
-
-      const { sound: newSound } = await Audio.Sound.createAsync(
-        { uri: url },
-        { shouldPlay: true },
-        onPlaybackStatusUpdate
-      );
-
-      setSound(newSound);
-      setIsPlaying(true);
+      player.replace({ uri: url });
+      player.play();
     } catch (error) {
       console.error('Audio error:', error);
       Alert.alert('Error', 'Failed to load audio');
@@ -186,30 +200,20 @@ export default function QuranPlayerScreen() {
     }
   };
 
-  const onPlaybackStatusUpdate = (status: any) => {
-    if (status.isLoaded) {
-      setPositionMillis(status.positionMillis);
-      setDurationMillis(status.durationMillis || 0);
-      setIsPlaying(status.isPlaying);
-
-      if (status.didJustFinish) {
-        handleNext();
-      }
-    }
-  };
-
   const togglePlayPause = async () => {
-    if (!sound && selectedSurah) {
+    if (!selectedSurah) {
+      return;
+    }
+
+    if (!playerStatus.isLoaded) {
       await loadAndPlayAudio();
       return;
     }
 
-    if (sound) {
-      if (isPlaying) {
-        await sound.pauseAsync();
-      } else {
-        await sound.playAsync();
-      }
+    if (playerStatus.playing) {
+      player.pause();
+    } else {
+      player.play();
     }
   };
 
@@ -230,8 +234,8 @@ export default function QuranPlayerScreen() {
   };
 
   const seekTo = async (value: number) => {
-    if (sound) {
-      await sound.setPositionAsync(value);
+    if (playerStatus.isLoaded) {
+      await player.seekTo(value / 1000);
     }
   };
 
@@ -342,15 +346,15 @@ export default function QuranPlayerScreen() {
             <Slider
               style={styles.slider}
               minimumValue={0}
-              maximumValue={durationMillis || 1}
-              value={positionMillis}
+              maximumValue={(playerStatus.duration || 0) * 1000 || 1}
+              value={(playerStatus.currentTime || 0) * 1000}
               onSlidingComplete={seekTo}
               minimumTrackTintColor="#27ae60"
               thumbTintColor="#27ae60"
             />
 
             <Text style={[styles.timeText, isDark && styles.darkText]}>
-              {formatTime(positionMillis)} / {formatTime(durationMillis)}
+              {formatTime((playerStatus.currentTime || 0) * 1000)} / {formatTime((playerStatus.duration || 0) * 1000)}
             </Text>
 
             <View style={styles.playerControls}>
@@ -366,7 +370,7 @@ export default function QuranPlayerScreen() {
 
               <TouchableOpacity onPress={togglePlayPause}>
                 <Text style={styles.playPauseBtn}>
-                  {isLoading ? '⏳' : isPlaying ? '⏸' : '▶'}
+                  {isLoading ? '⏳' : playerStatus.playing ? '⏸' : '▶'}
                 </Text>
               </TouchableOpacity>
 

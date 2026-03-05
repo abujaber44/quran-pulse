@@ -235,9 +235,8 @@ export default function PrayerTimesScreen() {
             vibrate: [0, 250, 250, 250],
           },
           trigger: {
-            type: 'timeInterval',
-            seconds: (triggerDate.getTime() - today.getTime()) / 1000,
-            repeats: false,
+            type: Notifications.SchedulableTriggerInputTypes.DATE,
+            date: triggerDate,
           },
         });
       } catch (error) {
