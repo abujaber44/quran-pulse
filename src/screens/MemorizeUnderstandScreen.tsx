@@ -11,6 +11,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { fetchSurahs } from '../services/quranApi';
 import { Surah } from '../types';
+import { UI_COLORS, UI_RADII, UI_SHADOWS } from '../theme/ui';
 
 export default function MemorizeUnderstandScreen({ navigation }: any) {
   const [surahs, setSurahs] = useState<Surah[]>([]);
@@ -64,7 +65,7 @@ export default function MemorizeUnderstandScreen({ navigation }: any) {
   );
 
   return (
-    //<SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={styles.safeArea}>
       <View style={styles.container}>
         {/* <TouchableOpacity 
           style={styles.backButton}
@@ -118,19 +119,19 @@ export default function MemorizeUnderstandScreen({ navigation }: any) {
           showsVerticalScrollIndicator={false}
         />
       </View>
-    //</SafeAreaView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: '#2c3e50' },
-  container: { flex: 1, backgroundColor: '#f8f9fa' },
+  safeArea: { flex: 1, backgroundColor: UI_COLORS.background },
+  container: { flex: 1, backgroundColor: UI_COLORS.background },
   header: { 
     flexDirection: 'row', 
     alignItems: 'center', 
-    paddingHorizontal: 16, 
-    paddingTop: 20,
-    paddingBottom: 20,
+    paddingHorizontal: 16,
+    paddingTop: 14,
+    paddingBottom: 18,
   },
   settingsBtn: {
     width: 50,
@@ -147,15 +148,16 @@ const styles = StyleSheet.create({
   },
   titleContainer: { flex: 1 },
   title: { 
-    fontSize: 36, 
+    fontSize: 34, 
     fontWeight: 'bold', 
-    color: '#2c3e50', 
+    color: UI_COLORS.primaryDeep, 
     fontFamily: 'AmiriQuran',
     textAlign: 'center', 
+    letterSpacing: 0.4,
   },
   subtitle: { 
-    fontSize: 18, 
-    color: '#7f8c8d', 
+    fontSize: 17, 
+    color: UI_COLORS.textMuted, 
     marginTop: 4,
     fontStyle: 'italic',
     textAlign: 'center', 
@@ -163,32 +165,30 @@ const styles = StyleSheet.create({
   searchContainer: {
     paddingHorizontal: 16,
     paddingBottom: 12,
-    backgroundColor: '#f8f9fa',
+    backgroundColor: UI_COLORS.background,
   },
   searchWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#fff',
-    borderRadius: 16,
-    elevation: 4,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 6,
+    backgroundColor: UI_COLORS.surface,
+    borderRadius: UI_RADII.md,
+    borderWidth: 1,
+    borderColor: UI_COLORS.border,
+    ...UI_SHADOWS.input,
   },
   searchInput: {
     flex: 1,
     paddingHorizontal: 16,
     paddingVertical: 14,
     fontSize: 16,
-    color: '#2c3e50',
+    color: UI_COLORS.text,
   },
   clearButton: {
     paddingHorizontal: 16,
   },
   clearIcon: {
     fontSize: 20,
-    color: '#7f8c8d',
+    color: UI_COLORS.textMuted,
   },
   featureButtonsContainer: {
     flexDirection: 'row',
@@ -217,26 +217,26 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     textAlign: 'center',
   },
-  list: { paddingHorizontal: 16 },
+  list: { paddingHorizontal: 16, paddingBottom: 22 },
   surahCard: { 
-    backgroundColor: '#fff', 
+    backgroundColor: UI_COLORS.surface,
     padding: 20, 
     marginVertical: 8, 
-    borderRadius: 18, 
+    borderRadius: UI_RADII.lg,
     flexDirection: 'row', 
     justifyContent: 'space-between', 
     alignItems: 'center', 
-    elevation: 6, 
-    shadowColor: '#000', 
-    shadowOffset: { width: 0, height: 3 }, 
-    shadowOpacity: 0.1, 
-    shadowRadius: 6 
+    borderWidth: 1,
+    borderColor: UI_COLORS.border,
+    borderLeftWidth: 5,
+    borderLeftColor: UI_COLORS.primary,
+    ...UI_SHADOWS.card,
   },
   surahInfo: { flexDirection: 'row', alignItems: 'center' },
-  surahNumber: { fontSize: 24, fontWeight: 'bold', color: '#3498db', marginRight: 20, width: 50, textAlign: 'center' },
-  surahNameEnglish: { fontSize: 16, color: '#2c3e50', fontWeight: '600' },
-  surahNameArabic: { fontFamily: 'AmiriQuran', fontSize: 24, color: '#2c3e50', marginTop: 4 },
-  versesCount: { fontSize: 14, color: '#7f8c8d' },
+  surahNumber: { fontSize: 24, fontWeight: 'bold', color: UI_COLORS.accent, marginRight: 20, width: 50, textAlign: 'center' },
+  surahNameEnglish: { fontSize: 16, color: UI_COLORS.text, fontWeight: '600' },
+  surahNameArabic: { fontFamily: 'AmiriQuran', fontSize: 24, color: UI_COLORS.text, marginTop: 4 },
+  versesCount: { fontSize: 14, color: UI_COLORS.textMuted },
   backButton: { 
     padding: 6, 
     alignSelf: 'flex-start', // ← Align left
@@ -246,16 +246,19 @@ const styles = StyleSheet.create({
   },
   backIcon: { fontSize: 18, color: '#3498db', fontWeight: '600' },
   explanation: {
-  paddingHorizontal: 16,
-  paddingVertical: 12,
-  backgroundColor: '#e8f5e9',
-  borderRadius: 12,
-  marginBottom: 16,
- },
- explanationText: {
-  fontSize: 14,
-  color: '#2c3e50',
-  textAlign: 'center',
-  lineHeight: 20,
- },
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    backgroundColor: UI_COLORS.primarySoft,
+    borderRadius: UI_RADII.sm,
+    borderWidth: 1,
+    borderColor: '#cde9d5',
+    marginHorizontal: 16,
+    marginBottom: 16,
+  },
+  explanationText: {
+    fontSize: 14,
+    color: UI_COLORS.text,
+    textAlign: 'center',
+    lineHeight: 21,
+  },
 });

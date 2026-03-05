@@ -14,6 +14,7 @@ import { fetchSurahs } from '../services/quranApi';
 import { getBookmarks, removeBookmark, Bookmark } from '../services/bookmarkService';
 import { useNavigation } from '@react-navigation/native';
 import type { StackNavigationProp } from '@react-navigation/stack';
+import { UI_COLORS, UI_RADII, UI_SHADOWS } from '../theme/ui';
 
 type RootStackParamList = {
   Surah: {
@@ -134,18 +135,16 @@ export default function BookmarksScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f8f9fa' },
-  list: { padding: 16 },
+  container: { flex: 1, backgroundColor: UI_COLORS.background },
+  list: { paddingHorizontal: 16, paddingBottom: 24 },
   card: {
-    backgroundColor: '#fff',
+    backgroundColor: UI_COLORS.surface,
     padding: 20,
-    borderRadius: 20,
+    borderRadius: UI_RADII.lg,
     marginBottom: 16,
-    elevation: 6,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.1,
-    shadowRadius: 6,
+    borderWidth: 1,
+    borderColor: UI_COLORS.border,
+    ...UI_SHADOWS.card,
   },
   header: {
     flexDirection: 'row',
@@ -156,15 +155,15 @@ const styles = StyleSheet.create({
   surahName: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#2c3e50',
+    color: UI_COLORS.text,
   },
   ayahNumber: {
     fontSize: 16,
-    color: '#3498db',
+    color: UI_COLORS.accent,
     marginTop: 4,
   },
   removeText: {
-    color: '#e74c3c',
+    color: UI_COLORS.danger,
     fontWeight: '700',
     fontSize: 17,
     paddingVertical: 8,
@@ -174,48 +173,51 @@ const styles = StyleSheet.create({
     fontFamily: 'AmiriQuran',
     fontSize: 26,
     textAlign: 'right',
-    color: '#2c3e50',
+    color: UI_COLORS.text,
     lineHeight: 42,
   },
   translation: {
     fontSize: 16,
-    color: '#34495e',
+    color: UI_COLORS.text,
     marginTop: 12,
     lineHeight: 24,
   },
   emptyText: {
     fontSize: 18,
     textAlign: 'center',
-    color: '#7f8c8d',
+    color: UI_COLORS.textMuted,
     marginTop: 100,
     paddingHorizontal: 40,
   },
   loadingText: {
     marginTop: 16,
     fontSize: 16,
-    color: '#2c3e50',
+    color: UI_COLORS.text,
     textAlign: 'center',
   },
-    explanation: {
-  paddingHorizontal: 16,
-  paddingVertical: 12,
-  backgroundColor: '#e8f5e9',
-  borderRadius: 12,
-  marginBottom: 16,
- },
- explanationText: {
-  fontSize: 14,
-  color: '#2c3e50',
-  textAlign: 'center',
-  lineHeight: 20,
- },
- title: {
-  fontSize: 30,
-  fontWeight: '700',          // slightly heavier than 'bold'
-  color: '#1a3c34',           // deeper, richer green-teal (Islamic feel)
-  textAlign: 'center',
-  marginVertical: 20,
-  letterSpacing: 0.5,         // subtle spacing for elegance
-  fontFamily: 'AmiriQuran',   // if you want Quranic font (optional)
-},
+  explanation: {
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    backgroundColor: UI_COLORS.primarySoft,
+    borderRadius: UI_RADII.sm,
+    borderWidth: 1,
+    borderColor: '#cde9d5',
+    marginHorizontal: 16,
+    marginBottom: 16,
+  },
+  explanationText: {
+    fontSize: 14,
+    color: UI_COLORS.text,
+    textAlign: 'center',
+    lineHeight: 21,
+  },
+  title: {
+    fontSize: 30,
+    fontWeight: '700',
+    color: UI_COLORS.primaryDeep,
+    textAlign: 'center',
+    marginVertical: 20,
+    letterSpacing: 0.5,
+    fontFamily: 'AmiriQuran',
+  },
 });

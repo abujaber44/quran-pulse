@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Animated, ScrollView } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import type { StackNavigationProp } from '@react-navigation/stack';
+import { UI_COLORS, UI_RADII, UI_SHADOWS } from '../theme/ui';
 
 type RootStackParamList = {
   MemorizeUnderstand: undefined;
@@ -35,7 +36,7 @@ export default function LandingScreen() {
           Quran Pulse
         </Animated.Text>
 
-        <Animated.View style={{ opacity: fadeAnim, alignItems: 'center' }}>
+        <Animated.View style={[styles.introCard, { opacity: fadeAnim }]}>
           <Text style={styles.subtitle}>
             Memorize • Recite • Understand
           </Text>
@@ -81,54 +82,68 @@ export default function LandingScreen() {
 const styles = StyleSheet.create({
   container: { 
     flex: 1, 
-    backgroundColor: '#2c3e50', 
+    backgroundColor: UI_COLORS.text, 
   },
   scrollContent: {
     flexGrow: 1,
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: 24,
-    paddingVertical: 40, // extra padding for better scroll feel
+    paddingTop: 48,
+    paddingBottom: 36,
   },
   title: { 
     fontSize: 52, 
     fontWeight: 'bold', 
-    color: '#fff', 
+    color: UI_COLORS.white, 
     fontFamily: 'AmiriQuran', 
-    marginBottom: 8 
+    letterSpacing: 0.5,
+    marginBottom: 10,
   },
   subtitle: { 
     fontSize: 24, 
-    color: '#bdc3c7', 
+    color: UI_COLORS.textLight, 
     marginBottom: 16, 
     textAlign: 'center' 
+  },
+  introCard: {
+    alignItems: 'center',
+    width: '92%',
+    maxWidth: 760,
+    backgroundColor: 'rgba(255,255,255,0.08)',
+    borderColor: 'rgba(255,255,255,0.18)',
+    borderWidth: 1,
+    borderRadius: UI_RADII.lg,
+    paddingTop: 16,
+    paddingBottom: 8,
+    paddingHorizontal: 12,
+    marginBottom: 18,
   },
   description: { 
     fontSize: 18, 
     color: '#ecf0f1', 
     textAlign: 'center', 
-    marginBottom: 40, 
-    lineHeight: 26,
-    paddingHorizontal: 20 
+    marginBottom: 36, 
+    lineHeight: 27,
+    maxWidth: 720,
+    paddingHorizontal: 18,
   },
   buttonContainer: { 
     width: '90%', 
     maxWidth: 400 
   },
   button: { 
-    backgroundColor: '#27ae60', 
-    paddingVertical: 18, 
-    borderRadius: 16, 
+    backgroundColor: UI_COLORS.primary, 
+    paddingVertical: 17, 
+    borderRadius: UI_RADII.md, 
     marginBottom: 16, 
     alignItems: 'center',
-    elevation: 4,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 6,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.16)',
+    ...UI_SHADOWS.card,
   },
   buttonText: { 
-    color: '#fff', 
+    color: UI_COLORS.white, 
     fontSize: 18, 
     fontWeight: '600' 
   },
