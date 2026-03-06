@@ -65,7 +65,7 @@ export default function MemorizeUnderstandScreen({ navigation }: any) {
   );
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={styles.safeArea} edges={['left', 'right', 'bottom']}>
       <View style={styles.container}>
         {/* <TouchableOpacity 
           style={styles.backButton}
@@ -130,7 +130,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row', 
     alignItems: 'center', 
     paddingHorizontal: 16,
-    paddingTop: 14,
+    paddingTop: 4,
     paddingBottom: 18,
   },
   settingsBtn: {

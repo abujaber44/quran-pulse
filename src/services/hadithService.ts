@@ -15,8 +15,14 @@ type HadithApiRecord = {
 const HADITH_API_URL = 'https://hadithapi.com/public/api/hadiths';
 
 const getHadithApiKey = (): string => {
-  const key = process.env.EXPO_PUBLIC_HADITH_API_KEY;
-  return typeof key === 'string' ? key.trim() : '';
+  const raw = process.env.EXPO_PUBLIC_HADITH_API_KEY;
+  if (typeof raw !== 'string') return '';
+
+  // Support accidental quoted values and escaped dollar signs from env files.
+  return raw
+    .trim()
+    .replace(/^['"]|['"]$/g, '')
+    .replace(/\\\$/g, '$');
 };
 
 export const fetchRandomDailyHadith = async (): Promise<DailyHadith | null> => {

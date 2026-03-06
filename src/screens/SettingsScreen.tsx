@@ -73,7 +73,7 @@ export default function SettingsScreen() {
   };
 
   return (
-    <SafeAreaView style={[styles.container, isDarkMode && styles.darkContainer]}>
+    <SafeAreaView style={[styles.container, isDarkMode && styles.darkContainer]} edges={['left', 'right', 'bottom']}>
       <ScrollView contentContainerStyle={styles.scroll}>
         <Text style={[styles.title, isDarkMode && styles.darkText]}>Settings</Text>
 
@@ -166,7 +166,8 @@ const styles = StyleSheet.create({
     fontSize: 32,
     fontWeight: '700',
     textAlign: 'center',
-    marginBottom: 22,
+    marginTop: 8,
+    marginBottom: 14,
     color: UI_COLORS.primaryDeep,
     letterSpacing: 0.4,
     fontFamily: 'AmiriQuran',

@@ -31,6 +31,18 @@ const PRAYER_PREFS_KEY = 'prayer_athan_prefs';
 const DEFAULT_CITY = 'Makkah';
 const ATHAN_CHANNEL_ID = 'athan-alerts-v2';
 
+const parsePrayerTime = (raw: string): { hour: number; minute: number } | null => {
+  const match = raw.match(/(\d{1,2}):(\d{2})/);
+  if (!match) return null;
+
+  const hour = Number(match[1]);
+  const minute = Number(match[2]);
+  if (Number.isNaN(hour) || Number.isNaN(minute)) return null;
+  if (hour < 0 || hour > 23 || minute < 0 || minute > 59) return null;
+
+  return { hour, minute };
+};
+
 export default function PrayerTimesScreen() {
   const [prayers, setPrayers] = useState<Prayer[]>([]);
   const [nextPrayer, setNextPrayer] = useState<string>('');
@@ -77,8 +89,11 @@ export default function PrayerTimesScreen() {
   }, [searchInput, debouncedSearch]);
 
   useEffect(() => {
-    loadSavedData();
-    requestPermissions();
+    const bootstrap = async () => {
+      await requestPermissions();
+      await loadSavedData();
+    };
+    bootstrap();
   }, []);
 
   const setupAndroidNotificationChannel = async () => {
@@ -111,9 +126,9 @@ export default function PrayerTimesScreen() {
         initialPrefs = JSON.parse(savedPrefs);
       }
 
-      loadPrayerTimes(cityToUse, initialPrefs);
+      await loadPrayerTimes(cityToUse, initialPrefs);
     } catch (err) {
-      loadPrayerTimes(DEFAULT_CITY);
+      await loadPrayerTimes(DEFAULT_CITY);
     }
   };
 
@@ -135,7 +150,13 @@ export default function PrayerTimesScreen() {
 
   const requestPermissions = async () => {
     await setupAndroidNotificationChannel();
-    const { status } = await Notifications.requestPermissionsAsync();
+    const { status } = await Notifications.requestPermissionsAsync({
+      ios: {
+        allowAlert: true,
+        allowBadge: true,
+        allowSound: true,
+      },
+    });
     if (status !== 'granted') {
       Alert.alert('Permission required', 'Please enable notifications for Athan alerts');
     }
@@ -219,8 +240,10 @@ export default function PrayerTimesScreen() {
     const currentTime = now.getHours() * 60 + now.getMinutes();
 
     for (const prayer of prayerList) {
-      const [h, m] = prayer.time.split(':').map(Number);
-      const prayerMinutes = h * 60 + m;
+      const parsed = parsePrayerTime(prayer.time);
+      if (!parsed) continue;
+
+      const prayerMinutes = parsed.hour * 60 + parsed.minute;
       if (prayerMinutes > currentTime) {
         setNextPrayer(prayer.name);
         return;
@@ -236,28 +259,47 @@ export default function PrayerTimesScreen() {
     for (const prayer of prayerList) {
       if (!prayer.enabled) continue;
 
-      const [h, m] = prayer.time.split(':').map(Number);
+      const parsed = parsePrayerTime(prayer.time);
+      if (!parsed) {
+        console.warn(`Skipping invalid prayer time for ${prayer.name}: ${prayer.time}`);
+        continue;
+      }
+
       let triggerDate = new Date(today);
-      triggerDate.setHours(h, m, 0, 0);
+      triggerDate.setHours(parsed.hour, parsed.minute, 0, 0);
 
       if (triggerDate <= today) {
         triggerDate.setDate(triggerDate.getDate() + 1);
       }
 
       try {
+        const content: Notifications.NotificationContentInput = {
+          title: `حان الآن موعد صلاة ${prayer.name}`,
+          body: '🕌 اللَّهُمَّ رَبَّ هَذِهِ الدَّعْوَةِ التَّامَّةِ، وَالصَّلَاةِ الْقَائِمَةِ، آتِ مُحَمَّداً الْوَسِيلَةَ وَالْفَضِيلَةَ، وَابْعَثْهُ مَقَاماً مَحْمُوداً الَّذِي وَعَدْتَهُ، إَنَّكَ لَا تُخْلِفُ الْمِيعَادَ',
+          sound: 'athan.mp3',
+          priority: Notifications.AndroidNotificationPriority.HIGH,
+          vibrate: [0, 250, 250, 250],
+        };
+
+        if (Platform.OS === 'ios') {
+          content.interruptionLevel = 'timeSensitive';
+        }
+
+        const trigger: Notifications.NotificationTriggerInput =
+          Platform.OS === 'android'
+            ? {
+                type: Notifications.SchedulableTriggerInputTypes.DATE,
+                date: triggerDate,
+                channelId: ATHAN_CHANNEL_ID,
+              }
+            : {
+                type: Notifications.SchedulableTriggerInputTypes.DATE,
+                date: triggerDate,
+              };
+
         await Notifications.scheduleNotificationAsync({
-          content: {
-            title: `حان الآن موعد صلاة ${prayer.name}`,
-            body: '🕌 اللَّهُمَّ رَبَّ هَذِهِ الدَّعْوَةِ التَّامَّةِ، وَالصَّلَاةِ الْقَائِمَةِ، آتِ مُحَمَّداً الْوَسِيلَةَ وَالْفَضِيلَةَ، وَابْعَثْهُ مَقَاماً مَحْمُوداً الَّذِي وَعَدْتَهُ، إَنَّكَ لَا تُخْلِفُ الْمِيعَادَ',
-            sound: 'athan.mp3',
-            priority: Notifications.AndroidNotificationPriority.HIGH,
-            vibrate: [0, 250, 250, 250],
-          },
-          trigger: {
-            type: Notifications.SchedulableTriggerInputTypes.DATE,
-            date: triggerDate,
-            channelId: ATHAN_CHANNEL_ID,
-          },
+          content,
+          trigger,
         });
       } catch (error) {
         console.error(`Failed to schedule ${prayer.name}:`, error);
@@ -308,10 +350,11 @@ export default function PrayerTimesScreen() {
 
   return (
     <KeyboardAvoidingView 
-      style={{ flex: 1 }} 
+      style={[styles.container, isDark && styles.darkBg]}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
       <ScrollView 
+        style={[styles.container, isDark && styles.darkBg]}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
@@ -341,24 +384,27 @@ export default function PrayerTimesScreen() {
               }}
               autoCapitalize="words"
               autoCorrect={false}
+              underlineColorAndroid="transparent"
             />
 
-            {/* Suggestions dropdown – always rendered */}
-            <View style={styles.suggestionsContainer}>
-              {suggestionsLoading ? (
-                <Text style={styles.loadingSuggestions}>Searching cities...</Text>
-              ) : suggestions.length > 0 ? (
-                suggestions.map((item) => (
-                  <TouchableOpacity
-                    key={item}
-                    style={styles.suggestionItem}
-                    onPress={() => handleSelectSuggestion(item)}
-                  >
-                    <Text style={styles.suggestionText}>{item}</Text>
-                  </TouchableOpacity>
-                ))
-              ) : null}
-            </View>
+            {/* Suggestions dropdown */}
+            {(suggestionsLoading || suggestions.length > 0) && (
+              <View style={styles.suggestionsContainer}>
+                {suggestionsLoading ? (
+                  <Text style={styles.loadingSuggestions}>Searching cities...</Text>
+                ) : (
+                  suggestions.map((item) => (
+                    <TouchableOpacity
+                      key={item}
+                      style={styles.suggestionItem}
+                      onPress={() => handleSelectSuggestion(item)}
+                    >
+                      <Text style={styles.suggestionText}>{item}</Text>
+                    </TouchableOpacity>
+                  ))
+                )}
+              </View>
+            )}
 
             {/* Manual update button (optional, for when no suggestions) */}
             {searchInput.trim().length >= 3 && suggestions.length === 0 && !suggestionsLoading && (
@@ -474,7 +520,8 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: UI_COLORS.primaryDeep,
     textAlign: 'center',
-    marginVertical: 20,
+    marginTop: 8,
+    marginBottom: 14,
     letterSpacing: 0.5,
     fontFamily: 'AmiriQuran',
   },

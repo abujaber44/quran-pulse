@@ -10,6 +10,7 @@ import {
   TouchableWithoutFeedback,
 } from 'react-native';
 import { useSettings } from '../context/SettingsContext';
+import { UI_COLORS } from '../theme/ui';
 
 interface AllahName {
   number: number;
@@ -159,16 +160,16 @@ export default function AsmaAlHusnaScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8f9fa',
+    backgroundColor: UI_COLORS.background,
     padding: 10,
   },
   darkContainer: {
-    backgroundColor: '#121212',
+    backgroundColor: UI_COLORS.darkBackground,
   },
   searchContainer: {
     paddingHorizontal: 16,
     paddingVertical: 12,
-    backgroundColor: '#f8f9fa',
+    backgroundColor: UI_COLORS.background,
   },
   darkSearchWrapper: {
     backgroundColor: '#1e1e1e',
@@ -286,7 +287,8 @@ const styles = StyleSheet.create({
   fontWeight: '700',          // slightly heavier than 'bold'
   color: '#1a3c34',           // deeper, richer green-teal (Islamic feel)
   textAlign: 'center',
-  marginVertical: 20,
+  marginTop: 8,
+  marginBottom: 14,
   letterSpacing: 0.5,         // subtle spacing for elegance
   fontFamily: 'AmiriQuran',   // if you want Quranic font (optional)
 },
