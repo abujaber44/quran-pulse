@@ -265,7 +265,7 @@ export default function PrayerTimesScreen() {
         continue;
       }
 
-      let triggerDate = new Date(today);
+      const triggerDate = new Date(today);
       triggerDate.setHours(parsed.hour, parsed.minute, 0, 0);
 
       if (triggerDate <= today) {
