@@ -109,11 +109,15 @@ export default function SurahScreen({ route }: any) {
         setBookmarkedAyahs(bookmarks);
       } catch (error) {
         console.error('Error loading ayahs or translations:', error);
-        const ayahsData = await fetchAyahs(surah.id);
-        setAyahs(ayahsData.map((ayah: any) => ({
-          ...ayah,
-          translation: 'Translation unavailable',
-        })));
+        try {
+          const ayahsData = await fetchAyahs(surah.id);
+          setAyahs(ayahsData.map((ayah: any) => ({
+            ...ayah,
+            translation: 'Translation unavailable',
+          })));
+        } catch (fallbackError) {
+          console.error('Fallback ayah fetch failed:', fallbackError);
+        }
       }
     };
 
