@@ -116,18 +116,32 @@ export default function QuranPlayerScreen() {
 
   // Auto-scroll to selected surah when it changes
   useEffect(() => {
-    if (selectedSurah && flatListRef.current) {
-      const index = surahs.findIndex(s => s.id === selectedSurah.id);
-      if (index !== -1) {
-        setTimeout(() => {
-          flatListRef.current?.scrollToIndex({
-            index,
-            animated: true,
-            viewPosition: 0.5, // Center the item
-          });
-        }, 300);
-      }
+    if (!selectedSurah || !flatListRef.current) {
+      return;
     }
+
+    if (surahs.length === 0) {
+      return;
+    }
+
+    const timer = setTimeout(() => {
+      const index = surahs.findIndex(s => s.id === selectedSurah.id);
+      if (index < 0 || index >= surahs.length) {
+        return;
+      }
+
+      try {
+        flatListRef.current?.scrollToIndex({
+          index,
+          animated: true,
+          viewPosition: 0.5, // Center the item
+        });
+      } catch {
+        // Ignore stale/race scroll requests when list size changes during search.
+      }
+    }, 300);
+
+    return () => clearTimeout(timer);
   }, [selectedSurah, surahs]);
 
   // Configure background playback behavior
