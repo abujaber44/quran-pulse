@@ -11,9 +11,8 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-
-
-const publicHadithKey='$2y$10$lIz3MVDZTOL4NNpxnHQtq6CfeXSYjTwpVDa2oKBeAk51PxSvXS6'
+import { UI_COLORS, UI_RADII, UI_SHADOWS } from '../theme/ui';
+import { fetchRandomDailyHadith, DailyHadith } from '../services/hadithService';
 
 const API_BASE = 'https://api.aladhan.com/v1';
 
@@ -32,10 +31,10 @@ type CalendarDay = {
   };
 };
 
-type DailyHadith = {
-  arabic: string;
-  english: string;
-  source: string;
+const FALLBACK_HADITH: DailyHadith = {
+  arabic: 'خَيْرُكُمْ مَنْ تَعَلَّمَ الْقُرْآنَ وَعَلَّمَهُ',
+  english: 'The best among you are those who learn the Quran and teach it.',
+  source: 'Sahih al-Bukhari',
 };
 
 export default function CalendarScreen() {
@@ -91,34 +90,17 @@ export default function CalendarScreen() {
         return;
       }
 
-      // Fetch new Hadith from hadithapi.com
-      const response = await axios.get(`https://hadithapi.com/public/api/hadiths?apiKey=${publicHadithKey}`);
-
-      if (response.data.status === 200 && response.data.hadiths.data.length > 0) {
-        // Select a RANDOM Hadith from the list
-        const randomIndex = Math.floor(Math.random() * response.data.hadiths.data.length);
-        const hadith = response.data.hadiths.data[randomIndex];
-
-        const formatted = {
-          arabic: hadith.hadithArabic || 'No Arabic text available',
-          english: hadith.hadithEnglish || 'No English text available',
-          source: hadith.book?.bookName || 'Unknown source',
-        };
-
-        setDailyHadith(formatted);
-
-        // Cache for today
-        await AsyncStorage.setItem('dailyHadith', JSON.stringify(formatted));
+      const hadith = await fetchRandomDailyHadith();
+      if (hadith) {
+        setDailyHadith(hadith);
+        await AsyncStorage.setItem('dailyHadith', JSON.stringify(hadith));
         await AsyncStorage.setItem('dailyHadithDate', today);
+      } else {
+        setDailyHadith(FALLBACK_HADITH);
       }
     } catch (error) {
       console.error('Hadith fetch error:', error);
-      // Fallback Hadith if API fails
-      setDailyHadith({
-        arabic: 'خَيْرُكُمْ مَنْ تَعَلَّمَ الْقُرْآنَ وَعَلَّمَهُ',
-        english: 'The best among you are those who learn the Quran and teach it.',
-        source: 'Sahih al-Bukhari'
-      });
+      setDailyHadith(FALLBACK_HADITH);
     }
   };
 
@@ -289,20 +271,21 @@ export default function CalendarScreen() {
 }
 
 const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: '#2c3e50' },
-  container: { flex: 1, backgroundColor: '#f8f9fa', padding: 16 },
+  safeArea: { flex: 1, backgroundColor: UI_COLORS.text },
+  container: { flex: 1, backgroundColor: UI_COLORS.background, padding: 16 },
   scrollContent: { 
-    paddingBottom: 40, // Extra space at bottom for legend & Hadith
-    alignItems: 'center', // ← Centers all content horizontally
+    paddingBottom: 40,
+    alignItems: 'center',
   },
   title: {
-  fontSize: 30,
-  fontWeight: '700',          // slightly heavier than 'bold'
-  color: '#1a3c34',           // deeper, richer green-teal (Islamic feel)
-  textAlign: 'center',
-  marginVertical: 20,
-  letterSpacing: 0.5,         // subtle spacing for elegance
-  fontFamily: 'AmiriQuran',   // if you want Quranic font (optional)
+    fontSize: 30,
+    fontWeight: '700',
+    color: UI_COLORS.primaryDeep,
+    textAlign: 'center',
+    marginTop: 8,
+    marginBottom: 14,
+    letterSpacing: 0.5,
+    fontFamily: 'AmiriQuran',
   },
   navigation: { 
     flexDirection: 'row', 
@@ -313,81 +296,82 @@ const styles = StyleSheet.create({
     maxWidth: 400,
   },
   navButton: { fontSize: 16, color: '#3498db' },
-  monthTitle: { fontSize: 22, fontWeight: '600', color: '#2c3e50' },
+  monthTitle: { fontSize: 22, fontWeight: '600', color: UI_COLORS.text },
   weekdayHeader: { 
     flexDirection: 'row', 
     marginBottom: 8,
-    backgroundColor: '#e8f5e9',
+    backgroundColor: UI_COLORS.primarySoft,
     paddingVertical: 8,
     borderRadius: 8,
     width: '100%',
     maxWidth: 400,
   },
-  weekdayText: { flex: 1, textAlign: 'center', fontWeight: 'bold', color: '#2c3e50' },
+  weekdayText: { flex: 1, textAlign: 'center', fontWeight: 'bold', color: UI_COLORS.text },
   gridWrapper: {
-    alignItems: 'center', // ← Centers the grid horizontally
+    alignItems: 'center',
     width: '100%',
-    maxWidth: 400, // ← Limits grid width and centers it
+    maxWidth: 400,
   },
   grid: { 
     flexDirection: 'row', 
     flexWrap: 'wrap', 
-    justifyContent: 'center', // ← Start from left for consistent spacing
+    justifyContent: 'center',
     width: '100%',
   },
   dayCell: { 
     width: '13.5%', 
     aspectRatio: 1, 
     margin: 2, 
-    backgroundColor: '#fff', 
-    borderRadius: 8, 
+    backgroundColor: UI_COLORS.surface,
+    borderRadius: 10, 
     justifyContent: 'center', 
     alignItems: 'center', 
     borderWidth: 1, 
-    borderColor: '#eee',
+    borderColor: UI_COLORS.border,
   },
-  fridayCell: { backgroundColor: '#b3e0f9' },
-  todayCell: { backgroundColor: '#27ae60' },
-  hijriDay: { fontSize: 16, fontWeight: '600', color: '#2c3e50' },
-  gregDay: { fontSize: 12, color: '#7f8c8d', marginTop: 4 },
-  gregMonthSmall: { fontSize: 10, color: '#95a5a6', marginTop: 2 }, // ← Small Gregorian month
-  todayText: { color: '#fff' },
-  noData: { fontSize: 18, textAlign: 'center', color: '#7f8c8d', marginTop: 50 },
+  fridayCell: { backgroundColor: UI_COLORS.friday },
+  todayCell: { backgroundColor: UI_COLORS.primary },
+  hijriDay: { fontSize: 16, fontWeight: '600', color: UI_COLORS.text },
+  gregDay: { fontSize: 12, color: UI_COLORS.textMuted, marginTop: 4 },
+  gregMonthSmall: { fontSize: 10, color: UI_COLORS.textMuted, marginTop: 2 },
+  todayText: { color: UI_COLORS.white },
+  noData: { fontSize: 18, textAlign: 'center', color: UI_COLORS.textMuted, marginTop: 50 },
 
   // Hadith of the Day - displayed below the calendar
   hadithContainer: {
     marginTop: 24,
     padding: 16,
-    backgroundColor: '#fff',
-    borderRadius: 12,
+    backgroundColor: UI_COLORS.surface,
+    borderRadius: UI_RADII.sm,
     borderWidth: 1,
-    borderColor: '#eee',
+    borderColor: UI_COLORS.border,
     width: '100%',
     maxWidth: 400,
+    ...UI_SHADOWS.card,
   },
   hadithTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#2c3e50',
+    color: UI_COLORS.text,
     marginBottom: 8,
     textAlign: 'center',
   },
   hadithArabic: {
     fontSize: 16,
-    color: '#2c3e50',
+    color: UI_COLORS.text,
     textAlign: 'right',
     marginBottom: 8,
     fontFamily: 'AmiriQuran',
   },
   hadithEnglish: {
     fontSize: 14,
-    color: '#7f8c8d',
+    color: UI_COLORS.textMuted,
     textAlign: 'left',
     marginBottom: 8,
   },
   hadithSource: {
     fontSize: 12,
-    color: '#95a5a6',
+    color: UI_COLORS.textMuted,
     textAlign: 'center',
     fontStyle: 'italic',
   },
@@ -410,18 +394,20 @@ const styles = StyleSheet.create({
     borderRadius: 4, 
     marginRight: 8 
   },
-  legendText: { fontSize: 14, color: '#2c3e50' },
+  legendText: { fontSize: 14, color: UI_COLORS.text },
   explanation: {
-  paddingHorizontal: 16,
-  paddingVertical: 12,
-  backgroundColor: '#e8f5e9',
-  borderRadius: 12,
-  marginBottom: 16,
-},
-explanationText: {
-  fontSize: 14,
-  color: '#2c3e50',
-  textAlign: 'center',
-  lineHeight: 20,
-},
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    backgroundColor: UI_COLORS.primarySoft,
+    borderRadius: UI_RADII.sm,
+    borderWidth: 1,
+    borderColor: '#cde9d5',
+    marginBottom: 16,
+  },
+  explanationText: {
+    fontSize: 14,
+    color: UI_COLORS.text,
+    textAlign: 'center',
+    lineHeight: 21,
+  },
 });

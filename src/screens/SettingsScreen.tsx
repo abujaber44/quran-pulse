@@ -13,6 +13,7 @@ import Slider from '@react-native-community/slider';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAudio } from '../context/AudioContext';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { UI_COLORS, UI_RADII, UI_SHADOWS } from '../theme/ui';
 
 const SETTINGS_KEY = '@quran_pulse_settings';
 
@@ -72,12 +73,12 @@ export default function SettingsScreen() {
   };
 
   return (
-    <SafeAreaView style={[styles.container, isDarkMode && styles.darkContainer]}>
+    <SafeAreaView style={[styles.container, isDarkMode && styles.darkContainer]} edges={['left', 'right', 'bottom']}>
       <ScrollView contentContainerStyle={styles.scroll}>
         <Text style={[styles.title, isDarkMode && styles.darkText]}>Settings</Text>
 
         {/* Arabic Font Size */}
-        <View style={styles.section}>
+        <View style={[styles.section, isDarkMode && styles.darkSection]}>
           <Text style={[styles.sectionTitle, isDarkMode && styles.darkText]}>
             Arabic Font Size
           </Text>
@@ -96,7 +97,7 @@ export default function SettingsScreen() {
         </View>
 
         {/* Memorization Pause */}
-        <View style={styles.section}>
+        <View style={[styles.section, isDarkMode && styles.darkSection]}>
           <Text style={[styles.sectionTitle, isDarkMode && styles.darkText]}>
             Memorization Pause (seconds)
           </Text>
@@ -115,7 +116,7 @@ export default function SettingsScreen() {
         </View>
 
         {/* Theme */}
-        <View style={styles.section}>
+        <View style={[styles.section, isDarkMode && styles.darkSection]}>
           <Text style={[styles.sectionTitle, isDarkMode && styles.darkText]}>
             Dark Mode
           </Text>
@@ -123,7 +124,7 @@ export default function SettingsScreen() {
         </View>
 
         {/* Auto-play on start */}
-        <View style={styles.section}>
+        <View style={[styles.section, isDarkMode && styles.darkSection]}>
           <Text style={[styles.sectionTitle, isDarkMode && styles.darkText]}>
             Auto-play first ayah when opening surah
           </Text>
@@ -131,7 +132,7 @@ export default function SettingsScreen() {
         </View>
 
         {/* Offline Downloads */}
-        <View style={styles.section}>
+        <View style={[styles.section, isDarkMode && styles.darkSection]}>
           <Text style={[styles.sectionTitle, isDarkMode && styles.darkText]}>
             Offline Downloads
           </Text>
@@ -158,16 +159,44 @@ export default function SettingsScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f8f9fa' },
-  darkContainer: { backgroundColor: '#121212' },
-  scroll: { padding: 20 },
-  title: { fontSize: 32, fontWeight: 'bold', textAlign: 'center', marginBottom: 30, color: '#2c3e50' },
-  section: { marginBottom: 30 },
-  sectionTitle: { fontSize: 18, fontWeight: '600', color: '#2c3e50', marginBottom: 10 },
-  valueText: { fontSize: 24, fontWeight: 'bold', textAlign: 'center', marginVertical: 10, color: '#27ae60' },
-  placeholder: { fontStyle: 'italic', color: '#7f8c8d', textAlign: 'center' },
-  downloadItem: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 12, borderBottomWidth: 1, borderColor: '#eee' },
-  downloadText: { fontSize: 16, color: '#2c3e50' },
-  deleteBtn: { color: '#e74c3c', fontWeight: '600' },
-  darkText: { color: '#fff' },
+  container: { flex: 1, backgroundColor: UI_COLORS.background },
+  darkContainer: { backgroundColor: UI_COLORS.darkBackground },
+  scroll: { padding: 20, paddingBottom: 42 },
+  title: {
+    fontSize: 32,
+    fontWeight: '700',
+    textAlign: 'center',
+    marginTop: 8,
+    marginBottom: 14,
+    color: UI_COLORS.primaryDeep,
+    letterSpacing: 0.4,
+    fontFamily: 'AmiriQuran',
+  },
+  section: {
+    marginBottom: 16,
+    backgroundColor: UI_COLORS.surface,
+    borderRadius: UI_RADII.lg,
+    borderWidth: 1,
+    borderColor: UI_COLORS.border,
+    padding: 16,
+    ...UI_SHADOWS.card,
+  },
+  darkSection: {
+    backgroundColor: UI_COLORS.darkSurface,
+    borderColor: '#30353b',
+  },
+  sectionTitle: { fontSize: 17, fontWeight: '600', color: UI_COLORS.text, marginBottom: 8 },
+  valueText: { fontSize: 24, fontWeight: 'bold', textAlign: 'center', marginVertical: 10, color: UI_COLORS.primary },
+  placeholder: { fontStyle: 'italic', color: UI_COLORS.textMuted, textAlign: 'center' },
+  downloadItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderColor: UI_COLORS.border,
+  },
+  downloadText: { fontSize: 16, color: UI_COLORS.text },
+  deleteBtn: { color: UI_COLORS.danger, fontWeight: '600' },
+  darkText: { color: UI_COLORS.white },
 });

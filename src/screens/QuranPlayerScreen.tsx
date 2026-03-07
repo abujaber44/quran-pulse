@@ -17,6 +17,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useSettings } from '../context/SettingsContext';
 import { fetchSurahs } from '../services/quranApi';
 import { getSurahAudioUrl } from '../services/quranApi';
+import { UI_COLORS, UI_RADII, UI_SHADOWS } from '../theme/ui';
 
 interface Surah {
   id: number;
@@ -152,21 +153,30 @@ export default function QuranPlayerScreen() {
   // Activate lock-screen controls for current surah
   useEffect(() => {
     if (!selectedSurah) {
+      try {
+        player.setActiveForLockScreen(false);
+      } catch {
+        // Player may already be disposed during teardown.
+      }
       return;
     }
 
-    player.setActiveForLockScreen(
-      true,
-      {
-        title: `${selectedSurah.id}. ${selectedSurah.name_simple}`,
-        artist: selectedReciter.name,
-        albumTitle: 'Quran Pulse',
-      },
-      {
-        showSeekBackward: true,
-        showSeekForward: true,
-      }
-    );
+    try {
+      player.setActiveForLockScreen(
+        true,
+        {
+          title: `${selectedSurah.id}. ${selectedSurah.name_simple}`,
+          artist: selectedReciter.name,
+          albumTitle: 'Quran Pulse',
+        },
+        {
+          showSeekBackward: true,
+          showSeekForward: true,
+        }
+      );
+    } catch (error) {
+      console.warn('Lock screen controls unavailable:', error);
+    }
   }, [player, selectedSurah, selectedReciter]);
 
   // Auto-next when playback reaches end
@@ -175,13 +185,6 @@ export default function QuranPlayerScreen() {
       handleNext();
     }
   }, [playerStatus.didJustFinish]);
-
-  // Cleanup lock-screen controls
-  useEffect(() => {
-    return () => {
-      player.clearLockScreenControls();
-    };
-  }, [player]);
 
   const loadAndPlayAudio = async () => {
     if (!selectedSurah) return;
@@ -409,54 +412,56 @@ export default function QuranPlayerScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f8f9fa' },
-  darkContainer: { backgroundColor: '#121212' },
+  container: { flex: 1, backgroundColor: UI_COLORS.background },
+  darkContainer: { backgroundColor: UI_COLORS.darkBackground },
   reciterSelector: {
     padding: 16,
-    backgroundColor: '#fff',
+    backgroundColor: UI_COLORS.surface,
     borderBottomWidth: 1,
-    borderColor: '#eee',
+    borderColor: UI_COLORS.border,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
   },
-  reciterLabel: { fontSize: 16, color: '#7f8c8d' },
-  selectedReciterText: { fontSize: 18, fontWeight: '600', color: '#2c3e50' },
+  reciterLabel: { fontSize: 16, color: UI_COLORS.textMuted },
+  selectedReciterText: { fontSize: 18, fontWeight: '600', color: UI_COLORS.text },
   searchContainer: { paddingHorizontal: 16, paddingVertical: 12 },
   searchWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#fff',
-    borderRadius: 16,
-    elevation: 4,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 6,
+    backgroundColor: UI_COLORS.surface,
+    borderRadius: UI_RADII.md,
+    borderWidth: 1,
+    borderColor: UI_COLORS.border,
+    ...UI_SHADOWS.input,
   },
   searchInput: {
     flex: 1,
     paddingHorizontal: 16,
     paddingVertical: 14,
     fontSize: 16,
-    color: '#2c3e50',
+    color: UI_COLORS.text,
   },
   clearButton: { paddingHorizontal: 16 },
-  clearIcon: { fontSize: 20, color: '#7f8c8d' },
+  clearIcon: { fontSize: 20, color: UI_COLORS.textMuted },
   surahList: { paddingHorizontal: 16, paddingBottom: 200 },
   surahItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#fff',
+    backgroundColor: UI_COLORS.surface,
     padding: 16,
-    borderRadius: 16,
+    borderRadius: UI_RADII.md,
     marginBottom: 10,
-    elevation: 4,
+    borderWidth: 1,
+    borderColor: UI_COLORS.border,
+    borderLeftWidth: 5,
+    borderLeftColor: UI_COLORS.accent,
+    ...UI_SHADOWS.card,
   },
-  selectedSurahItem: { backgroundColor: '#e8f5e9' },
-  surahNumber: { fontSize: 20, fontWeight: 'bold', color: '#3498db', width: 50, textAlign: 'center' },
-  surahEnglish: { fontSize: 18, color: '#2c3e50', fontWeight: '600' },
-  surahArabic: { fontFamily: 'AmiriQuran', fontSize: 22, color: '#2c3e50', marginTop: 4 },
+  selectedSurahItem: { backgroundColor: UI_COLORS.primarySoft, borderColor: '#bde2c8' },
+  surahNumber: { fontSize: 20, fontWeight: 'bold', color: UI_COLORS.accent, width: 50, textAlign: 'center' },
+  surahEnglish: { fontSize: 18, color: UI_COLORS.text, fontWeight: '600' },
+  surahArabic: { fontFamily: 'AmiriQuran', fontSize: 22, color: UI_COLORS.text, marginTop: 4 },
   playerContainer: {
     position: 'absolute',
     bottom: 0,
@@ -467,53 +472,54 @@ const styles = StyleSheet.create({
   },
   darkPlayerContainer: { backgroundColor: 'transparent' },
   playerCard: { 
-    backgroundColor: '#fff', 
-    borderRadius: 20, 
+    backgroundColor: UI_COLORS.surface, 
+    borderRadius: UI_RADII.lg, 
     padding: 12, 
-    elevation: 12, 
-    shadowColor: '#000', 
-    shadowOffset: { width: 0, height: -6 }, 
-    shadowOpacity: 0.15, 
-    shadowRadius: 12 
+    borderWidth: 1,
+    borderColor: UI_COLORS.border,
+    ...UI_SHADOWS.floating,
   },
-  darkPlayerCard: { backgroundColor: '#1e1e1e' },
+  darkPlayerCard: { backgroundColor: UI_COLORS.darkSurface, borderColor: '#30353b' },
   playerHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 6 },
-  playerAyahNumber: { fontSize: 20, fontWeight: 'bold', color: '#3498db', marginRight: 12 },
-  playerTitle: { fontSize: 13, fontWeight: '600', color: '#2c3e50' },
+  playerAyahNumber: { fontSize: 20, fontWeight: 'bold', color: UI_COLORS.accent, marginRight: 12 },
+  playerTitle: { fontSize: 13, fontWeight: '600', color: UI_COLORS.text },
   slider: { width: '100%', height: 40 },
-  timeText: { textAlign: 'center', color: '#7f8c8d', marginVertical: 8 },
+  timeText: { textAlign: 'center', color: UI_COLORS.textMuted, marginVertical: 8 },
   playerControls: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  controlBtn: { fontSize: 18, color: '#27ae60', fontWeight: '600' },
-  disabledBtn: { color: '#bdc3c7' },
-  playPauseBtn: { fontSize: 40, color: '#27ae60' },
+  controlBtn: { fontSize: 18, color: UI_COLORS.primary, fontWeight: '600' },
+  disabledBtn: { color: UI_COLORS.textLight },
+  playPauseBtn: { fontSize: 40, color: UI_COLORS.primary },
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'center', alignItems: 'center' },
-  modal: { backgroundColor: '#fff', padding: 20, borderRadius: 16, width: '90%', maxHeight: '80%' },
-  reciterModal: { backgroundColor: '#fff', padding: 20, borderRadius: 16, width: '90%', maxHeight: '80%' },
-  modalTitle: { fontSize: 20, fontWeight: 'bold', textAlign: 'center', marginBottom: 16 },
-  reciterModalItem: { padding: 14, borderBottomWidth: 1, borderColor: '#eee' },
+  modal: { backgroundColor: UI_COLORS.surface, padding: 20, borderRadius: UI_RADII.md, width: '90%', maxHeight: '80%' },
+  reciterModal: { backgroundColor: UI_COLORS.surface, padding: 20, borderRadius: UI_RADII.md, width: '90%', maxHeight: '80%' },
+  modalTitle: { fontSize: 20, fontWeight: 'bold', textAlign: 'center', marginBottom: 16, color: UI_COLORS.text },
+  reciterModalItem: { padding: 14, borderBottomWidth: 1, borderColor: UI_COLORS.border },
   reciterModalText: { fontSize: 16 },
-  modalClose: { textAlign: 'center', padding: 14, color: '#e74c3c', fontWeight: 'bold' },
-  darkText: { color: '#fff' },
+  modalClose: { textAlign: 'center', padding: 14, color: UI_COLORS.danger, fontWeight: 'bold' },
+  darkText: { color: UI_COLORS.white },
   explanation: {
     paddingHorizontal: 16,
-    paddingVertical: 12,
-    backgroundColor: '#e8f5e9',
-    borderRadius: 12,
+    paddingVertical: 14,
+    backgroundColor: UI_COLORS.primarySoft,
+    borderRadius: UI_RADII.sm,
+    borderWidth: 1,
+    borderColor: '#cde9d5',
     marginBottom: 16,
   },
   explanationText: {
     fontSize: 14,
-    color: '#2c3e50',
+    color: UI_COLORS.text,
     textAlign: 'center',
-    lineHeight: 20,
+    lineHeight: 21,
   },
   title: {
     fontSize: 30,
-    fontWeight: '700',          // slightly heavier than 'bold'
-    color: '#1a3c34',           // deeper, richer green-teal (Islamic feel)
+    fontWeight: '700',
+    color: UI_COLORS.primaryDeep,
     textAlign: 'center',
-    marginVertical: 20,
-    letterSpacing: 0.5,         // subtle spacing for elegance
-    fontFamily: 'AmiriQuran',   // if you want Quranic font (optional)
+    marginTop: 8,
+    marginBottom: 14,
+    letterSpacing: 0.5,
+    fontFamily: 'AmiriQuran',
   },
 });

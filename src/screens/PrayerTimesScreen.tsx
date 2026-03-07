@@ -18,6 +18,7 @@ import * as Notifications from 'expo-notifications';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useSettings } from '../context/SettingsContext';
 import debounce from 'lodash.debounce';
+import { UI_COLORS, UI_RADII, UI_SHADOWS } from '../theme/ui';
 
 interface Prayer {
   name: string;
@@ -25,9 +26,97 @@ interface Prayer {
   enabled: boolean;
 }
 
+type NominatimResult = {
+  name?: string;
+  display_name?: string;
+  address?: {
+    city?: string;
+    town?: string;
+    village?: string;
+    municipality?: string;
+    county?: string;
+    state?: string;
+  };
+};
+
+type OpenMeteoResult = {
+  name?: string;
+};
+
 const CITY_STORAGE_KEY = 'prayer_city';
 const PRAYER_PREFS_KEY = 'prayer_athan_prefs';
 const DEFAULT_CITY = 'Makkah';
+const ATHAN_CHANNEL_ID = 'athan-alerts-v2';
+
+const parsePrayerTime = (raw: string): { hour: number; minute: number } | null => {
+  const match = raw.match(/(\d{1,2}):(\d{2})/);
+  if (!match) return null;
+
+  const hour = Number(match[1]);
+  const minute = Number(match[2]);
+  if (Number.isNaN(hour) || Number.isNaN(minute)) return null;
+  if (hour < 0 || hour > 23 || minute < 0 || minute > 59) return null;
+
+  return { hour, minute };
+};
+
+const dedupeCities = (values: string[]): string[] => {
+  const cleaned = values
+    .map((value) => value.trim())
+    .filter((value) => value.length > 0);
+  return [...new Set(cleaned)];
+};
+
+const extractNominatimCity = (record: NominatimResult): string => {
+  return (
+    record.address?.city ||
+    record.address?.town ||
+    record.address?.village ||
+    record.address?.municipality ||
+    record.address?.county ||
+    record.address?.state ||
+    record.name ||
+    record.display_name?.split(',')[0] ||
+    ''
+  );
+};
+
+const fetchNominatimSuggestions = async (query: string): Promise<string[]> => {
+  const response = await fetch(
+    `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&addressdetails=1&limit=5`,
+    {
+      headers: {
+        Accept: 'application/json',
+        'Accept-Language': 'en',
+        'User-Agent': 'QuranPulse/1.0 (https://abujaber44.github.io/quran-pulse/privacy/)',
+      },
+    }
+  );
+
+  if (!response.ok) {
+    throw new Error(`Nominatim request failed: ${response.status}`);
+  }
+
+  const data = (await response.json()) as unknown;
+  if (!Array.isArray(data)) return [];
+
+  const cityNames = data.map((item) => extractNominatimCity(item as NominatimResult));
+  return dedupeCities(cityNames).slice(0, 5);
+};
+
+const fetchOpenMeteoSuggestions = async (query: string): Promise<string[]> => {
+  const response = await fetch(
+    `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(query)}&count=5&language=en&format=json`
+  );
+
+  if (!response.ok) {
+    throw new Error(`Open-Meteo request failed: ${response.status}`);
+  }
+
+  const payload = (await response.json()) as { results?: OpenMeteoResult[] };
+  const results = Array.isArray(payload.results) ? payload.results : [];
+  return dedupeCities(results.map((item) => item.name || '')).slice(0, 5);
+};
 
 export default function PrayerTimesScreen() {
   const [prayers, setPrayers] = useState<Prayer[]>([]);
@@ -45,22 +134,20 @@ export default function PrayerTimesScreen() {
   // Debounced city search for autocomplete using Nominatim
   const debouncedSearch = useCallback(
     debounce(async (query: string) => {
-      if (query.trim().length < 3) {
+      const trimmedQuery = query.trim();
+      if (trimmedQuery.length < 3) {
         setSuggestions([]);
+        setSuggestionsLoading(false);
         return;
       }
 
       setSuggestionsLoading(true);
       try {
-        const response = await fetch(
-          `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&addressdetails=1&limit=5`
-        );
-        const data = await response.json();
-
-        const cityNames = data
-          .filter((c: any) => c.address.city || c.address.town)
-          .map((c: any) => c.address.city || c.address.town);
-        setSuggestions([...new Set(cityNames)] as string[]);
+        let cityNames = await fetchNominatimSuggestions(trimmedQuery);
+        if (cityNames.length === 0) {
+          cityNames = await fetchOpenMeteoSuggestions(trimmedQuery);
+        }
+        setSuggestions(cityNames);
       } catch (err) {
         setSuggestions([]);
       } finally {
@@ -72,12 +159,34 @@ export default function PrayerTimesScreen() {
 
   useEffect(() => {
     debouncedSearch(searchInput);
+    return () => {
+      debouncedSearch.cancel();
+    };
   }, [searchInput, debouncedSearch]);
 
   useEffect(() => {
-    loadSavedData();
-    requestPermissions();
+    const bootstrap = async () => {
+      await requestPermissions();
+      await loadSavedData();
+    };
+    bootstrap();
   }, []);
+
+  const setupAndroidNotificationChannel = async () => {
+    if (Platform.OS !== 'android') return;
+
+    await Notifications.setNotificationChannelAsync(ATHAN_CHANNEL_ID, {
+      name: 'Athan Alerts',
+      description: 'Prayer time notifications with Athan sound',
+      importance: Notifications.AndroidImportance.MAX,
+      vibrationPattern: [0, 250, 250, 250],
+      lightColor: '#27ae60',
+      enableLights: true,
+      enableVibrate: true,
+      lockscreenVisibility: Notifications.AndroidNotificationVisibility.PUBLIC,
+      sound: 'athan.mp3',
+    });
+  };
 
   const loadSavedData = async () => {
     try {
@@ -93,9 +202,9 @@ export default function PrayerTimesScreen() {
         initialPrefs = JSON.parse(savedPrefs);
       }
 
-      loadPrayerTimes(cityToUse, initialPrefs);
+      await loadPrayerTimes(cityToUse, initialPrefs);
     } catch (err) {
-      loadPrayerTimes(DEFAULT_CITY);
+      await loadPrayerTimes(DEFAULT_CITY);
     }
   };
 
@@ -116,7 +225,14 @@ export default function PrayerTimesScreen() {
   };
 
   const requestPermissions = async () => {
-    const { status } = await Notifications.requestPermissionsAsync();
+    await setupAndroidNotificationChannel();
+    const { status } = await Notifications.requestPermissionsAsync({
+      ios: {
+        allowAlert: true,
+        allowBadge: true,
+        allowSound: true,
+      },
+    });
     if (status !== 'granted') {
       Alert.alert('Permission required', 'Please enable notifications for Athan alerts');
     }
@@ -200,8 +316,10 @@ export default function PrayerTimesScreen() {
     const currentTime = now.getHours() * 60 + now.getMinutes();
 
     for (const prayer of prayerList) {
-      const [h, m] = prayer.time.split(':').map(Number);
-      const prayerMinutes = h * 60 + m;
+      const parsed = parsePrayerTime(prayer.time);
+      if (!parsed) continue;
+
+      const prayerMinutes = parsed.hour * 60 + parsed.minute;
       if (prayerMinutes > currentTime) {
         setNextPrayer(prayer.name);
         return;
@@ -217,27 +335,47 @@ export default function PrayerTimesScreen() {
     for (const prayer of prayerList) {
       if (!prayer.enabled) continue;
 
-      const [h, m] = prayer.time.split(':').map(Number);
-      let triggerDate = new Date(today);
-      triggerDate.setHours(h, m, 0, 0);
+      const parsed = parsePrayerTime(prayer.time);
+      if (!parsed) {
+        console.warn(`Skipping invalid prayer time for ${prayer.name}: ${prayer.time}`);
+        continue;
+      }
+
+      const triggerDate = new Date(today);
+      triggerDate.setHours(parsed.hour, parsed.minute, 0, 0);
 
       if (triggerDate <= today) {
         triggerDate.setDate(triggerDate.getDate() + 1);
       }
 
       try {
+        const content: Notifications.NotificationContentInput = {
+          title: `حان الآن موعد صلاة ${prayer.name}`,
+          body: '🕌 اللَّهُمَّ رَبَّ هَذِهِ الدَّعْوَةِ التَّامَّةِ، وَالصَّلَاةِ الْقَائِمَةِ، آتِ مُحَمَّداً الْوَسِيلَةَ وَالْفَضِيلَةَ، وَابْعَثْهُ مَقَاماً مَحْمُوداً الَّذِي وَعَدْتَهُ، إَنَّكَ لَا تُخْلِفُ الْمِيعَادَ',
+          sound: 'athan.mp3',
+          priority: Notifications.AndroidNotificationPriority.HIGH,
+          vibrate: [0, 250, 250, 250],
+        };
+
+        if (Platform.OS === 'ios') {
+          content.interruptionLevel = 'timeSensitive';
+        }
+
+        const trigger: Notifications.NotificationTriggerInput =
+          Platform.OS === 'android'
+            ? {
+                type: Notifications.SchedulableTriggerInputTypes.DATE,
+                date: triggerDate,
+                channelId: ATHAN_CHANNEL_ID,
+              }
+            : {
+                type: Notifications.SchedulableTriggerInputTypes.DATE,
+                date: triggerDate,
+              };
+
         await Notifications.scheduleNotificationAsync({
-          content: {
-            title: `حان الآن موعد صلاة ${prayer.name}`,
-            body: '🕌 اللَّهُمَّ رَبَّ هَذِهِ الدَّعْوَةِ التَّامَّةِ، وَالصَّلَاةِ الْقَائِمَةِ، آتِ مُحَمَّداً الْوَسِيلَةَ وَالْفَضِيلَةَ، وَابْعَثْهُ مَقَاماً مَحْمُوداً الَّذِي وَعَدْتَهُ، إَنَّكَ لَا تُخْلِفُ الْمِيعَادَ',
-            sound: 'athan.mp3',
-            priority: Notifications.AndroidNotificationPriority.HIGH,
-            vibrate: [0, 250, 250, 250],
-          },
-          trigger: {
-            type: Notifications.SchedulableTriggerInputTypes.DATE,
-            date: triggerDate,
-          },
+          content,
+          trigger,
         });
       } catch (error) {
         console.error(`Failed to schedule ${prayer.name}:`, error);
@@ -288,10 +426,11 @@ export default function PrayerTimesScreen() {
 
   return (
     <KeyboardAvoidingView 
-      style={{ flex: 1 }} 
+      style={[styles.container, isDark && styles.darkBg]}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
       <ScrollView 
+        style={[styles.container, isDark && styles.darkBg]}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
@@ -321,24 +460,27 @@ export default function PrayerTimesScreen() {
               }}
               autoCapitalize="words"
               autoCorrect={false}
+              underlineColorAndroid="transparent"
             />
 
-            {/* Suggestions dropdown – always rendered */}
-            <View style={styles.suggestionsContainer}>
-              {suggestionsLoading ? (
-                <Text style={styles.loadingSuggestions}>Searching cities...</Text>
-              ) : suggestions.length > 0 ? (
-                suggestions.map((item) => (
-                  <TouchableOpacity
-                    key={item}
-                    style={styles.suggestionItem}
-                    onPress={() => handleSelectSuggestion(item)}
-                  >
-                    <Text style={styles.suggestionText}>{item}</Text>
-                  </TouchableOpacity>
-                ))
-              ) : null}
-            </View>
+            {/* Suggestions dropdown */}
+            {(suggestionsLoading || suggestions.length > 0) && (
+              <View style={styles.suggestionsContainer}>
+                {suggestionsLoading ? (
+                  <Text style={styles.loadingSuggestions}>Searching cities...</Text>
+                ) : (
+                  suggestions.map((item) => (
+                    <TouchableOpacity
+                      key={item}
+                      style={styles.suggestionItem}
+                      onPress={() => handleSelectSuggestion(item)}
+                    >
+                      <Text style={styles.suggestionText}>{item}</Text>
+                    </TouchableOpacity>
+                  ))
+                )}
+              </View>
+            )}
 
             {/* Manual update button (optional, for when no suggestions) */}
             {searchInput.trim().length >= 3 && suggestions.length === 0 && !suggestionsLoading && (
@@ -404,55 +546,58 @@ export default function PrayerTimesScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f8f9fa' },
-  darkBg: { backgroundColor: '#121212' },
+  container: { flex: 1, backgroundColor: UI_COLORS.background },
+  darkBg: { backgroundColor: UI_COLORS.darkBackground },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  loadingText: { marginTop: 16, fontSize: 16, color: '#2c3e50' },
+  loadingText: { marginTop: 16, fontSize: 16, color: UI_COLORS.text },
   scrollContent: { padding: 16, paddingBottom: 40 },
   headerContainer: { alignItems: 'center', marginBottom: 24 },
-  headerTitle: { fontSize: 18, color: '#7f8c8d', marginBottom: 4 },
-  cityName: { fontSize: 28, fontWeight: 'bold', color: '#2c3e50' },
-  changeCityText: { fontSize: 16, color: '#3498db', marginTop: 8, textDecorationLine: 'underline' },
-  nextPrayer: { fontSize: 20, textAlign: 'center', marginBottom: 24, color: '#2c3e50' },
-  bold: { fontWeight: 'bold', color: '#27ae60' },
+  headerTitle: { fontSize: 18, color: UI_COLORS.textMuted, marginBottom: 4 },
+  cityName: { fontSize: 28, fontWeight: 'bold', color: UI_COLORS.text },
+  changeCityText: { fontSize: 16, color: UI_COLORS.accent, marginTop: 8, textDecorationLine: 'underline' },
+  nextPrayer: { fontSize: 20, textAlign: 'center', marginBottom: 24, color: UI_COLORS.text },
+  bold: { fontWeight: 'bold', color: UI_COLORS.primary },
   prayerCard: { 
     flexDirection: 'row', 
     justifyContent: 'space-between', 
     alignItems: 'center', 
-    backgroundColor: '#fff', 
+    backgroundColor: UI_COLORS.surface,
     padding: 24, 
-    borderRadius: 20, 
+    borderRadius: UI_RADII.lg,
     marginBottom: 16, 
-    elevation: 6,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
+    borderWidth: 1,
+    borderColor: UI_COLORS.border,
+    borderLeftWidth: 5,
+    borderLeftColor: UI_COLORS.primary,
+    ...UI_SHADOWS.card,
   },
-  darkCard: { backgroundColor: '#1e1e1e' },
-  prayerName: { fontSize: 16, fontWeight: 'bold', color: '#2c3e50' },
-  prayerTime: { fontSize: 16, color: '#27ae60', fontWeight: '600', marginTop: 4 },
-  note: { fontSize: 14, color: '#7f8c8d', textAlign: 'center', marginTop: 24, fontStyle: 'italic' },
-  darkText: { color: '#fff' },
+  darkCard: { backgroundColor: UI_COLORS.darkSurface, borderColor: '#30353b' },
+  prayerName: { fontSize: 16, fontWeight: 'bold', color: UI_COLORS.text },
+  prayerTime: { fontSize: 16, color: UI_COLORS.primary, fontWeight: '600', marginTop: 4 },
+  note: { fontSize: 14, color: UI_COLORS.textMuted, textAlign: 'center', marginTop: 24, fontStyle: 'italic' },
+  darkText: { color: UI_COLORS.white },
   explanation: {
     paddingHorizontal: 16,
-    paddingVertical: 12,
-    backgroundColor: '#e8f5e9',
-    borderRadius: 12,
+    paddingVertical: 14,
+    backgroundColor: UI_COLORS.primarySoft,
+    borderRadius: UI_RADII.sm,
+    borderWidth: 1,
+    borderColor: '#cde9d5',
     marginBottom: 16,
   },
   explanationText: {
     fontSize: 14,
-    color: '#2c3e50',
+    color: UI_COLORS.text,
     textAlign: 'center',
-    lineHeight: 20,
+    lineHeight: 21,
   },
   title: {
     fontSize: 30,
     fontWeight: '700',
-    color: '#1a3c34',
+    color: UI_COLORS.primaryDeep,
     textAlign: 'center',
-    marginVertical: 20,
+    marginTop: 8,
+    marginBottom: 14,
     letterSpacing: 0.5,
     fontFamily: 'AmiriQuran',
   },
@@ -464,26 +609,22 @@ const styles = StyleSheet.create({
     zIndex: 20,
   },
   cityInput: {
-    backgroundColor: '#fff',
-    borderRadius: 16,
+    backgroundColor: UI_COLORS.surface,
+    borderRadius: UI_RADII.md,
     paddingHorizontal: 16,
     paddingVertical: 14,
     fontSize: 16,
-    color: '#2c3e50',
-    elevation: 4,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 6,
+    color: UI_COLORS.text,
+    borderWidth: 1,
+    borderColor: UI_COLORS.border,
+    ...UI_SHADOWS.input,
   },
   suggestionsContainer: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    elevation: 6,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
+    backgroundColor: UI_COLORS.surface,
+    borderRadius: UI_RADII.sm,
+    borderWidth: 1,
+    borderColor: UI_COLORS.border,
+    ...UI_SHADOWS.card,
     zIndex: 20,
     maxHeight: 240,
     overflow: 'hidden',
@@ -496,28 +637,28 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     paddingHorizontal: 16,
     borderBottomWidth: 1,
-    borderColor: '#eee',
+    borderColor: UI_COLORS.border,
   },
   suggestionText: {
     fontSize: 16,
-    color: '#2c3e50',
+    color: UI_COLORS.text,
   },
   loadingSuggestions: {
     padding: 16,
     textAlign: 'center',
-    color: '#7f8c8d',
+    color: UI_COLORS.textMuted,
     fontSize: 14,
   },
   updateButton: {
     marginTop: 8,
     alignSelf: 'center',
-    backgroundColor: '#27ae60',
+    backgroundColor: UI_COLORS.primary,
     paddingHorizontal: 20,
     paddingVertical: 10,
-    borderRadius: 20,
+    borderRadius: UI_RADII.xl,
   },
   updateButtonText: {
-    color: '#fff',
+    color: UI_COLORS.white,
     fontSize: 16,
     fontWeight: '600',
   },
@@ -528,7 +669,7 @@ const styles = StyleSheet.create({
   },
   guideText: {
     fontSize: 14,
-    color: '#7f8c8d',
+    color: UI_COLORS.textMuted,
     textAlign: 'center',
     lineHeight: 20,
   },
@@ -536,22 +677,21 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
   },
-  locationContainer: {
+locationContainer: {
   alignItems: 'center',
   marginBottom: 24,
-  backgroundColor: '#ffffff',
-  borderRadius: 20,
+  backgroundColor: UI_COLORS.surface,
+  borderRadius: UI_RADII.lg,
   padding: 16,
-  elevation: 4,
-  shadowColor: '#000',
-  shadowOffset: { width: 0, height: 2 },
-  shadowOpacity: 0.1,
-  shadowRadius: 6,
+  borderWidth: 1,
+  borderColor: UI_COLORS.border,
+  ...UI_SHADOWS.input,
   width: '90%',
   alignSelf: 'center',
 },
 darkLocationContainer: {
-  backgroundColor: '#1e1e1e',
+  backgroundColor: UI_COLORS.darkSurface,
+  borderColor: '#30353b',
 },
 locationInner: {
   flexDirection: 'row',
@@ -560,7 +700,7 @@ locationInner: {
 },
 locationText: {
   fontSize: 16,
-  color: '#27ae60',
+  color: UI_COLORS.primary,
   fontWeight: '600',
 },
 });
