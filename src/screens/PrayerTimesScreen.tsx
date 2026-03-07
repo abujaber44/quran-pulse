@@ -26,6 +26,23 @@ interface Prayer {
   enabled: boolean;
 }
 
+type NominatimResult = {
+  name?: string;
+  display_name?: string;
+  address?: {
+    city?: string;
+    town?: string;
+    village?: string;
+    municipality?: string;
+    county?: string;
+    state?: string;
+  };
+};
+
+type OpenMeteoResult = {
+  name?: string;
+};
+
 const CITY_STORAGE_KEY = 'prayer_city';
 const PRAYER_PREFS_KEY = 'prayer_athan_prefs';
 const DEFAULT_CITY = 'Makkah';
@@ -41,6 +58,64 @@ const parsePrayerTime = (raw: string): { hour: number; minute: number } | null =
   if (hour < 0 || hour > 23 || minute < 0 || minute > 59) return null;
 
   return { hour, minute };
+};
+
+const dedupeCities = (values: string[]): string[] => {
+  const cleaned = values
+    .map((value) => value.trim())
+    .filter((value) => value.length > 0);
+  return [...new Set(cleaned)];
+};
+
+const extractNominatimCity = (record: NominatimResult): string => {
+  return (
+    record.address?.city ||
+    record.address?.town ||
+    record.address?.village ||
+    record.address?.municipality ||
+    record.address?.county ||
+    record.address?.state ||
+    record.name ||
+    record.display_name?.split(',')[0] ||
+    ''
+  );
+};
+
+const fetchNominatimSuggestions = async (query: string): Promise<string[]> => {
+  const response = await fetch(
+    `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&addressdetails=1&limit=5`,
+    {
+      headers: {
+        Accept: 'application/json',
+        'Accept-Language': 'en',
+        'User-Agent': 'QuranPulse/1.0 (https://abujaber44.github.io/quran-pulse/privacy/)',
+      },
+    }
+  );
+
+  if (!response.ok) {
+    throw new Error(`Nominatim request failed: ${response.status}`);
+  }
+
+  const data = (await response.json()) as unknown;
+  if (!Array.isArray(data)) return [];
+
+  const cityNames = data.map((item) => extractNominatimCity(item as NominatimResult));
+  return dedupeCities(cityNames).slice(0, 5);
+};
+
+const fetchOpenMeteoSuggestions = async (query: string): Promise<string[]> => {
+  const response = await fetch(
+    `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(query)}&count=5&language=en&format=json`
+  );
+
+  if (!response.ok) {
+    throw new Error(`Open-Meteo request failed: ${response.status}`);
+  }
+
+  const payload = (await response.json()) as { results?: OpenMeteoResult[] };
+  const results = Array.isArray(payload.results) ? payload.results : [];
+  return dedupeCities(results.map((item) => item.name || '')).slice(0, 5);
 };
 
 export default function PrayerTimesScreen() {
@@ -59,22 +134,20 @@ export default function PrayerTimesScreen() {
   // Debounced city search for autocomplete using Nominatim
   const debouncedSearch = useCallback(
     debounce(async (query: string) => {
-      if (query.trim().length < 3) {
+      const trimmedQuery = query.trim();
+      if (trimmedQuery.length < 3) {
         setSuggestions([]);
+        setSuggestionsLoading(false);
         return;
       }
 
       setSuggestionsLoading(true);
       try {
-        const response = await fetch(
-          `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&addressdetails=1&limit=5`
-        );
-        const data = await response.json();
-
-        const cityNames = data
-          .filter((c: any) => c.address.city || c.address.town)
-          .map((c: any) => c.address.city || c.address.town);
-        setSuggestions([...new Set(cityNames)] as string[]);
+        let cityNames = await fetchNominatimSuggestions(trimmedQuery);
+        if (cityNames.length === 0) {
+          cityNames = await fetchOpenMeteoSuggestions(trimmedQuery);
+        }
+        setSuggestions(cityNames);
       } catch (err) {
         setSuggestions([]);
       } finally {
@@ -86,6 +159,9 @@ export default function PrayerTimesScreen() {
 
   useEffect(() => {
     debouncedSearch(searchInput);
+    return () => {
+      debouncedSearch.cancel();
+    };
   }, [searchInput, debouncedSearch]);
 
   useEffect(() => {
