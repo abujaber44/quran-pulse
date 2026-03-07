@@ -23,7 +23,6 @@ Quran Pulse is a peaceful, modern companion app to help you connect deeply with 
 - **Prayer Times & Athan** – accurate timings and full Athan audio alerts (even when app is closed)
 - **Islamic Calendar** – full Hijri month view with corresponding Gregorian dates
 - **Bookmarks** – save and revisit your favorite ayahs anytime
-- **Offline-first design** (streaming + future download support)
 - **Clean, spiritual UI** with focus on Arabic typography
 
 ### 📱 Screenshots
@@ -67,7 +66,7 @@ Quran Pulse is a peaceful, modern companion app to help you connect deeply with 
 - Context API for state management
 - Expo Notifications for Athan alerts
 - Expo Audio for recitation playback
-- Aladhan API for prayer times, Qibla, and Islamic calendar
+- Aladhan API for prayer times and Islamic calendar
 - Quran.com & open tafseer sources
 
 ### 🙏 Dua
