@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import {
   View,
   Text,
@@ -11,6 +11,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
+  Vibration,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as Location from 'expo-location';
@@ -25,6 +26,11 @@ interface Prayer {
   time: string;
   enabled: boolean;
 }
+
+type Coordinates = {
+  latitude: number;
+  longitude: number;
+};
 
 type NominatimResult = {
   name?: string;
@@ -46,6 +52,10 @@ type OpenMeteoResult = {
 const CITY_STORAGE_KEY = 'prayer_city';
 const PRAYER_PREFS_KEY = 'prayer_athan_prefs';
 const DEFAULT_CITY = 'Makkah';
+const KAABA_COORDINATES: Coordinates = {
+  latitude: 21.4225,
+  longitude: 39.8262,
+};
 // Bump when notification sound asset changes so Android recreates channel with new sound.
 const ATHAN_CHANNEL_ID = 'athan-alerts-v3';
 
@@ -66,6 +76,24 @@ const dedupeCities = (values: string[]): string[] => {
     .map((value) => value.trim())
     .filter((value) => value.length > 0);
   return [...new Set(cleaned)];
+};
+
+const toRadians = (degrees: number): number => (degrees * Math.PI) / 180;
+const toDegrees = (radians: number): number => (radians * 180) / Math.PI;
+
+const normalizeDegrees = (degrees: number): number => (degrees + 360) % 360;
+
+const calculateQiblaBearing = (origin: Coordinates): number => {
+  const lat1 = toRadians(origin.latitude);
+  const lon1 = toRadians(origin.longitude);
+  const lat2 = toRadians(KAABA_COORDINATES.latitude);
+  const lon2 = toRadians(KAABA_COORDINATES.longitude);
+
+  const deltaLon = lon2 - lon1;
+  const y = Math.sin(deltaLon) * Math.cos(lat2);
+  const x = Math.cos(lat1) * Math.sin(lat2) - Math.sin(lat1) * Math.cos(lat2) * Math.cos(deltaLon);
+
+  return normalizeDegrees(toDegrees(Math.atan2(y, x)));
 };
 
 const extractNominatimCity = (record: NominatimResult): string => {
@@ -128,6 +156,11 @@ export default function PrayerTimesScreen() {
   const [searchInput, setSearchInput] = useState('');
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [suggestionsLoading, setSuggestionsLoading] = useState(false);
+  const [currentCoordinates, setCurrentCoordinates] = useState<Coordinates | null>(null);
+  const [heading, setHeading] = useState<number | null>(null);
+  const [headingAccuracy, setHeadingAccuracy] = useState<number | null>(null);
+  const [isCompassAvailable, setIsCompassAvailable] = useState(true);
+  const hasVibratedForQiblaRef = useRef(false);
 
   const { settings } = useSettings();
   const isDark = settings.isDarkMode;
@@ -172,6 +205,53 @@ export default function PrayerTimesScreen() {
     };
     bootstrap();
   }, []);
+
+  useEffect(() => {
+    let isActive = true;
+    let subscription: Location.LocationSubscription | null = null;
+
+    const startHeadingWatch = async () => {
+      try {
+        subscription = await Location.watchHeadingAsync(
+          (headingData) => {
+            if (!isActive) return;
+            const resolvedHeading = headingData.trueHeading >= 0 ? headingData.trueHeading : headingData.magHeading;
+            setHeading(resolvedHeading);
+            setHeadingAccuracy(headingData.accuracy ?? null);
+          },
+          () => {
+            if (!isActive) return;
+            setIsCompassAvailable(false);
+          }
+        );
+      } catch {
+        if (!isActive) return;
+        setIsCompassAvailable(false);
+      }
+    };
+
+    void startHeadingWatch();
+
+    return () => {
+      isActive = false;
+      subscription?.remove();
+    };
+  }, []);
+
+  const resolveCoordinatesForCity = async (cityName: string): Promise<Coordinates | null> => {
+    try {
+      const geocoded = await Location.geocodeAsync(cityName);
+      if (!Array.isArray(geocoded) || geocoded.length === 0) {
+        return null;
+      }
+      return {
+        latitude: geocoded[0].latitude,
+        longitude: geocoded[0].longitude,
+      };
+    } catch {
+      return null;
+    }
+  };
 
   const setupAndroidNotificationChannel = async () => {
     if (Platform.OS !== 'android') return;
@@ -250,6 +330,12 @@ export default function PrayerTimesScreen() {
       }
 
       const location = await Location.getCurrentPositionAsync({});
+      const detectedCoordinates: Coordinates = {
+        latitude: location.coords.latitude,
+        longitude: location.coords.longitude,
+      };
+
+      setCurrentCoordinates(detectedCoordinates);
       const reverse = await Location.reverseGeocodeAsync({
         latitude: location.coords.latitude,
         longitude: location.coords.longitude,
@@ -261,7 +347,7 @@ export default function PrayerTimesScreen() {
         setCity(cityName);
         setSearchInput(''); // Clear search box
         saveCity(cityName);
-        loadPrayerTimes(cityName);
+        loadPrayerTimes(cityName, undefined, detectedCoordinates);
       }
     } catch (err) {
       Alert.alert('Location Error', 'Could not detect location. Please enter city manually.');
@@ -270,7 +356,11 @@ export default function PrayerTimesScreen() {
     }
   };
 
-  const loadPrayerTimes = async (cityName: string, initialPrefs?: Record<string, boolean>) => {
+  const loadPrayerTimes = async (
+    cityName: string,
+    initialPrefs?: Record<string, boolean>,
+    preferredCoordinates?: Coordinates
+  ) => {
     setLoading(true);
     try {
       const date = new Date();
@@ -298,6 +388,13 @@ export default function PrayerTimesScreen() {
         await scheduleAthanNotifications(prayerList);
         setCity(cityName);
         saveCity(cityName);
+
+        if (preferredCoordinates) {
+          setCurrentCoordinates(preferredCoordinates);
+        } else {
+          const resolvedCoordinates = await resolveCoordinatesForCity(cityName);
+          setCurrentCoordinates(resolvedCoordinates);
+        }
       } else {
         Alert.alert(
           'Invalid City',
@@ -414,6 +511,44 @@ export default function PrayerTimesScreen() {
     loadPrayerTimes(trimmed);
   };
 
+  const qiblaBearing = currentCoordinates ? calculateQiblaBearing(currentCoordinates) : null;
+  const rotationToQibla = heading !== null && qiblaBearing !== null
+    ? normalizeDegrees(qiblaBearing - heading)
+    : null;
+  const signedTurnDelta = heading !== null && qiblaBearing !== null
+    ? ((qiblaBearing - heading + 540) % 360) - 180
+    : null;
+  const isFacingQibla = signedTurnDelta !== null && Math.abs(signedTurnDelta) <= 5;
+
+  useEffect(() => {
+    if (!isFacingQibla) {
+      hasVibratedForQiblaRef.current = false;
+      return;
+    }
+
+    if (hasVibratedForQiblaRef.current) {
+      return;
+    }
+
+    hasVibratedForQiblaRef.current = true;
+    Vibration.vibrate(150);
+  }, [isFacingQibla]);
+
+  const qiblaTurnInstruction = () => {
+    if (signedTurnDelta === null) return 'Align your phone with North to start guidance.';
+    const delta = Math.round(Math.abs(signedTurnDelta));
+    if (delta <= 5) return 'You are facing Qibla.';
+    return signedTurnDelta > 0 ? `Turn right ${delta}°` : `Turn left ${delta}°`;
+  };
+
+  const compassCalibrationGuidance = () => {
+    if (!isCompassAvailable) return 'Compass sensor is unavailable on this device/runtime.';
+    if (headingAccuracy === null) return 'Move your phone slowly to initialize compass direction.';
+    if (headingAccuracy <= 1) return 'Low accuracy: move phone in a figure-8 and keep away from metal objects.';
+    if (headingAccuracy === 2) return 'Medium accuracy: keep phone flat and away from magnetic interference.';
+    return 'Compass calibrated.';
+  };
+
   if (loading) {
     return (
       <View style={[styles.center, isDark && styles.darkBg]}>
@@ -442,7 +577,7 @@ export default function PrayerTimesScreen() {
           
           <View style={styles.explanation}>
             <Text style={styles.explanationText}>
-              Stay connected to your daily prayers with accurate athan times and reminders. Let each prayer be a moment of peace, gratitude, and renewal in your journey with Allah.
+              Stay connected to your daily prayers with accurate athan times, reminders, and live Qibla compass guidance. Calibrate your heading, align toward the Kaaba with turn-by-turn direction, and feel a gentle vibration when Qibla is reached.
             </Text>
           </View>
 
@@ -512,6 +647,41 @@ export default function PrayerTimesScreen() {
           </Text>
         </View>
         </TouchableOpacity>
+
+        <View style={[styles.qiblaCard, isDark && styles.darkCard]}>
+          <Text style={[styles.qiblaTitle, isDark && styles.darkText]}>Qibla Compass</Text>
+          {qiblaBearing === null ? (
+            <Text style={[styles.qiblaHint, isDark && styles.darkText]}>
+              Choose a city or tap "Use My Location" to calculate Qibla direction.
+            </Text>
+          ) : (
+            <>
+              <View style={styles.qiblaCompassWrap}>
+                <View style={styles.qiblaDial}>
+                  <Text style={styles.qiblaNorth}>N</Text>
+                  <View
+                    style={[
+                      styles.qiblaArrowWrap,
+                      rotationToQibla !== null
+                        ? { transform: [{ rotate: `${rotationToQibla}deg` }] }
+                        : null,
+                    ]}
+                  >
+                    <Text style={styles.qiblaArrow}>▲</Text>
+                  </View>
+                </View>
+              </View>
+              <Text style={[styles.qiblaMeta, isDark && styles.darkText]}>
+                Qibla bearing: {Math.round(qiblaBearing)}°
+                {heading !== null ? ` • Heading: ${Math.round(heading)}°` : ''}
+              </Text>
+              <Text style={styles.qiblaInstruction}>{qiblaTurnInstruction()}</Text>
+              <Text style={[styles.qiblaCalibration, isDark && styles.darkText]}>
+                Calibration: {compassCalibrationGuidance()}
+              </Text>
+            </>
+          )}
+        </View>
 
         {/* Next Prayer */}
         <Text style={[styles.nextPrayer, isDark && styles.darkText]}>
@@ -703,5 +873,75 @@ locationText: {
   fontSize: 16,
   color: UI_COLORS.primary,
   fontWeight: '600',
+},
+qiblaCard: {
+  backgroundColor: UI_COLORS.surface,
+  borderRadius: UI_RADII.lg,
+  borderWidth: 1,
+  borderColor: UI_COLORS.border,
+  padding: 16,
+  marginBottom: 24,
+  ...UI_SHADOWS.card,
+},
+qiblaTitle: {
+  fontSize: 20,
+  fontWeight: '700',
+  color: UI_COLORS.text,
+  textAlign: 'center',
+  marginBottom: 12,
+},
+qiblaHint: {
+  fontSize: 14,
+  textAlign: 'center',
+  color: UI_COLORS.textMuted,
+  lineHeight: 20,
+},
+qiblaCompassWrap: {
+  alignItems: 'center',
+  marginBottom: 10,
+},
+qiblaDial: {
+  width: 150,
+  height: 150,
+  borderRadius: 75,
+  borderWidth: 2,
+  borderColor: UI_COLORS.border,
+  alignItems: 'center',
+  justifyContent: 'center',
+  backgroundColor: '#f7fbff',
+},
+qiblaNorth: {
+  position: 'absolute',
+  top: 8,
+  fontSize: 16,
+  fontWeight: '700',
+  color: UI_COLORS.accent,
+},
+qiblaArrowWrap: {
+  alignItems: 'center',
+  justifyContent: 'center',
+},
+qiblaArrow: {
+  fontSize: 38,
+  color: UI_COLORS.primary,
+},
+qiblaMeta: {
+  fontSize: 14,
+  textAlign: 'center',
+  color: UI_COLORS.textMuted,
+  marginBottom: 6,
+},
+qiblaInstruction: {
+  fontSize: 16,
+  textAlign: 'center',
+  color: UI_COLORS.primary,
+  fontWeight: '700',
+  marginBottom: 8,
+},
+qiblaCalibration: {
+  fontSize: 13,
+  textAlign: 'center',
+  color: UI_COLORS.textMuted,
+  lineHeight: 18,
 },
 });

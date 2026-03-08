@@ -20,7 +20,7 @@ Quran Pulse is a peaceful, modern companion app to help you connect deeply with 
 - **Repeat mode** (single ayah or custom range) for memorization
 - **Memorization mode** support
 - **99 Names of Allah (Asma Al-Husna)** – elegant display with meaning and transliteration
-- **Prayer Times & Athan** – accurate timings and full Athan audio alerts (even when app is closed)
+- **Prayer Times, Athan & Qibla Compass** – accurate timings, full Athan audio alerts, and live Qibla direction guidance
 - **Islamic Calendar** – full Hijri month view with corresponding Gregorian dates
 - **Bookmarks** – save and revisit your favorite ayahs anytime
 - **Clean, spiritual UI** with focus on Arabic typography
@@ -49,6 +49,9 @@ Quran Pulse is a peaceful, modern companion app to help you connect deeply with 
 - Toggle individual prayer alerts on/off
 - Auto-detect location or manually set city
 - Next prayer highlighted
+- Live Qibla compass with turn-by-turn direction to the Kaaba
+- Calibration guidance when compass accuracy is low
+- Haptic confirmation when Qibla alignment is achieved
 
 ### 📿 Asma Al-Husna
 - All 99 Beautiful Names of Allah
@@ -66,6 +69,7 @@ Quran Pulse is a peaceful, modern companion app to help you connect deeply with 
 - Context API for state management
 - Expo Notifications for Athan alerts
 - Expo Audio for recitation playback
+- Expo Location for city detection and Qibla compass heading
 - Aladhan API for prayer times and Islamic calendar
 - Quran.com & open tafseer sources
 
