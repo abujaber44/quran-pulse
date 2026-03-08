@@ -1,5 +1,5 @@
 // src/context/AudioContext.tsx
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react';
 import { Alert } from 'react-native';
 import { Audio } from 'expo-av';
 import { getReciter, saveReciter } from '../services/storage';
@@ -25,10 +25,7 @@ const BASE_URL = 'https://cdn.islamic.network/quran/audio/128';
 
 interface AudioContextType {
   currentAyah: { surah: number; ayah: number; global: number } | null;
-  isPlaying: boolean;
   sound: Audio.Sound | null;
-  positionMillis: number;
-  durationMillis: number;
   selectedReciter: Reciter;
   repeatMode: 'none' | 'single' | 'range';
   repeatRange: { start: number; end: number } | null;
@@ -44,7 +41,14 @@ interface AudioContextType {
   stopListening: () => Promise<void>; // ← New: exit listening mode
 }
 
+interface AudioProgressContextType {
+  isPlaying: boolean;
+  positionMillis: number;
+  durationMillis: number;
+}
+
 const AudioContext = createContext<AudioContextType | undefined>(undefined);
+const AudioProgressContext = createContext<AudioProgressContextType | undefined>(undefined);
 
 export function AudioProvider({ children }: { children: React.ReactNode }) {
   const [sound, setSound] = useState<Audio.Sound | null>(null);
@@ -55,12 +59,12 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
   const [selectedReciter, setSelectedReciter] = useState<Reciter>(reciters[0]);
   const [repeatMode, setRepeatMode] = useState<'none' | 'single' | 'range'>('none');
   const [repeatRange, setRepeatRangeState] = useState<{ start: number; end: number } | null>(null);
-  const setRepeatRange = (start: number, end: number) => setRepeatRangeState({ start, end });
+  const setRepeatRange = useCallback((start: number, end: number) => setRepeatRangeState({ start, end }), []);
   const [memorizationMode, setMemorizationMode] = useState(false);
 
   const { settings } = useSettings();
 
-  const toggleMemorizationMode = () => setMemorizationMode(prev => !prev);
+  const toggleMemorizationMode = useCallback(() => setMemorizationMode(prev => !prev), []);
 
   useEffect(() => {
     Audio.setAudioModeAsync({
@@ -87,7 +91,7 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
     loadSavedReciter();
   }, []);
 
-  const playAyah = async (surah: number, ayah: number, global: number) => {
+  const playAyah = useCallback(async (surah: number, ayah: number, global: number) => {
     console.log('playAyah called for:', { surah, ayah, global });
 
     if (sound) {
@@ -129,38 +133,39 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
       console.error('Failed to play ayah:', error);
       Alert.alert('Audio Error', 'Could not play the recitation. Please check your internet connection.');
     }
-  };
+  }, [memorizationMode, repeatMode, selectedReciter.id, settings.memorizationPause, sound]);
 
-  const togglePlayPause = async () => {
+  const togglePlayPause = useCallback(async () => {
     if (sound) {
-      if (isPlaying) {
+      const status = await sound.getStatusAsync();
+      if (status.isLoaded && status.isPlaying) {
         await sound.pauseAsync();
-      } else {
-        await sound.playAsync();
+        return;
       }
+      await sound.playAsync();
     }
-  };
+  }, [sound]);
 
-  const seekTo = async (millis: number) => {
+  const seekTo = useCallback(async (millis: number) => {
     if (sound) {
       await sound.setPositionAsync(millis);
     }
-  };
+  }, [sound]);
 
-  const setReciter = async (reciter: Reciter) => {
+  const setReciter = useCallback(async (reciter: Reciter) => {
     setSelectedReciter(reciter);
     await saveReciter(reciter.id);
     if (currentAyah) {
       await playAyah(currentAyah.surah, currentAyah.ayah, currentAyah.global);
     }
-  };
+  }, [currentAyah, playAyah]);
 
-  const downloadSurah = async (surahId: number, totalVerses: number, surahs: any[]) => {
+  const downloadSurah = useCallback(async (surahId: number, totalVerses: number, surahs: any[]) => {
     Alert.alert('Coming Soon', 'Offline download feature will be added in the next update.');
-  };
+  }, []);
 
   // New: Stop listening and clear state
-  const stopListening = async () => {
+  const stopListening = useCallback(async () => {
     if (sound) {
       await sound.stopAsync();
       await sound.unloadAsync();
@@ -170,7 +175,7 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
     setCurrentAyah(null);
     setPositionMillis(0);
     setDurationMillis(0);
-  };
+  }, [sound]);
 
   useEffect(() => {
     return () => {
@@ -180,30 +185,50 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
     };
   }, [sound]);
 
+  const audioValue = useMemo<AudioContextType>(() => ({
+    currentAyah,
+    sound,
+    selectedReciter,
+    repeatMode,
+    repeatRange,
+    memorizationMode,
+    playAyah,
+    togglePlayPause,
+    seekTo,
+    setReciter,
+    setRepeatMode,
+    setRepeatRange,
+    toggleMemorizationMode,
+    downloadSurah,
+    stopListening, // ← Exposed to all screens
+  }), [
+    currentAyah,
+    sound,
+    selectedReciter,
+    repeatMode,
+    repeatRange,
+    memorizationMode,
+    playAyah,
+    togglePlayPause,
+    seekTo,
+    setReciter,
+    setRepeatRange,
+    toggleMemorizationMode,
+    downloadSurah,
+    stopListening,
+  ]);
+
+  const audioProgressValue = useMemo<AudioProgressContextType>(() => ({
+    isPlaying,
+    positionMillis,
+    durationMillis,
+  }), [isPlaying, positionMillis, durationMillis]);
+
   return (
-    <AudioContext.Provider
-      value={{
-        currentAyah,
-        isPlaying,
-        sound,
-        positionMillis,
-        durationMillis,
-        selectedReciter,
-        repeatMode,
-        repeatRange,
-        memorizationMode,
-        playAyah,
-        togglePlayPause,
-        seekTo,
-        setReciter,
-        setRepeatMode,
-        setRepeatRange,
-        toggleMemorizationMode,
-        downloadSurah,
-        stopListening, // ← Exposed to all screens
-      }}
-    >
-      {children}
+    <AudioContext.Provider value={audioValue}>
+      <AudioProgressContext.Provider value={audioProgressValue}>
+        {children}
+      </AudioProgressContext.Provider>
     </AudioContext.Provider>
   );
 }
@@ -212,6 +237,14 @@ export function useAudio() {
   const context = useContext(AudioContext);
   if (!context) {
     throw new Error('useAudio must be used within an AudioProvider');
+  }
+  return context;
+}
+
+export function useAudioProgress() {
+  const context = useContext(AudioProgressContext);
+  if (!context) {
+    throw new Error('useAudioProgress must be used within an AudioProvider');
   }
   return context;
 }

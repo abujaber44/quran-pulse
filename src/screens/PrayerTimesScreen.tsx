@@ -58,6 +58,8 @@ const KAABA_COORDINATES: Coordinates = {
 };
 // Bump when notification sound asset changes so Android recreates channel with new sound.
 const ATHAN_CHANNEL_ID = 'athan-alerts-v3';
+const ATHAN_NOTIFICATION_ID_PREFIX = 'athan-prayer-';
+const ATHAN_NOTIFICATION_TITLE_PREFIX = 'حان الآن موعد صلاة';
 
 const parsePrayerTime = (raw: string): { hour: number; minute: number } | null => {
   const match = raw.match(/(\d{1,2}):(\d{2})/);
@@ -161,6 +163,7 @@ export default function PrayerTimesScreen() {
   const [headingAccuracy, setHeadingAccuracy] = useState<number | null>(null);
   const [isCompassAvailable, setIsCompassAvailable] = useState(true);
   const hasVibratedForQiblaRef = useRef(false);
+  const scheduleRunIdRef = useRef(0);
 
   const { settings } = useSettings();
   const isDark = settings.isDarkMode;
@@ -427,57 +430,90 @@ export default function PrayerTimesScreen() {
   };
 
   const scheduleAthanNotifications = async (prayerList: Prayer[]) => {
-    await Notifications.cancelAllScheduledNotificationsAsync();
+    const runId = ++scheduleRunIdRef.current;
 
-    const today = new Date();
-    for (const prayer of prayerList) {
-      if (!prayer.enabled) continue;
+    const isStaleRun = () => runId !== scheduleRunIdRef.current;
 
-      const parsed = parsePrayerTime(prayer.time);
-      if (!parsed) {
-        console.warn(`Skipping invalid prayer time for ${prayer.name}: ${prayer.time}`);
-        continue;
+    try {
+      const existingScheduled = await Notifications.getAllScheduledNotificationsAsync();
+      if (isStaleRun()) return;
+
+      const existingAthanIds = existingScheduled
+        .filter((notification) => {
+          const title = typeof notification.content.title === 'string' ? notification.content.title : '';
+          const source = notification.content.data?.source;
+          return (
+            notification.identifier.startsWith(ATHAN_NOTIFICATION_ID_PREFIX) ||
+            source === 'athan' ||
+            title.startsWith(ATHAN_NOTIFICATION_TITLE_PREFIX)
+          );
+        })
+        .map((notification) => notification.identifier);
+
+      for (const id of existingAthanIds) {
+        try {
+          await Notifications.cancelScheduledNotificationAsync(id);
+        } catch (cancelError) {
+          console.warn(`Failed to cancel scheduled athan notification ${id}:`, cancelError);
+        }
       }
+      if (isStaleRun()) return;
 
-      const triggerDate = new Date(today);
-      triggerDate.setHours(parsed.hour, parsed.minute, 0, 0);
+      const today = new Date();
+      for (const prayer of prayerList) {
+        if (isStaleRun()) return;
+        if (!prayer.enabled) continue;
 
-      if (triggerDate <= today) {
-        triggerDate.setDate(triggerDate.getDate() + 1);
-      }
-
-      try {
-        const content: Notifications.NotificationContentInput = {
-          title: `حان الآن موعد صلاة ${prayer.name}`,
-          body: '🕌 اللَّهُمَّ رَبَّ هَذِهِ الدَّعْوَةِ التَّامَّةِ، وَالصَّلَاةِ الْقَائِمَةِ، آتِ مُحَمَّداً الْوَسِيلَةَ وَالْفَضِيلَةَ، وَابْعَثْهُ مَقَاماً مَحْمُوداً الَّذِي وَعَدْتَهُ، إَنَّكَ لَا تُخْلِفُ الْمِيعَادَ',
-          sound: 'athan.mp3',
-          priority: Notifications.AndroidNotificationPriority.HIGH,
-          vibrate: [0, 250, 250, 250],
-        };
-
-        if (Platform.OS === 'ios') {
-          content.interruptionLevel = 'timeSensitive';
+        const parsed = parsePrayerTime(prayer.time);
+        if (!parsed) {
+          console.warn(`Skipping invalid prayer time for ${prayer.name}: ${prayer.time}`);
+          continue;
         }
 
-        const trigger: Notifications.NotificationTriggerInput =
-          Platform.OS === 'android'
-            ? {
-                type: Notifications.SchedulableTriggerInputTypes.DATE,
-                date: triggerDate,
-                channelId: ATHAN_CHANNEL_ID,
-              }
-            : {
-                type: Notifications.SchedulableTriggerInputTypes.DATE,
-                date: triggerDate,
-              };
+        const triggerDate = new Date(today);
+        triggerDate.setHours(parsed.hour, parsed.minute, 0, 0);
 
-        await Notifications.scheduleNotificationAsync({
-          content,
-          trigger,
-        });
-      } catch (error) {
-        console.error(`Failed to schedule ${prayer.name}:`, error);
+        if (triggerDate <= today) {
+          triggerDate.setDate(triggerDate.getDate() + 1);
+        }
+
+        try {
+          const content: Notifications.NotificationContentInput = {
+            title: `${ATHAN_NOTIFICATION_TITLE_PREFIX} ${prayer.name}`,
+            body: '🕌 اللَّهُمَّ رَبَّ هَذِهِ الدَّعْوَةِ التَّامَّةِ، وَالصَّلَاةِ الْقَائِمَةِ، آتِ مُحَمَّداً الْوَسِيلَةَ وَالْفَضِيلَةَ، وَابْعَثْهُ مَقَاماً مَحْمُوداً الَّذِي وَعَدْتَهُ، إَنَّكَ لَا تُخْلِفُ الْمِيعَادَ',
+            sound: 'athan.mp3',
+            priority: Notifications.AndroidNotificationPriority.HIGH,
+            vibrate: [0, 250, 250, 250],
+            data: { source: 'athan', prayerName: prayer.name },
+          };
+
+          if (Platform.OS === 'ios') {
+            content.interruptionLevel = 'timeSensitive';
+          }
+
+          const trigger: Notifications.NotificationTriggerInput =
+            Platform.OS === 'android'
+              ? {
+                  type: Notifications.SchedulableTriggerInputTypes.DATE,
+                  date: triggerDate,
+                  channelId: ATHAN_CHANNEL_ID,
+                }
+              : {
+                  type: Notifications.SchedulableTriggerInputTypes.DATE,
+                  date: triggerDate,
+                };
+
+          await Notifications.scheduleNotificationAsync({
+            identifier: `${ATHAN_NOTIFICATION_ID_PREFIX}${prayer.name.toLowerCase()}`,
+            content,
+            trigger,
+          });
+        } catch (error) {
+          console.error(`Failed to schedule ${prayer.name}:`, error);
+        }
       }
+    } catch (error) {
+      console.error('Failed to refresh athan schedules:', error);
     }
   };
 
@@ -492,7 +528,7 @@ export default function PrayerTimesScreen() {
     }, {} as Record<string, boolean>);
     savePrayerPrefs(prefs);
 
-    scheduleAthanNotifications(updated);
+    void scheduleAthanNotifications(updated);
   };
 
   const handleSelectSuggestion = (suggestedCity: string) => {
