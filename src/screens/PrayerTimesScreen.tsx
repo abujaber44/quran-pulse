@@ -46,7 +46,8 @@ type OpenMeteoResult = {
 const CITY_STORAGE_KEY = 'prayer_city';
 const PRAYER_PREFS_KEY = 'prayer_athan_prefs';
 const DEFAULT_CITY = 'Makkah';
-const ATHAN_CHANNEL_ID = 'athan-alerts-v2';
+// Bump when notification sound asset changes so Android recreates channel with new sound.
+const ATHAN_CHANNEL_ID = 'athan-alerts-v3';
 
 const parsePrayerTime = (raw: string): { hour: number; minute: number } | null => {
   const match = raw.match(/(\d{1,2}):(\d{2})/);
