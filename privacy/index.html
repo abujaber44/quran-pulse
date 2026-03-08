@@ -49,7 +49,7 @@
 <body>
 
   <h1>Privacy Policy</h1>
-  <p class="last-updated">Last updated: February 13, 2026</p>
+  <p class="last-updated">Last updated: March 8, 2026</p>
 
   <section>
     <p>
@@ -68,6 +68,7 @@
     <p>We collect only the following non-personal data, and only when needed for app functionality:</p>
     <ul>
       <li><strong>Location data</strong> (city or coordinates) – used temporarily to provide accurate prayer times. This data is never stored on our servers or shared with third parties beyond the APIs listed below.</li>
+      <li><strong>Compass heading data</strong> (device orientation/magnetometer reading) – used in real time to provide Qibla direction guidance. This data is processed on-device and is not sent to our servers.</li>
       <li><strong>Usage preferences</strong> – such as selected reciter, dark mode, notification toggles, and bookmarks. This data is stored locally on your device using AsyncStorage and never leaves your phone.</li>
     </ul>
     <p>We do not collect:</p>
@@ -82,6 +83,8 @@
     <h2>How We Use Information</h2>
     <ul>
       <li>Location is used only in real-time to fetch prayer times (via Aladhan API). It is discarded immediately after use.</li>
+      <li>Compass heading is used only in real-time to show Qibla direction and calibration guidance. It is not stored or transmitted to us.</li>
+      <li>Optional haptic feedback (vibration) is triggered locally when Qibla alignment is reached.</li>
       <li>Local preferences (reciter, bookmarks, etc.) are saved on your device to improve your experience and persist across app sessions.</li>
       <li>No data is used for advertising, profiling, marketing, or any commercial purpose.</li>
     </ul>
@@ -91,10 +94,21 @@
     <h2>Third-Party Services</h2>
     <p>The app relies on the following external APIs. They may collect minimal, anonymized data as per their own policies:</p>
     <ul>
-      <li><strong>Aladhan API</strong>[](https://aladhan.com) – provides prayer times, and Islamic calendar data. See their privacy policy: https://aladhan.com/privacy-policy</li>
-      <li><strong>Hadith API</strong>[](https://hadithapi.com) – provides random Hadith of the Day. No personal data is sent.</li>
+      <li><strong>Aladhan API</strong> (https://aladhan.com) – provides prayer times and Islamic calendar data. See their privacy policy: https://aladhan.com/privacy-policy</li>
+      <li><strong>Hadith API</strong> (https://hadithapi.com) – provides random Hadith of the Day. No personal data is sent.</li>
+      <li><strong>Nominatim / OpenStreetMap</strong> (https://nominatim.openstreetmap.org) – used for city search suggestions and geocoding.</li>
+      <li><strong>Open-Meteo Geocoding API</strong> (https://open-meteo.com) – fallback city geocoding for search suggestions.</li>
     </ul>
     <p>We do not have access to any data these services collect from your requests.</p>
+  </section>
+
+  <section>
+    <h2>Qibla Compass & Calibration</h2>
+    <p>
+      Qibla direction is calculated using your location (city or coordinates) and your device heading sensor.
+      Compass readings are processed locally on your device to render direction and calibration guidance.
+      We do not store, upload, or share compass data.
+    </p>
   </section>
 
   <section>

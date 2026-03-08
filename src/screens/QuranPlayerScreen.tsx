@@ -41,6 +41,7 @@ const RECITERS: Reciter[] = [
   { id: 'saud_ash-shuraym/murattal', name: 'Saud Ash-Shuraym' },
   { id: 'ahmed_ibn_3ali_al-3ajamy', name: 'Ahmed Ibn 3ali Al-3ajamy' },
   { id: 'maher_almu3aiqly/year1422-1423', name: 'Maher Almu3aiqly' },
+  { id: 'yasser_ad-dussary', name: 'Yasser Ad-Dussary' },
 ];
 
 const SELECTED_RECITER_KEY = 'quran_pulse_selected_reciter';

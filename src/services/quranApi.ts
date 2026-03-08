@@ -52,13 +52,15 @@ export const fetchTafseer = async (
 
 // List of reciters that require leading zeros (001.mp3 format)
 const RECITERS_WITH_LEADING_ZEROS = new Set([
-  'saud_ash-shuraym/murattal',
+  'saud_ash-shuraym/murattal'
+  
 ]);
 
 // List of reciters that use the special format with double slash // + 3-digit (001.mp3)
 const RECITERS_WITH_DOUBLE_SLASH = new Set([
   'ahmed_ibn_3ali_al-3ajamy',
   'maher_almu3aiqly/year1422-1423',
+  'yasser_ad-dussary'
 ]);
 
 export const getSurahAudioUrl = (reciterId: string, surahNumber: number): string => {

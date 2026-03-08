@@ -1,9 +1,8 @@
 // src/screens/SurahScreen.tsx
-import React, { useEffect, useState, useRef } from 'react';
+import React, { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   View,
   Text,
-  ScrollView,
   TouchableOpacity,
   StyleSheet,
   Modal,
@@ -12,12 +11,12 @@ import {
 } from 'react-native';
 import Slider from '@react-native-community/slider';
 import { fetchAyahs, fetchTranslations, fetchTafseer } from '../services/quranApi';
-import { useAudio } from '../context/AudioContext';
+import { useAudio, useAudioProgress } from '../context/AudioContext';
 import { useSettings } from '../context/SettingsContext';
 import { getGlobalAyahNumber } from '../utils/quranUtils';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
-import { isBookmarked, addBookmark, removeBookmark } from '../services/bookmarkService';
+import { getBookmarks, addBookmark, removeBookmark } from '../services/bookmarkService';
 import { UI_COLORS, UI_RADII, UI_SHADOWS } from '../theme/ui';
 
 const reciters = [
@@ -29,6 +28,219 @@ const reciters = [
   { id: 'ar.shaatree', name: 'Abu Bakr Ash-Shatri' },
   { id: 'ar.ahmedajamy', name: 'Ahmed ibn Ali al-Ajamy' },
 ];
+
+const LIST_FOOTER_HEIGHT = 130;
+const LIST_SCROLL_RETRY_DELAY_MS = 300;
+
+type AyahItemProps = {
+  ayah: any;
+  isDark: boolean;
+  isActiveAyah: boolean;
+  isBookmarked: boolean;
+  expandedTranslation: number | null;
+  expandedTafseer: number | null;
+  loadingTafseer: boolean;
+  currentTafseer: string;
+  onPlayAyah: (ayahNum: number) => void;
+  onToggleBookmark: (ayahNum: number) => void;
+  onToggleTranslation: (ayahNum: number) => void;
+  onToggleTafseer: (ayahNum: number) => void;
+};
+
+const AyahItem = memo(({
+  ayah,
+  isDark,
+  isActiveAyah,
+  isBookmarked,
+  expandedTranslation,
+  expandedTafseer,
+  loadingTafseer,
+  currentTafseer,
+  onPlayAyah,
+  onToggleBookmark,
+  onToggleTranslation,
+  onToggleTafseer,
+}: AyahItemProps) => {
+  return (
+    <TouchableOpacity
+      style={[
+        styles.ayahCard,
+        isDark && styles.darkAyahCard,
+        isActiveAyah && styles.playingCard,
+      ]}
+      onPress={() => onPlayAyah(ayah.verse_number)}
+    >
+      <TouchableOpacity
+        style={styles.bookmarkBtn}
+        onPress={() => onToggleBookmark(ayah.verse_number)}
+      >
+        <Text style={[
+          styles.bookmarkIcon,
+          isBookmarked && styles.bookmarkedIcon,
+        ]}>
+          {isBookmarked ? '★' : '☆'}
+        </Text>
+      </TouchableOpacity>
+
+      <Text style={[styles.ayahText, { fontSize: 24 }, isDark && styles.darkText]}>
+        {ayah.text_uthmani}
+      </Text>
+
+      <View style={styles.bottomToggles}>
+        <TouchableOpacity onPress={() => onToggleTranslation(ayah.verse_number)} style={styles.tafseerToggleBtn}>
+          <Text style={[styles.tafseerToggle, isDark && styles.darkText]}>
+            {expandedTranslation === ayah.verse_number ? '↑ Hide Translation' : '↓ Show Translation'}
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity onPress={() => onToggleTafseer(ayah.verse_number)} style={styles.tafseerToggleBtn}>
+          <Text style={[styles.tafseerToggle, isDark && styles.darkText]}>
+            {expandedTafseer === ayah.verse_number
+              ? (loadingTafseer ? 'Loading...' : '↑ Hide Tafseer')
+              : '↓ Show Tafseer'}
+          </Text>
+        </TouchableOpacity>
+      </View>
+
+      {expandedTranslation === ayah.verse_number && (
+        <Text style={[styles.translationText, isDark && styles.darkText]}>
+          {ayah.translation}
+        </Text>
+      )}
+
+      {expandedTafseer === ayah.verse_number && (
+        <Text style={[styles.tafseerText, isDark && styles.darkText]}>
+          {currentTafseer}
+        </Text>
+      )}
+
+      <Text style={[styles.ayahNumberBottom, isDark && styles.darkText]}>
+        {ayah.verse_number}
+      </Text>
+    </TouchableOpacity>
+  );
+});
+
+type SurahPlayerBarProps = {
+  surahId: number;
+  surahVersesCount: number;
+  isDark: boolean;
+  onPlayAyahByNumber: (ayahNum: number) => void;
+};
+
+const SurahPlayerBar = memo(({ surahId, surahVersesCount, isDark, onPlayAyahByNumber }: SurahPlayerBarProps) => {
+  const {
+    currentAyah,
+    togglePlayPause,
+    seekTo,
+    stopListening,
+    repeatMode,
+    repeatRange,
+    memorizationMode,
+  } = useAudio();
+  const { isPlaying, positionMillis, durationMillis } = useAudioProgress();
+  const isCurrentSurah = !!currentAyah && currentAyah.surah === surahId;
+
+  useEffect(() => {
+    if (!isCurrentSurah || !currentAyah) {
+      return;
+    }
+
+    if (durationMillis <= 0 || positionMillis < durationMillis - 300) {
+      return;
+    }
+
+    const timer = setTimeout(() => {
+      if (repeatMode === 'range' && repeatRange && currentAyah.ayah === repeatRange.end) {
+        onPlayAyahByNumber(repeatRange.start);
+      } else if (repeatMode !== 'single' && !memorizationMode && currentAyah.ayah < surahVersesCount) {
+        onPlayAyahByNumber(currentAyah.ayah + 1);
+      }
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [
+    currentAyah?.ayah,
+    durationMillis,
+    memorizationMode,
+    onPlayAyahByNumber,
+    positionMillis,
+    repeatMode,
+    repeatRange,
+    isCurrentSurah,
+    surahVersesCount,
+  ]);
+
+  if (!isCurrentSurah || !currentAyah) {
+    return null;
+  }
+
+  const handlePreviousAyah = () => {
+    if (currentAyah.ayah > 1) {
+      onPlayAyahByNumber(currentAyah.ayah - 1);
+    }
+  };
+
+  const handleNextAyah = () => {
+    if (currentAyah.ayah < surahVersesCount) {
+      onPlayAyahByNumber(currentAyah.ayah + 1);
+    }
+  };
+
+  const formatTime = (ms: number) => {
+    if (!ms) return '0:00';
+    const mins = Math.floor(ms / 60000);
+    const secs = Math.floor((ms % 60000) / 1000);
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  return (
+    <View style={[styles.playerContainer, isDark && styles.darkPlayerContainer]}>
+      <View style={[styles.playerCard, isDark && styles.darkPlayerCard]}>
+        <TouchableOpacity style={styles.exitButton} onPress={stopListening}>
+          <Text style={styles.exitIcon}>×</Text>
+        </TouchableOpacity>
+
+        <View style={styles.playerHeader}>
+          <Text style={styles.playerAyahNumber}>{currentAyah.ayah}</Text>
+          <Text style={[styles.playerTitle, isDark && styles.darkText]}>Currently Playing</Text>
+        </View>
+
+        <Slider
+          style={styles.slider}
+          minimumValue={0}
+          maximumValue={durationMillis || 1}
+          value={positionMillis}
+          onSlidingComplete={seekTo}
+          minimumTrackTintColor="#27ae60"
+          thumbTintColor="#27ae60"
+        />
+
+        <Text style={[styles.timeText, isDark && styles.darkText]}>
+          {formatTime(positionMillis)} / {formatTime(durationMillis)}
+        </Text>
+
+        <View style={styles.playerControls}>
+          <TouchableOpacity onPress={handlePreviousAyah} disabled={currentAyah.ayah === 1}>
+            <Text style={[styles.controlBtn, currentAyah.ayah === 1 && styles.disabledBtn, isDark && styles.darkText]}>
+              ← Prev
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity onPress={togglePlayPause}>
+            <Text style={styles.playPauseBtn}>{isPlaying ? '⏸' : '▶'}</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity onPress={handleNextAyah} disabled={currentAyah.ayah === surahVersesCount}>
+            <Text style={[styles.controlBtn, currentAyah.ayah === surahVersesCount && styles.disabledBtn, isDark && styles.darkText]}>
+              Next →
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    </View>
+  );
+});
 
 export default function SurahScreen({ route }: any) {
   const { surah, surahs } = route.params;
@@ -44,23 +256,18 @@ export default function SurahScreen({ route }: any) {
 
   // For cancelling previous tafseer fetch
   const abortControllerRef = useRef<AbortController | null>(null);
+  const tafseerCacheRef = useRef<Record<number, string>>({});
 
   // Track bookmarked ayahs
   const [bookmarkedAyahs, setBookmarkedAyahs] = useState<Set<string>>(new Set());
 
-  const scrollRef = useRef<ScrollView>(null);
-  const ayahRefs = useRef<{ [key: number]: View | null }>({});
+  const flatListRef = useRef<FlatList<any>>(null);
 
   const navigation = useNavigation();
 
   const {
     playAyah,
-    togglePlayPause,
-    seekTo,
     currentAyah,
-    isPlaying,
-    positionMillis,
-    durationMillis,
     selectedReciter,
     setReciter,
     repeatMode,
@@ -69,9 +276,7 @@ export default function SurahScreen({ route }: any) {
     setRepeatRange,
     memorizationMode,
     toggleMemorizationMode,
-    downloadSurah,
     sound,
-    stopListening, // ← New: from AudioContext
   } = useAudio();
 
   const { settings } = useSettings();
@@ -87,34 +292,53 @@ export default function SurahScreen({ route }: any) {
 
   // Load Arabic ayahs + English translations
   useEffect(() => {
+    let isMounted = true;
+
     const loadData = async () => {
+      tafseerCacheRef.current = {};
+      setExpandedTafseer(null);
+      setCurrentTafseer('');
+      setExpandedTranslation(null);
+
       try {
-        const ayahsData = await fetchAyahs(surah.id);
-        const translationsData = await fetchTranslations(surah.id);
+        const [ayahsData, translationsData, allBookmarks] = await Promise.all([
+          fetchAyahs(surah.id),
+          fetchTranslations(surah.id),
+          getBookmarks(),
+        ]);
 
         const ayahsWithTranslation = ayahsData.map((ayah: any, index: number) => ({
           ...ayah,
           translation: translationsData[index]?.text || 'Translation not available',
         }));
 
+        if (!isMounted) return;
         setAyahs(ayahsWithTranslation);
 
-        // Load bookmark status for this surah
-        const bookmarks = new Set<string>();
-        for (const ayah of ayahsWithTranslation) {
-          if (await isBookmarked(surah.id, ayah.verse_number)) {
-            bookmarks.add(`${surah.id}-${ayah.verse_number}`);
-          }
-        }
+        const bookmarks = new Set<string>(
+          allBookmarks
+            .filter((bookmark) => bookmark.surahId === surah.id)
+            .map((bookmark) => `${bookmark.surahId}-${bookmark.ayahNum}`)
+        );
         setBookmarkedAyahs(bookmarks);
       } catch (error) {
         console.error('Error loading ayahs or translations:', error);
         try {
           const ayahsData = await fetchAyahs(surah.id);
+          const allBookmarks = await getBookmarks();
+          if (!isMounted) return;
+
           setAyahs(ayahsData.map((ayah: any) => ({
             ...ayah,
             translation: 'Translation unavailable',
           })));
+
+          const bookmarks = new Set<string>(
+            allBookmarks
+              .filter((bookmark) => bookmark.surahId === surah.id)
+              .map((bookmark) => `${bookmark.surahId}-${bookmark.ayahNum}`)
+          );
+          setBookmarkedAyahs(bookmarks);
         } catch (fallbackError) {
           console.error('Fallback ayah fetch failed:', fallbackError);
         }
@@ -122,90 +346,69 @@ export default function SurahScreen({ route }: any) {
     };
 
     loadData();
+
+    return () => {
+      isMounted = false;
+    };
   }, [surah.id]);
 
-  // Auto next ayah
   useEffect(() => {
-    if (!currentAyah || currentAyah.surah !== surah.id) return;
+    return () => {
+      abortControllerRef.current?.abort();
+    };
+  }, []);
 
-    if (durationMillis > 0 && positionMillis >= durationMillis - 300) {
-      const timer = setTimeout(() => {
-        if (repeatMode === 'range' && repeatRange && currentAyah.ayah === repeatRange.end) {
-          const startGlobal = getGlobalAyahNumber(surah.id, repeatRange.start, surahs);
-          playAyah(surah.id, repeatRange.start, startGlobal);
-        } else if (repeatMode !== 'single' && !memorizationMode && currentAyah.ayah < surah.verses_count) {
-          const nextGlobal = currentAyah.global + 1;
-          playAyah(surah.id, currentAyah.ayah + 1, nextGlobal);
-        }
-      }, 500);
+  const scrollToAyah = useCallback((ayahNum: number, animated: boolean) => {
+    if (!flatListRef.current || ayahs.length === 0) return;
 
-      return () => clearTimeout(timer);
-    }
-  }, [positionMillis, durationMillis, currentAyah, repeatMode, repeatRange, memorizationMode, surah.id, surahs]);
+    const targetAyahNum = Number(ayahNum);
+    if (!Number.isFinite(targetAyahNum)) return;
 
-  // Auto-scroll
-  useEffect(() => {
-    if (currentAyah && currentAyah.surah === surah.id) {
-      const view = ayahRefs.current[currentAyah.ayah];
-      if (view) {
-        view.measureLayout(
-          scrollRef.current as any,
-          (x, y) => {
-            scrollRef.current?.scrollTo({ y: y - 150, animated: true });
-          },
-          () => {}
-        );
-      }
-    }
-  }, [currentAyah]);
+    const index = ayahs.findIndex((item) => Number(item.verse_number) === targetAyahNum);
+    if (index < 0 || index >= ayahs.length) return;
 
-  useEffect(() => {
-    if (route.params?.initialAyah && ayahs.length > 0) {
-      const index = ayahs.findIndex(a => a.verse_number === route.params.initialAyah);
-      if (index !== -1) {
-        setTimeout(() => {
-          ayahRefs.current[route.params.initialAyah]?.measureLayout(
-            scrollRef.current as any,
-            (x, y) => {
-              scrollRef.current?.scrollTo({ y: y - 150, animated: true });
-            },
-            () => {}
-          );
-        }, 500);
-      }
+    try {
+      flatListRef.current.scrollToIndex({ index, animated, viewPosition: 0.45 });
+    } catch {
+      // Ignore stale list index during rapid list/layout updates.
     }
   }, [ayahs]);
 
-  const handlePlayAyah = (ayahNum: number) => {
+  // Auto-scroll current ayah into view.
+  useEffect(() => {
+    if (!currentAyah || currentAyah.surah !== surah.id) return;
+    scrollToAyah(currentAyah.ayah, true);
+  }, [currentAyah, scrollToAyah, surah.id]);
+
+  // Scroll to bookmark-selected ayah once the list is ready.
+  useEffect(() => {
+    const initialAyah = Number(route.params?.initialAyah);
+    if (!Number.isFinite(initialAyah) || initialAyah <= 0 || ayahs.length === 0) return;
+
+    const timer = setTimeout(() => {
+      scrollToAyah(initialAyah, true);
+    }, 350);
+
+    return () => clearTimeout(timer);
+  }, [ayahs.length, route.params?.initialAyah, route.params?.scrollNonce, scrollToAyah]);
+
+  const handlePlayAyah = useCallback((ayahNum: number) => {
     const global = getGlobalAyahNumber(surah.id, ayahNum, surahs);
     playAyah(surah.id, ayahNum, global);
-  };
-
-  const handlePreviousAyah = () => {
-    if (currentAyah && currentAyah.ayah > 1) {
-      const prevGlobal = currentAyah.global - 1;
-      playAyah(surah.id, currentAyah.ayah - 1, prevGlobal);
-    }
-  };
-
-  const handleNextAyah = () => {
-    if (currentAyah && currentAyah.ayah < surah.verses_count) {
-      const nextGlobal = currentAyah.global + 1;
-      playAyah(surah.id, currentAyah.ayah + 1, nextGlobal);
-    }
-  };
-
-  const formatTime = (ms: number) => {
-    if (!ms) return '0:00';
-    const mins = Math.floor(ms / 60000);
-    const secs = Math.floor((ms % 60000) / 1000);
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
-  };
+  }, [playAyah, surah.id, surahs]);
 
   // Fixed toggleTafseer — prevents flash of previous tafseer
-  const toggleTafseer = async (ayahNum: number) => {
+  const toggleTafseer = useCallback(async (ayahNum: number) => {
     if (expandedTafseer === ayahNum) {
       setExpandedTafseer(null);
+      return;
+    }
+
+    const cached = tafseerCacheRef.current[ayahNum];
+    if (cached) {
+      setCurrentTafseer(cached);
+      setLoadingTafseer(false);
+      setExpandedTafseer(ayahNum);
       return;
     }
 
@@ -225,6 +428,7 @@ export default function SurahScreen({ route }: any) {
     try {
       const text = await fetchTafseer(surah.id, ayahNum, controller.signal);
       if (!controller.signal.aborted) {
+        tafseerCacheRef.current[ayahNum] = text;
         setCurrentTafseer(text);
       }
     } catch (error: any) {
@@ -244,19 +448,19 @@ export default function SurahScreen({ route }: any) {
         abortControllerRef.current = null;
       }
     }
-  };
+  }, [expandedTafseer, surah.id]);
 
   // New: Toggle translation (similar to toggleTafseer)
-  const toggleTranslation = (ayahNum: number) => {
+  const toggleTranslation = useCallback((ayahNum: number) => {
     if (expandedTranslation === ayahNum) {
       setExpandedTranslation(null);
     } else {
       setExpandedTranslation(ayahNum);
     }
-  };
+  }, [expandedTranslation]);
 
   // Toggle bookmark
-  const toggleBookmark = async (ayahNum: number) => {
+  const toggleBookmark = useCallback(async (ayahNum: number) => {
     const key = `${surah.id}-${ayahNum}`;
     const isBookmarked = bookmarkedAyahs.has(key);
 
@@ -283,9 +487,71 @@ export default function SurahScreen({ route }: any) {
         Alert.alert('Saved', 'Ayah added to bookmarks');
       }
     }
-  };
+  }, [ayahs, bookmarkedAyahs, surah.id]);
 
   const isDark = settings.isDarkMode;
+  const currentAyahNumForThisSurah = currentAyah?.surah === surah.id ? currentAyah?.ayah : null;
+
+  const listExtraData = useMemo(() => ({
+    expandedTranslation,
+    expandedTafseer,
+    currentTafseer,
+    loadingTafseer,
+    currentAyahNumForThisSurah,
+    bookmarkedAyahs,
+    isDark,
+  }), [
+    expandedTranslation,
+    expandedTafseer,
+    currentTafseer,
+    loadingTafseer,
+    currentAyahNumForThisSurah,
+    bookmarkedAyahs,
+    isDark,
+  ]);
+
+  const onScrollToIndexFailed = useCallback(({ index }: { index: number }) => {
+    setTimeout(() => {
+      if (!flatListRef.current || ayahs.length === 0) return;
+      const safeIndex = Math.max(0, Math.min(index, ayahs.length - 1));
+      flatListRef.current.scrollToIndex({ index: safeIndex, animated: true, viewPosition: 0.45 });
+    }, LIST_SCROLL_RETRY_DELAY_MS);
+  }, [ayahs.length]);
+
+  const renderAyahItem = useCallback(({ item }: { item: any }) => {
+    const isBookmarked = bookmarkedAyahs.has(`${surah.id}-${item.verse_number}`);
+    const isActiveAyah = currentAyahNumForThisSurah === item.verse_number;
+
+    return (
+      <AyahItem
+        ayah={item}
+        isDark={isDark}
+        isActiveAyah={isActiveAyah}
+        isBookmarked={isBookmarked}
+        expandedTranslation={expandedTranslation}
+        expandedTafseer={expandedTafseer}
+        loadingTafseer={loadingTafseer}
+        currentTafseer={currentTafseer}
+        onPlayAyah={handlePlayAyah}
+        onToggleBookmark={toggleBookmark}
+        onToggleTranslation={toggleTranslation}
+        onToggleTafseer={toggleTafseer}
+      />
+    );
+  }, [
+    bookmarkedAyahs,
+    surah.id,
+    currentAyahNumForThisSurah,
+    isDark,
+    expandedTranslation,
+    expandedTafseer,
+    loadingTafseer,
+    currentTafseer,
+    handlePlayAyah,
+    toggleBookmark,
+    toggleTranslation,
+    toggleTafseer,
+  ]);
 
   return (
     <SafeAreaView style={[styles.safeArea, isDark && styles.darkSafeArea]}>
@@ -335,129 +601,27 @@ export default function SurahScreen({ route }: any) {
           </TouchableOpacity>
         </View>
 
-        <ScrollView ref={scrollRef} contentContainerStyle={styles.scrollContent}>
-          {ayahs.map((ayah) => {
-            const isBookmarked = bookmarkedAyahs.has(`${surah.id}-${ayah.verse_number}`);
+        <FlatList
+          ref={flatListRef}
+          data={ayahs}
+          keyExtractor={(item) => String(item.verse_number)}
+          renderItem={renderAyahItem}
+          contentContainerStyle={styles.scrollContent}
+          extraData={listExtraData}
+          onScrollToIndexFailed={onScrollToIndexFailed}
+          removeClippedSubviews
+          initialNumToRender={8}
+          maxToRenderPerBatch={8}
+          windowSize={11}
+          ListFooterComponent={<View style={{ height: LIST_FOOTER_HEIGHT }} />}
+        />
 
-            return (
-              <TouchableOpacity
-                key={ayah.verse_number}
-                ref={(ref) => { ayahRefs.current[ayah.verse_number] = ref; }}
-                style={[
-                  styles.ayahCard,
-                  isDark && styles.darkAyahCard,
-                  currentAyah?.surah === surah.id && currentAyah?.ayah === ayah.verse_number && styles.playingCard,
-                ]}
-                onPress={() => handlePlayAyah(ayah.verse_number)}
-              >
-                {/* Bookmark Button - Top Left */}
-                <TouchableOpacity 
-                  style={styles.bookmarkBtn}
-                  onPress={() => toggleBookmark(ayah.verse_number)}
-                >
-                  <Text style={[
-                    styles.bookmarkIcon,
-                    isBookmarked && styles.bookmarkedIcon
-                  ]}>
-                    {isBookmarked ? '★' : '☆'}
-                  </Text>
-                </TouchableOpacity>
-
-                <Text style={[styles.ayahText, { fontSize: 24 }, isDark && styles.darkText]}>
-                  {ayah.text_uthmani}
-                </Text>
-
-                {/* Bottom toggles: Translation left, Tafseer right */}
-                <View style={styles.bottomToggles}>
-                  <TouchableOpacity onPress={() => toggleTranslation(ayah.verse_number)} style={styles.tafseerToggleBtn}>
-                    <Text style={[styles.tafseerToggle, isDark && styles.darkText]}>
-                      {expandedTranslation === ayah.verse_number 
-                        ? '↑ Hide Translation' 
-                        : '↓ Show Translation'}
-                    </Text>
-                  </TouchableOpacity>
-
-                  <TouchableOpacity onPress={() => toggleTafseer(ayah.verse_number)} style={styles.tafseerToggleBtn}>
-                    <Text style={[styles.tafseerToggle, isDark && styles.darkText]}>
-                      {expandedTafseer === ayah.verse_number 
-                        ? (loadingTafseer ? 'Loading...' : '↑ Hide Tafseer') 
-                        : '↓ Show Tafseer'}
-                    </Text>
-                  </TouchableOpacity>
-                </View>
-
-                {expandedTranslation === ayah.verse_number && (
-                  <Text style={[styles.translationText, isDark && styles.darkText]}>
-                    {ayah.translation}
-                  </Text>
-                )}
-
-                {expandedTafseer === ayah.verse_number && (
-                  <Text style={[styles.tafseerText, isDark && styles.darkText]}>
-                    {currentTafseer}
-                  </Text>
-                )}
-
-                <Text style={[styles.ayahNumberBottom, isDark && styles.darkText]}>
-                  {ayah.verse_number}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
-          <View style={{ height: 130 }} />
-        </ScrollView>
-
-        {/* Player with X Button to exit listening */}
-        {currentAyah && currentAyah.surah === surah.id && (
-          <View style={[styles.playerContainer, isDark && styles.darkPlayerContainer]}>
-            <View style={[styles.playerCard, isDark && styles.darkPlayerCard]}>
-              {/* X Button to stop listening and hide player */}
-              <TouchableOpacity 
-                style={styles.exitButton}
-                onPress={stopListening}
-              >
-                <Text style={styles.exitIcon}>×</Text>
-              </TouchableOpacity>
-
-              <View style={styles.playerHeader}>
-                <Text style={styles.playerAyahNumber}>{currentAyah.ayah}</Text>
-                <Text style={[styles.playerTitle, isDark && styles.darkText]}>Currently Playing</Text>
-              </View>
-
-              <Slider
-                style={styles.slider}
-                minimumValue={0}
-                maximumValue={durationMillis || 1}
-                value={positionMillis}
-                onSlidingComplete={seekTo}
-                minimumTrackTintColor="#27ae60"
-                thumbTintColor="#27ae60"
-              />
-
-              <Text style={[styles.timeText, isDark && styles.darkText]}>
-                {formatTime(positionMillis)} / {formatTime(durationMillis)}
-              </Text>
-
-              <View style={styles.playerControls}>
-                <TouchableOpacity onPress={handlePreviousAyah} disabled={currentAyah.ayah === 1}>
-                  <Text style={[styles.controlBtn, currentAyah.ayah === 1 && styles.disabledBtn, isDark && styles.darkText]}>
-                    ← Prev
-                  </Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity onPress={togglePlayPause}>
-                  <Text style={styles.playPauseBtn}>{isPlaying ? '⏸' : '▶'}</Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity onPress={handleNextAyah} disabled={currentAyah.ayah === surah.verses_count}>
-                  <Text style={[styles.controlBtn, currentAyah.ayah === surah.verses_count && styles.disabledBtn, isDark && styles.darkText]}>
-                    Next →
-                  </Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          </View>
-        )}
+        <SurahPlayerBar
+          surahId={surah.id}
+          surahVersesCount={surah.verses_count}
+          isDark={isDark}
+          onPlayAyahByNumber={handlePlayAyah}
+        />
 
         {/* Reciter Modal */}
         <Modal visible={reciterModal} animationType="slide" transparent>

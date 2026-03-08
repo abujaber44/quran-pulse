@@ -21,6 +21,7 @@ type RootStackParamList = {
     surah: any;
     surahs: any[];
     initialAyah: number;
+    scrollNonce?: number;
   };
   // Add other routes here if needed
 };
@@ -74,6 +75,7 @@ export default function BookmarksScreen() {
       surahs: surahs,
       // Optional: scroll to specific ayah on load
       initialAyah: item.ayahNum,
+      scrollNonce: Date.now(),
     });
   };
 
