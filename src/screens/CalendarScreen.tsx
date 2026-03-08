@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -8,13 +8,13 @@ import {
   Alert,
   ScrollView,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { UI_COLORS, UI_RADII, UI_SHADOWS } from '../theme/ui';
 import { fetchRandomDailyHadith, DailyHadith } from '../services/hadithService';
 
 const API_BASE = 'https://api.aladhan.com/v1';
+const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
 type CalendarDay = {
   gregorian: {
@@ -43,6 +43,7 @@ export default function CalendarScreen() {
   const [monthData, setMonthData] = useState<CalendarDay[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [dailyHadith, setDailyHadith] = useState<DailyHadith | null>(null);
+  const [selectedDay, setSelectedDay] = useState<CalendarDay | null>(null);
 
 
   // Automatically set to today's Hijri month on first load
@@ -75,6 +76,28 @@ export default function CalendarScreen() {
       fetchHijriMonth();
     }
   }, [hijriMonth, hijriYear]);
+
+  useEffect(() => {
+    if (monthData.length === 0) {
+      setSelectedDay(null);
+      return;
+    }
+
+    const today = new Date();
+    const todayInMonth = monthData.find((day) =>
+      Number(day.gregorian.day) === today.getDate() &&
+      day.gregorian.month.number === today.getMonth() + 1 &&
+      Number(day.gregorian.year) === today.getFullYear()
+    );
+
+    setSelectedDay((previous) => {
+      if (previous) {
+        const stillExists = monthData.find((day) => day.gregorian.date === previous.gregorian.date);
+        if (stillExists) return stillExists;
+      }
+      return todayInMonth || monthData[0];
+    });
+  }, [monthData]);
 
   // Fetch Hadith of the Day (once per day, cached)
   useEffect(() => {
@@ -149,11 +172,31 @@ export default function CalendarScreen() {
     return names[month - 1] || 'Unknown';
   };
 
-  const renderDay = (day: CalendarDay) => {
+  const monthGrid = useMemo<(CalendarDay | null)[]>(() => {
+    if (monthData.length === 0) return [];
+
+    const firstWeekday = monthData[0].gregorian.weekday.en.toLowerCase();
+    const firstWeekdayIndex = Math.max(
+      WEEKDAYS.findIndex((weekday) => firstWeekday.startsWith(weekday.toLowerCase())),
+      0
+    );
+
+    const leadingEmptyCells = Array.from({ length: firstWeekdayIndex }, () => null);
+    const baseGrid = [...leadingEmptyCells, ...monthData];
+    const trailingCellsCount = (7 - (baseGrid.length % 7)) % 7;
+    const trailingEmptyCells = Array.from({ length: trailingCellsCount }, () => null);
+    return [...baseGrid, ...trailingEmptyCells];
+  }, [monthData]);
+
+  const renderDay = (day: CalendarDay | null, index: number) => {
+    if (!day) {
+      return <View key={`empty-${index}`} style={styles.emptyCell} />;
+    }
+
     const greg = day.gregorian;
     const hij = day.hijri;
+    const isSelected = selectedDay?.gregorian.date === day.gregorian.date;
 
-    // Check if this day is today
     const today = new Date();
     const isToday =
       Number(greg.day) === today.getDate() &&
@@ -163,38 +206,31 @@ export default function CalendarScreen() {
     return (
       <TouchableOpacity
         key={day.gregorian.date}
-        style={[
-          styles.dayCell,
-          isToday && styles.todayCell,
-          greg.weekday.en === 'Friday' && styles.fridayCell,
-        ]}
-        onPress={() => {
-          const hadithText = dailyHadith
-            ? `Hadith of the Day:\n\nArabic: ${dailyHadith.arabic}\n\nEnglish: ${dailyHadith.english}\n\n(${dailyHadith.source})`
-            : 'Hadith loading...';
-
-          Alert.alert(
-            `${hij.day} ${hij.month.en} ${hij.year} AH`,
-            `${greg.weekday.en}, ${greg.day} ${greg.month.en} ${greg.year}\n\n${hadithText}`
-          );
-        }}
+        style={styles.dayCell}
+        onPress={() => setSelectedDay(day)}
       >
-        <Text style={[
-          styles.hijriDay,
-          isToday && styles.todayText,
+        <View style={[
+          styles.dayCard,
+          greg.weekday.en === 'Friday' && styles.fridayCell,
+          isToday && styles.todayCell,
+          isSelected && !isToday && styles.selectedCell,
         ]}>
-          {hij.day}
-        </Text>
-        <Text style={[
-          styles.gregDay,
-          isToday && styles.todayText,
-        ]}>
-          {greg.day}
-        </Text>
-        {/* Small Gregorian month name */}
-        <Text style={styles.gregMonthSmall}>
-          {greg.month.en.substring(0, 3)}  {/* e.g., "Feb" */}
-        </Text>
+          <Text style={[
+            styles.hijriDay,
+            isToday && styles.todayText,
+          ]}>
+            {hij.day}
+          </Text>
+          <Text style={[
+            styles.gregDay,
+            isToday && styles.todayText,
+          ]}>
+            {greg.day}
+          </Text>
+          <Text style={styles.gregMonthSmall}>
+            {greg.month.en.substring(0, 3)}
+          </Text>
+        </View>
       </TouchableOpacity>
     );
   };
@@ -207,7 +243,8 @@ export default function CalendarScreen() {
         <View style={styles.explanation}>
           <Text style={styles.explanationText}>
             This calendar displays the current Islamic (Hijri) month with corresponding Gregorian dates. 
-            Tap any day to see its full details, including the Hadith of the Day for reflection and inspiration.
+            Tap any day to highlight it and view its full Hijri and Gregorian date details. 
+            The Hadith of the Day is shown below for daily reflection.
           </Text>
         </View>
 
@@ -235,11 +272,31 @@ export default function CalendarScreen() {
 
               {/* Centered calendar grid wrapper */}
               <View style={styles.gridWrapper}>
+                <View style={styles.weekdayHeader}>
+                  {WEEKDAYS.map((weekday) => (
+                    <Text key={weekday} style={styles.weekdayText}>
+                      {weekday}
+                    </Text>
+                  ))}
+                </View>
+
                 {/* Days grid */}
                 <View style={styles.grid}>
-                  {monthData.map(day => renderDay(day))}
+                  {monthGrid.map((day, index) => renderDay(day, index))}
                 </View>
               </View>
+
+              {selectedDay && (
+                <View style={styles.selectedDayContainer}>
+                  <Text style={styles.selectedDayTitle}>Selected Day</Text>
+                  <Text style={styles.selectedDayText}>
+                    Hijri: {selectedDay.hijri.day} {selectedDay.hijri.month.en} {selectedDay.hijri.year} AH
+                  </Text>
+                  <Text style={styles.selectedDayText}>
+                    Gregorian: {selectedDay.gregorian.weekday.en}, {selectedDay.gregorian.day} {selectedDay.gregorian.month.en} {selectedDay.gregorian.year}
+                  </Text>
+                </View>
+              )}
 
               {/* Hadith of the Day - displayed below the calendar */}
               {dailyHadith && (
@@ -294,6 +351,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     width: '100%',
     maxWidth: 400,
+    alignSelf: 'center',
   },
   navButton: { fontSize: 16, color: '#3498db' },
   monthTitle: { fontSize: 22, fontWeight: '600', color: UI_COLORS.text },
@@ -315,13 +373,20 @@ const styles = StyleSheet.create({
   grid: { 
     flexDirection: 'row', 
     flexWrap: 'wrap', 
-    justifyContent: 'center',
     width: '100%',
   },
-  dayCell: { 
-    width: '13.5%', 
-    aspectRatio: 1, 
-    margin: 2, 
+  dayCell: {
+    width: '14.2857%',
+    aspectRatio: 1,
+    padding: 2,
+  },
+  emptyCell: {
+    width: '14.2857%',
+    aspectRatio: 1,
+    padding: 2,
+  },
+  dayCard: {
+    flex: 1,
     backgroundColor: UI_COLORS.surface,
     borderRadius: 10, 
     justifyContent: 'center', 
@@ -331,6 +396,7 @@ const styles = StyleSheet.create({
   },
   fridayCell: { backgroundColor: UI_COLORS.friday },
   todayCell: { backgroundColor: UI_COLORS.primary },
+  selectedCell: { borderColor: UI_COLORS.accent, borderWidth: 2 },
   hijriDay: { fontSize: 16, fontWeight: '600', color: UI_COLORS.text },
   gregDay: { fontSize: 12, color: UI_COLORS.textMuted, marginTop: 4 },
   gregMonthSmall: { fontSize: 10, color: UI_COLORS.textMuted, marginTop: 2 },
@@ -348,6 +414,29 @@ const styles = StyleSheet.create({
     width: '100%',
     maxWidth: 400,
     ...UI_SHADOWS.card,
+  },
+  selectedDayContainer: {
+    marginTop: 18,
+    padding: 14,
+    backgroundColor: UI_COLORS.primarySoft,
+    borderRadius: UI_RADII.sm,
+    borderWidth: 1,
+    borderColor: '#cde9d5',
+    width: '100%',
+    maxWidth: 400,
+  },
+  selectedDayTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: UI_COLORS.primaryDeep,
+    marginBottom: 6,
+    textAlign: 'center',
+  },
+  selectedDayText: {
+    fontSize: 14,
+    color: UI_COLORS.text,
+    textAlign: 'center',
+    lineHeight: 20,
   },
   hadithTitle: {
     fontSize: 18,

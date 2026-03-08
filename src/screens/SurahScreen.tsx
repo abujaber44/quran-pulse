@@ -262,7 +262,6 @@ export default function SurahScreen({ route }: any) {
   const [bookmarkedAyahs, setBookmarkedAyahs] = useState<Set<string>>(new Set());
 
   const flatListRef = useRef<FlatList<any>>(null);
-  const hasHandledInitialAyahRef = useRef(false);
 
   const navigation = useNavigation();
 
@@ -296,7 +295,6 @@ export default function SurahScreen({ route }: any) {
     let isMounted = true;
 
     const loadData = async () => {
-      hasHandledInitialAyahRef.current = false;
       tafseerCacheRef.current = {};
       setExpandedTafseer(null);
       setCurrentTafseer('');
@@ -363,7 +361,10 @@ export default function SurahScreen({ route }: any) {
   const scrollToAyah = useCallback((ayahNum: number, animated: boolean) => {
     if (!flatListRef.current || ayahs.length === 0) return;
 
-    const index = ayahs.findIndex((item) => item.verse_number === ayahNum);
+    const targetAyahNum = Number(ayahNum);
+    if (!Number.isFinite(targetAyahNum)) return;
+
+    const index = ayahs.findIndex((item) => Number(item.verse_number) === targetAyahNum);
     if (index < 0 || index >= ayahs.length) return;
 
     try {
@@ -379,18 +380,17 @@ export default function SurahScreen({ route }: any) {
     scrollToAyah(currentAyah.ayah, true);
   }, [currentAyah, scrollToAyah, surah.id]);
 
-  // Scroll to bookmark-start ayah on first load.
+  // Scroll to bookmark-selected ayah once the list is ready.
   useEffect(() => {
-    const initialAyah = route.params?.initialAyah;
-    if (!initialAyah || ayahs.length === 0 || hasHandledInitialAyahRef.current) return;
+    const initialAyah = Number(route.params?.initialAyah);
+    if (!Number.isFinite(initialAyah) || initialAyah <= 0 || ayahs.length === 0) return;
 
-    hasHandledInitialAyahRef.current = true;
     const timer = setTimeout(() => {
       scrollToAyah(initialAyah, true);
     }, 350);
 
     return () => clearTimeout(timer);
-  }, [ayahs.length, route.params?.initialAyah, scrollToAyah]);
+  }, [ayahs.length, route.params?.initialAyah, route.params?.scrollNonce, scrollToAyah]);
 
   const handlePlayAyah = useCallback((ayahNum: number) => {
     const global = getGlobalAyahNumber(surah.id, ayahNum, surahs);
