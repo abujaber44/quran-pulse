@@ -30,6 +30,8 @@ type ScheduledAthan = {
   title: string;
   scheduledAt: Date | null;
   channelId: string | null;
+  triggerType: string;
+  triggerNote: string | null;
 };
 
 type UpcomingPrayer = {
@@ -66,6 +68,12 @@ const extractTriggerDate = (trigger: Notifications.NotificationTrigger | null): 
   return null;
 };
 
+const extractTriggerType = (trigger: Notifications.NotificationTrigger | null): string => {
+  if (!trigger || typeof trigger !== 'object') return 'unknown';
+  const rawType = (trigger as { type?: unknown }).type;
+  return typeof rawType === 'string' ? rawType : 'unknown';
+};
+
 const extractTriggerChannelId = (trigger: Notifications.NotificationTrigger | null): string | null => {
   if (!trigger || typeof trigger !== 'object') {
     return null;
@@ -73,6 +81,113 @@ const extractTriggerChannelId = (trigger: Notifications.NotificationTrigger | nu
 
   const channelId = (trigger as { channelId?: unknown }).channelId;
   return typeof channelId === 'string' ? channelId : null;
+};
+
+const buildSchedulableTriggerInput = (
+  trigger: Notifications.NotificationTrigger | null
+): Notifications.SchedulableNotificationTriggerInput | null => {
+  if (!trigger || typeof trigger !== 'object') return null;
+
+  const triggerType = extractTriggerType(trigger);
+
+  if (triggerType === 'date') {
+    const rawDate = (trigger as { date?: unknown }).date;
+    if (rawDate instanceof Date || typeof rawDate === 'number') {
+      return {
+        type: Notifications.SchedulableTriggerInputTypes.DATE,
+        date: rawDate,
+      };
+    }
+    return null;
+  }
+
+  if (triggerType === 'timeInterval') {
+    const seconds = Number((trigger as { seconds?: unknown }).seconds);
+    const repeats = Boolean((trigger as { repeats?: unknown }).repeats);
+    if (!Number.isFinite(seconds) || seconds <= 0) return null;
+    return {
+      type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
+      seconds,
+      repeats,
+    };
+  }
+
+  if (triggerType === 'calendar') {
+    const repeats = Boolean((trigger as { repeats?: unknown }).repeats);
+    const dateComponents = (trigger as { dateComponents?: unknown }).dateComponents;
+    if (!dateComponents || typeof dateComponents !== 'object') return null;
+
+    const components = dateComponents as Record<string, unknown>;
+    const result: Notifications.CalendarTriggerInput = {
+      type: Notifications.SchedulableTriggerInputTypes.CALENDAR,
+      repeats,
+    };
+
+    const numericFields = [
+      'year',
+      'month',
+      'day',
+      'hour',
+      'minute',
+      'second',
+      'weekday',
+      'weekdayOrdinal',
+      'weekOfMonth',
+      'weekOfYear',
+    ] as const;
+
+    for (const field of numericFields) {
+      const value = Number(components[field]);
+      if (Number.isFinite(value)) {
+        (result as any)[field] = value;
+      }
+    }
+
+    if (typeof components.timeZone === 'string') {
+      result.timezone = components.timeZone;
+    }
+
+    return result;
+  }
+
+  return null;
+};
+
+const resolveScheduledAtFromTrigger = async (
+  trigger: Notifications.NotificationTrigger | null
+): Promise<{ scheduledAt: Date | null; triggerNote: string | null; triggerType: string }> => {
+  const triggerType = extractTriggerType(trigger);
+  const directDate = extractTriggerDate(trigger);
+  if (directDate) {
+    return { scheduledAt: directDate, triggerNote: null, triggerType };
+  }
+
+  const schedulableTrigger = buildSchedulableTriggerInput(trigger);
+  if (!schedulableTrigger) {
+    const triggerNote =
+      Platform.OS === 'ios'
+        ? 'iOS runtime did not expose an absolute trigger date for this notification.'
+        : null;
+    return { scheduledAt: null, triggerNote, triggerType };
+  }
+
+  try {
+    const nextTriggerTimestamp = await Notifications.getNextTriggerDateAsync(schedulableTrigger);
+    if (typeof nextTriggerTimestamp === 'number') {
+      return { scheduledAt: new Date(nextTriggerTimestamp), triggerNote: null, triggerType };
+    }
+    return {
+      scheduledAt: null,
+      triggerNote: 'No next trigger date was returned by runtime.',
+      triggerType,
+    };
+  } catch {
+    const triggerNote =
+      Platform.OS === 'ios'
+        ? 'Expo Go on iOS may hide exact pending trigger timestamps.'
+        : 'Could not resolve next trigger timestamp from runtime.';
+    return { scheduledAt: null, triggerNote, triggerType };
+  }
 };
 
 const formatDateExact = (date: Date | null): string => {
@@ -134,7 +249,7 @@ export default function AthanDiagnosticsScreen({ route }: any) {
 
     try {
       const scheduled = await Notifications.getAllScheduledNotificationsAsync();
-      const athans = scheduled
+      const filteredAthanRequests = scheduled
         .filter((request) => {
           const title = typeof request.content.title === 'string' ? request.content.title : '';
           const rawData = request.content.data as { source?: unknown } | undefined;
@@ -144,8 +259,10 @@ export default function AthanDiagnosticsScreen({ route }: any) {
             source === 'athan' ||
             title.startsWith(ATHAN_NOTIFICATION_TITLE_PREFIX)
           );
-        })
-        .map((request) => {
+        });
+
+      const athans = await Promise.all(
+        filteredAthanRequests.map(async (request) => {
           const title = typeof request.content.title === 'string' ? request.content.title : '';
           const rawData = request.content.data as { prayerName?: unknown } | undefined;
           const prayerNameFromData =
@@ -153,22 +270,28 @@ export default function AthanDiagnosticsScreen({ route }: any) {
           const prayerNameFromTitle = title.startsWith(ATHAN_NOTIFICATION_TITLE_PREFIX)
             ? title.replace(ATHAN_NOTIFICATION_TITLE_PREFIX, '').trim()
             : '';
+          const resolvedSchedule = await resolveScheduledAtFromTrigger(request.trigger);
 
           return {
             identifier: request.identifier,
             prayerName: prayerNameFromData || prayerNameFromTitle || 'Unknown',
             title,
-            scheduledAt: extractTriggerDate(request.trigger),
+            scheduledAt: resolvedSchedule.scheduledAt,
             channelId: extractTriggerChannelId(request.trigger),
+            triggerType: resolvedSchedule.triggerType,
+            triggerNote: resolvedSchedule.triggerNote,
           };
         })
+      );
+
+      const sortedAthans = athans
         .sort((a, b) => {
           const aTime = a.scheduledAt ? a.scheduledAt.getTime() : Number.MAX_SAFE_INTEGER;
           const bTime = b.scheduledAt ? b.scheduledAt.getTime() : Number.MAX_SAFE_INTEGER;
           return aTime - bTime;
         });
 
-      setScheduledAthans(athans);
+      setScheduledAthans(sortedAthans);
 
       if (Platform.OS === 'android') {
         const channel = await Notifications.getNotificationChannelAsync(ATHAN_CHANNEL_ID);
@@ -246,6 +369,10 @@ export default function AthanDiagnosticsScreen({ route }: any) {
                       <Text style={styles.rowText}>
                         Scheduled: {formatDateExact(scheduledItem?.scheduledAt ?? null)}
                       </Text>
+                      {scheduledItem?.triggerNote ? (
+                        <Text style={styles.rowMeta}>Note: {scheduledItem.triggerNote}</Text>
+                      ) : null}
+                      <Text style={styles.rowMeta}>Trigger type: {scheduledItem?.triggerType || 'unknown'}</Text>
                       <Text style={styles.rowMeta}>ID: {item.identifier}</Text>
                     </View>
                   );
@@ -262,6 +389,8 @@ export default function AthanDiagnosticsScreen({ route }: any) {
                   <View key={item.identifier} style={styles.row}>
                     <Text style={styles.rowTitle}>{item.prayerName}</Text>
                     <Text style={styles.rowText}>{formatDateExact(item.scheduledAt)}</Text>
+                    {item.triggerNote ? <Text style={styles.rowMeta}>Note: {item.triggerNote}</Text> : null}
+                    <Text style={styles.rowMeta}>Trigger type: {item.triggerType}</Text>
                     <Text style={styles.rowMeta}>
                       {item.channelId ? `Channel: ${item.channelId}` : 'Channel: n/a'}
                     </Text>
