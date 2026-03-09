@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback, useRef } from 'react';
+import React, { useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import {
   View,
   Text,
@@ -34,6 +34,13 @@ interface Prayer {
   enabled: boolean;
 }
 
+type NextPrayerInfo = {
+  name: string;
+  time: string;
+  remainingMs: number;
+  isTomorrow: boolean;
+};
+
 type NominatimResult = {
   name?: string;
   display_name?: string;
@@ -64,6 +71,55 @@ const parsePrayerTime = (raw: string): { hour: number; minute: number } | null =
   if (hour < 0 || hour > 23 || minute < 0 || minute > 59) return null;
 
   return { hour, minute };
+};
+
+const formatTimeFromRaw = (raw: string): string => {
+  const parsed = parsePrayerTime(raw);
+  if (!parsed) return raw;
+  return `${String(parsed.hour).padStart(2, '0')}:${String(parsed.minute).padStart(2, '0')}`;
+};
+
+const formatCountdown = (remainingMs: number): string => {
+  const totalSeconds = Math.max(0, Math.floor(remainingMs / 1000));
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+  return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+};
+
+const getNextPrayerInfo = (prayerList: Prayer[], now: Date): NextPrayerInfo | null => {
+  for (const prayer of prayerList) {
+    const parsed = parsePrayerTime(prayer.time);
+    if (!parsed) continue;
+
+    const prayerDate = new Date(now);
+    prayerDate.setHours(parsed.hour, parsed.minute, 0, 0);
+    if (prayerDate > now) {
+      return {
+        name: prayer.name,
+        time: formatTimeFromRaw(prayer.time),
+        remainingMs: prayerDate.getTime() - now.getTime(),
+        isTomorrow: false,
+      };
+    }
+  }
+
+  const firstValidPrayer = prayerList.find((prayer) => parsePrayerTime(prayer.time));
+  if (!firstValidPrayer) return null;
+
+  const parsedFirst = parsePrayerTime(firstValidPrayer.time);
+  if (!parsedFirst) return null;
+
+  const tomorrowPrayerDate = new Date(now);
+  tomorrowPrayerDate.setDate(tomorrowPrayerDate.getDate() + 1);
+  tomorrowPrayerDate.setHours(parsedFirst.hour, parsedFirst.minute, 0, 0);
+
+  return {
+    name: firstValidPrayer.name,
+    time: formatTimeFromRaw(firstValidPrayer.time),
+    remainingMs: tomorrowPrayerDate.getTime() - now.getTime(),
+    isTomorrow: true,
+  };
 };
 
 const dedupeCities = (values: string[]): string[] => {
@@ -126,7 +182,7 @@ const fetchOpenMeteoSuggestions = async (query: string): Promise<string[]> => {
 
 export default function PrayerTimesScreen({ navigation }: any) {
   const [prayers, setPrayers] = useState<Prayer[]>([]);
-  const [nextPrayer, setNextPrayer] = useState<string>('');
+  const [countdownNow, setCountdownNow] = useState(() => Date.now());
   const [city, setCity] = useState<string>(DEFAULT_CITY);
   const [loading, setLoading] = useState(true);
   const [fetchingLocation, setFetchingLocation] = useState(false);
@@ -178,6 +234,16 @@ export default function PrayerTimesScreen({ navigation }: any) {
       await loadSavedData();
     };
     bootstrap();
+  }, []);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCountdownNow(Date.now());
+    }, 1000);
+
+    return () => {
+      clearInterval(timer);
+    };
   }, []);
 
   const resolveCoordinatesForCity = async (cityName: string): Promise<Coordinates | null> => {
@@ -326,7 +392,6 @@ export default function PrayerTimesScreen({ navigation }: any) {
         ];
 
         setPrayers(prayerList);
-        findNextPrayer(prayerList);
         await scheduleAthanNotifications(prayerList);
         setCity(cityName);
         saveCity(cityName);
@@ -349,23 +414,6 @@ export default function PrayerTimesScreen({ navigation }: any) {
     } finally {
       setLoading(false);
     }
-  };
-
-  const findNextPrayer = (prayerList: Prayer[]) => {
-    const now = new Date();
-    const currentTime = now.getHours() * 60 + now.getMinutes();
-
-    for (const prayer of prayerList) {
-      const parsed = parsePrayerTime(prayer.time);
-      if (!parsed) continue;
-
-      const prayerMinutes = parsed.hour * 60 + parsed.minute;
-      if (prayerMinutes > currentTime) {
-        setNextPrayer(prayer.name);
-        return;
-      }
-    }
-    setNextPrayer('Fajr (tomorrow)');
   };
 
   const scheduleAthanNotifications = async (prayerList: Prayer[]) => {
@@ -488,6 +536,7 @@ export default function PrayerTimesScreen({ navigation }: any) {
 
   const qiblaBearing = currentCoordinates ? calculateQiblaBearing(currentCoordinates) : null;
   const distanceToKaabaKm = currentCoordinates ? calculateDistanceToKaabaKm(currentCoordinates) : null;
+  const nextPrayer = useMemo(() => getNextPrayerInfo(prayers, new Date(countdownNow)), [prayers, countdownNow]);
 
   if (loading) {
     return (
@@ -524,7 +573,13 @@ export default function PrayerTimesScreen({ navigation }: any) {
         {/* Next Prayer summary */}
         <View style={[styles.nextPrayerCard, isDark && styles.darkCard]}>
           <Text style={[styles.nextPrayerLabel, isDark && styles.darkMutedText]}>Next Prayer</Text>
-          <Text style={[styles.nextPrayerValue, isDark && styles.darkText]}>{nextPrayer}</Text>
+          <Text style={styles.nextPrayerCountdown}>
+            {nextPrayer
+              ? nextPrayer.isTomorrow
+                ? `${nextPrayer.name} tomorrow in ${formatCountdown(nextPrayer.remainingMs)}`
+                : `${nextPrayer.name} in ${formatCountdown(nextPrayer.remainingMs)}`
+              : 'Prayer schedule unavailable'}
+          </Text>
         </View>
 
         {/* City and search controls */}
@@ -695,11 +750,12 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     textAlign: 'center',
   },
-  nextPrayerValue: {
-    fontSize: 20,
+  nextPrayerCountdown: {
+    fontSize: 19,
     color: UI_COLORS.primary,
     fontWeight: '700',
     textAlign: 'center',
+    marginTop: 2,
   },
   cityPanel: {
     backgroundColor: UI_COLORS.surface,
