@@ -75,8 +75,9 @@ export default function BookmarksScreen() {
       surahs: surahs,
       // Optional: scroll to specific ayah on load
       initialAyah: item.ayahNum,
-      scrollNonce: Date.now(),
+      scrollNonce: Date.now()
     });
+    console.log(`Navigating to Surah ${fullSurah.name_simple} at Ayah ${item.ayahNum}`);
   };
 
   const renderItem = ({ item }: { item: Bookmark }) => (

@@ -31,6 +31,8 @@ const reciters = [
 
 const LIST_FOOTER_HEIGHT = 130;
 const LIST_SCROLL_RETRY_DELAY_MS = 300;
+const INITIAL_AYAH_SCROLL_RETRY_MS = 180;
+const INITIAL_AYAH_SCROLL_MAX_ATTEMPTS = 6;
 
 type AyahItemProps = {
   ayah: any;
@@ -262,6 +264,7 @@ export default function SurahScreen({ route }: any) {
   const [bookmarkedAyahs, setBookmarkedAyahs] = useState<Set<string>>(new Set());
 
   const flatListRef = useRef<FlatList<any>>(null);
+  const initialAyahScrollInProgressRef = useRef(false);
 
   const navigation = useNavigation();
 
@@ -374,8 +377,41 @@ export default function SurahScreen({ route }: any) {
     }
   }, [ayahs]);
 
+  const scrollToAyahWithRetry = useCallback((ayahNum: number, attempt = 0) => {
+    if (!flatListRef.current || ayahs.length === 0) {
+      initialAyahScrollInProgressRef.current = false;
+      return;
+    }
+
+    const targetAyahNum = Number(ayahNum);
+    if (!Number.isFinite(targetAyahNum) || targetAyahNum <= 0) {
+      initialAyahScrollInProgressRef.current = false;
+      return;
+    }
+
+    const index = ayahs.findIndex((item) => Number(item.verse_number) === targetAyahNum);
+    if (index < 0 || index >= ayahs.length) {
+      initialAyahScrollInProgressRef.current = false;
+      return;
+    }
+
+    try {
+      flatListRef.current.scrollToIndex({ index, animated: true, viewPosition: 0.45 });
+      initialAyahScrollInProgressRef.current = false;
+    } catch {
+      if (attempt >= INITIAL_AYAH_SCROLL_MAX_ATTEMPTS) {
+        initialAyahScrollInProgressRef.current = false;
+        return;
+      }
+      setTimeout(() => {
+        scrollToAyahWithRetry(targetAyahNum, attempt + 1);
+      }, INITIAL_AYAH_SCROLL_RETRY_MS);
+    }
+  }, [ayahs]);
+
   // Auto-scroll current ayah into view.
   useEffect(() => {
+    if (initialAyahScrollInProgressRef.current) return;
     if (!currentAyah || currentAyah.surah !== surah.id) return;
     scrollToAyah(currentAyah.ayah, true);
   }, [currentAyah, scrollToAyah, surah.id]);
@@ -385,12 +421,16 @@ export default function SurahScreen({ route }: any) {
     const initialAyah = Number(route.params?.initialAyah);
     if (!Number.isFinite(initialAyah) || initialAyah <= 0 || ayahs.length === 0) return;
 
+    initialAyahScrollInProgressRef.current = true;
     const timer = setTimeout(() => {
-      scrollToAyah(initialAyah, true);
+      scrollToAyahWithRetry(initialAyah);
     }, 350);
 
-    return () => clearTimeout(timer);
-  }, [ayahs.length, route.params?.initialAyah, route.params?.scrollNonce, scrollToAyah]);
+    return () => {
+      clearTimeout(timer);
+      initialAyahScrollInProgressRef.current = false;
+    };
+  }, [ayahs.length, route.params?.initialAyah, route.params?.scrollNonce, scrollToAyahWithRetry]);
 
   const handlePlayAyah = useCallback((ayahNum: number) => {
     const global = getGlobalAyahNumber(surah.id, ayahNum, surahs);
@@ -510,10 +550,27 @@ export default function SurahScreen({ route }: any) {
     isDark,
   ]);
 
-  const onScrollToIndexFailed = useCallback(({ index }: { index: number }) => {
+  const onScrollToIndexFailed = useCallback(({
+    index,
+    averageItemLength,
+    highestMeasuredFrameIndex,
+  }: {
+    index: number;
+    averageItemLength: number;
+    highestMeasuredFrameIndex: number;
+  }) => {
     setTimeout(() => {
       if (!flatListRef.current || ayahs.length === 0) return;
       const safeIndex = Math.max(0, Math.min(index, ayahs.length - 1));
+
+       if (averageItemLength > 0) {
+        const measuredIndex = Math.max(0, Math.min(safeIndex, highestMeasuredFrameIndex + 1));
+        flatListRef.current.scrollToOffset({
+          offset: measuredIndex * averageItemLength,
+          animated: false,
+        });
+      }
+
       flatListRef.current.scrollToIndex({ index: safeIndex, animated: true, viewPosition: 0.45 });
     }, LIST_SCROLL_RETRY_DELAY_MS);
   }, [ayahs.length]);
@@ -839,10 +896,10 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 12,
     right: 12,
-    zIndex: 10,
-    padding: 8,
+    zIndex: 7,
+    padding: 3,
     backgroundColor: 'rgba(0,0,0,0.1)',
-    borderRadius: 20,
+    borderRadius: 5,
   },
   exitIcon: {
     fontSize: 24,
