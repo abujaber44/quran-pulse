@@ -16,6 +16,7 @@ import { useNavigation } from '@react-navigation/native';
 import type { StackNavigationProp } from '@react-navigation/stack';
 import { useSettings } from '../context/SettingsContext';
 import { UI_COLORS, UI_RADII, UI_SHADOWS } from '../theme/ui';
+import ScreenIntroTile from '../components/ScreenIntroTile';
 
 type RootStackParamList = {
   Surah: {
@@ -125,13 +126,12 @@ export default function BookmarksScreen() {
   return (
     //<SafeAreaView style={styles.container}>
     <View style={[styles.container, isDark && styles.darkBg]}>
-      <Text style={styles.title}>My Bookmarks</Text>
-      
-            <View style={[styles.explanation, isDark && styles.darkExplanation]}>
-              <Text style={[styles.explanationText, isDark && styles.darkText]}>
-                Your personal collection of cherished ayahs, moments of reflection, and verses that touched your heart. Return here anytime to revisit what inspires and strengthens your connection with the Quran.
-              </Text>
-            </View>
+      <ScreenIntroTile
+        title="My Bookmarks"
+        description="Your personal collection of cherished ayahs, moments of reflection, and verses that touched your heart. Return here anytime to revisit what inspires and strengthens your connection with the Quran."
+        isDark={isDark}
+        style={styles.introTile}
+      />
       <FlatList
         data={bookmarks}
         keyExtractor={(item) => `${item.surahId}-${item.ayahNum}`}
@@ -146,6 +146,7 @@ export default function BookmarksScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: UI_COLORS.background },
   darkBg: { backgroundColor: UI_COLORS.darkBackground },
+  introTile: { marginBottom: 12 },
   list: { paddingHorizontal: 16, paddingBottom: 24 },
   card: {
     backgroundColor: UI_COLORS.surface,
@@ -209,36 +210,6 @@ const styles = StyleSheet.create({
     color: UI_COLORS.text,
     textAlign: 'center',
   },
-  explanation: {
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    backgroundColor: UI_COLORS.primarySoft,
-    borderRadius: UI_RADII.sm,
-    borderWidth: 1,
-    borderColor: '#cde9d5',
-    marginHorizontal: 16,
-    marginBottom: 16,
-  },
-  darkExplanation: {
-    backgroundColor: '#1f2d2f',
-    borderColor: '#2f474a',
-  },
-  explanationText: {
-    fontSize: 14,
-    color: UI_COLORS.text,
-    textAlign: 'center',
-    lineHeight: 21,
-  },
   darkText: { color: UI_COLORS.white },
   darkMutedText: { color: '#a8b3bd' },
-  title: {
-    fontSize: 30,
-    fontWeight: '700',
-    color: UI_COLORS.primaryDeep,
-    textAlign: 'center',
-    marginTop: 8,
-    marginBottom: 14,
-    letterSpacing: 0.5,
-    fontFamily: 'AmiriQuran',
-  },
 });

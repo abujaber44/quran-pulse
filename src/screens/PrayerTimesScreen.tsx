@@ -20,6 +20,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useSettings } from '../context/SettingsContext';
 import debounce from 'lodash.debounce';
 import { UI_COLORS, UI_RADII, UI_SHADOWS } from '../theme/ui';
+import ScreenIntroTile from '../components/ScreenIntroTile';
 
 interface Prayer {
   name: string;
@@ -609,13 +610,12 @@ export default function PrayerTimesScreen() {
       >
         {/* Header: Athan Times for City */}
         <View style={styles.headerContainer}>
-          <Text style={styles.title}>Prayer Times & Athan</Text>
-          
-          <View style={styles.explanation}>
-            <Text style={styles.explanationText}>
-              Stay connected to your daily prayers with accurate athan times, reminders, and live Qibla compass guidance. Calibrate your heading, align toward the Kaaba with turn-by-turn direction, and feel a gentle vibration when Qibla is reached.
-            </Text>
-          </View>
+          <ScreenIntroTile
+            title="Prayer Times & Athan"
+            description="Stay connected to your daily prayers with accurate athan times, reminders, and live Qibla compass guidance. Calibrate your heading, align toward the Kaaba with turn-by-turn direction, and feel a gentle vibration when Qibla is reached."
+            isDark={isDark}
+            style={styles.introTile}
+          />
 
           <Text style={[styles.headerTitle, isDark && styles.darkText]}>Athan Times for</Text>
           <Text style={[styles.cityName, isDark && styles.darkText]}>{city}</Text>
@@ -758,7 +758,8 @@ const styles = StyleSheet.create({
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   loadingText: { marginTop: 16, fontSize: 16, color: UI_COLORS.text },
   scrollContent: { padding: 16, paddingBottom: 40 },
-  headerContainer: { alignItems: 'center', marginBottom: 24 },
+  headerContainer: { alignItems: 'center', marginBottom: 24, width: '100%' },
+  introTile: { width: '100%', marginHorizontal: 0, marginBottom: 12 },
   headerTitle: { fontSize: 18, color: UI_COLORS.textMuted, marginBottom: 4 },
   cityName: { fontSize: 28, fontWeight: 'bold', color: UI_COLORS.text },
   changeCityText: { fontSize: 16, color: UI_COLORS.accent, marginTop: 8, textDecorationLine: 'underline' },
@@ -783,31 +784,6 @@ const styles = StyleSheet.create({
   prayerTime: { fontSize: 16, color: UI_COLORS.primary, fontWeight: '600', marginTop: 4 },
   note: { fontSize: 14, color: UI_COLORS.textMuted, textAlign: 'center', marginTop: 24, fontStyle: 'italic' },
   darkText: { color: UI_COLORS.white },
-  explanation: {
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    backgroundColor: UI_COLORS.primarySoft,
-    borderRadius: UI_RADII.sm,
-    borderWidth: 1,
-    borderColor: '#cde9d5',
-    marginBottom: 16,
-  },
-  explanationText: {
-    fontSize: 14,
-    color: UI_COLORS.text,
-    textAlign: 'center',
-    lineHeight: 21,
-  },
-  title: {
-    fontSize: 30,
-    fontWeight: '700',
-    color: UI_COLORS.primaryDeep,
-    textAlign: 'center',
-    marginTop: 8,
-    marginBottom: 14,
-    letterSpacing: 0.5,
-    fontFamily: 'AmiriQuran',
-  },
   // Autocomplete styles
   searchContainer: {
     width: '100%',

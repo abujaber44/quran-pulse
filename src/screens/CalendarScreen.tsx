@@ -13,6 +13,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useSettings } from '../context/SettingsContext';
 import { UI_COLORS, UI_RADII, UI_SHADOWS } from '../theme/ui';
 import { fetchRandomDailyHadith, DailyHadith } from '../services/hadithService';
+import ScreenIntroTile from '../components/ScreenIntroTile';
 
 const API_BASE = 'https://api.aladhan.com/v1';
 const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -245,15 +246,12 @@ export default function CalendarScreen() {
   return (
     //<SafeAreaView style={styles.safeArea}>
       <View style={[styles.container, isDark && styles.darkBg]}>
-        <Text style={styles.title}>Islamic Calendar</Text>
-
-        <View style={[styles.explanation, isDark && styles.darkExplanation]}>
-          <Text style={[styles.explanationText, isDark && styles.darkText]}>
-            This calendar displays the current Islamic (Hijri) month with corresponding Gregorian dates. 
-            Tap any day to highlight it and view its full Hijri and Gregorian date details. 
-            The Hadith of the Day is shown below for daily reflection.
-          </Text>
-        </View>
+        <ScreenIntroTile
+          title="Islamic Calendar"
+          description="This calendar displays the current Islamic (Hijri) month with corresponding Gregorian dates. Tap any day to highlight it and view its full Hijri and Gregorian date details. The Hadith of the Day is shown below for daily reflection."
+          isDark={isDark}
+          style={styles.introTile}
+        />
 
         <View style={styles.navigation}>
           <TouchableOpacity onPress={() => changeMonth(-1)}>
@@ -294,7 +292,7 @@ export default function CalendarScreen() {
               </View>
 
               {selectedDay && (
-                <View style={[styles.selectedDayContainer, isDark && styles.darkExplanation]}>
+                <View style={[styles.selectedDayContainer, isDark && styles.darkSelectedDayContainer]}>
                   <Text style={styles.selectedDayTitle}>Selected Day</Text>
                   <Text style={[styles.selectedDayText, isDark && styles.darkText]}>
                     Hijri: {selectedDay.hijri.day} {selectedDay.hijri.month.en} {selectedDay.hijri.year} AH
@@ -340,19 +338,16 @@ const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: UI_COLORS.text },
   container: { flex: 1, backgroundColor: UI_COLORS.background, padding: 16 },
   darkBg: { backgroundColor: UI_COLORS.darkBackground },
+  introTile: {
+    marginHorizontal: 0,
+    marginBottom: 14,
+    width: '100%',
+    maxWidth: 400,
+    alignSelf: 'center',
+  },
   scrollContent: { 
     paddingBottom: 40,
     alignItems: 'center',
-  },
-  title: {
-    fontSize: 30,
-    fontWeight: '700',
-    color: UI_COLORS.primaryDeep,
-    textAlign: 'center',
-    marginTop: 8,
-    marginBottom: 14,
-    letterSpacing: 0.5,
-    fontFamily: 'AmiriQuran',
   },
   navigation: { 
     flexDirection: 'row', 
@@ -442,6 +437,10 @@ const styles = StyleSheet.create({
     width: '100%',
     maxWidth: 400,
   },
+  darkSelectedDayContainer: {
+    backgroundColor: '#1f2d2f',
+    borderColor: '#2f474a',
+  },
   selectedDayTitle: {
     fontSize: 16,
     fontWeight: '700',
@@ -501,25 +500,6 @@ const styles = StyleSheet.create({
     marginRight: 8 
   },
   legendText: { fontSize: 14, color: UI_COLORS.text },
-  explanation: {
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    backgroundColor: UI_COLORS.primarySoft,
-    borderRadius: UI_RADII.sm,
-    borderWidth: 1,
-    borderColor: '#cde9d5',
-    marginBottom: 16,
-  },
-  darkExplanation: {
-    backgroundColor: '#1f2d2f',
-    borderColor: '#2f474a',
-  },
-  explanationText: {
-    fontSize: 14,
-    color: UI_COLORS.text,
-    textAlign: 'center',
-    lineHeight: 21,
-  },
   darkText: { color: UI_COLORS.white },
   darkMutedText: { color: '#a8b3bd' },
 });

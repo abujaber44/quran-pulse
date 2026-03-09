@@ -19,6 +19,7 @@ Quran Pulse is a peaceful, modern companion app to help you connect deeply with 
 - **Auto-scroll** during playback
 - **Repeat mode** (single ayah or custom range) for memorization
 - **Memorization mode** support
+- **Deep Quran search** in Memorize & Understand — search by surah name or any Arabic/English Quran word across all ayahs, then jump directly to the matching surah/ayah
 - **99 Names of Allah (Asma Al-Husna)** – elegant display with meaning and transliteration
 - **Prayer Times, Athan & Qibla Compass** – accurate timings, full Athan audio alerts, and live Qibla direction guidance
 - **Islamic Calendar** – full Hijri month view with corresponding Gregorian dates

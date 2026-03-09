@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { useSettings } from '../context/SettingsContext';
 import { UI_COLORS } from '../theme/ui';
+import ScreenIntroTile from '../components/ScreenIntroTile';
 
 interface AllahName {
   number: number;
@@ -114,14 +115,12 @@ export default function AsmaAlHusnaScreen() {
 
   return (
     <View style={[styles.container, isDark && styles.darkContainer]}>
-      {/* Search Bar */}
-      <Text style={styles.title}>Asma'a Allah Al-Husna</Text>
-
-      <View style={styles.explanation}>
-        <Text style={styles.explanationText}>
-          Explore the 99 Beautiful Names of Allah — each name a reflection of His perfect attributes. Reflect, remember, and draw closer to your Creator through His divine names.
-        </Text>
-      </View>
+      <ScreenIntroTile
+        title="Asma'a Allah Al-Husna"
+        description="Explore the 99 Beautiful Names of Allah, each name a reflection of His perfect attributes. Reflect, remember, and draw closer to your Creator through His divine names."
+        isDark={isDark}
+        style={styles.introTile}
+      />
 
       <View style={styles.searchContainer}>
         <View style={[styles.searchWrapper, isDark && styles.darkSearchWrapper]}>
@@ -161,10 +160,13 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: UI_COLORS.background,
-    padding: 10,
+    padding: 0,
   },
   darkContainer: {
     backgroundColor: UI_COLORS.darkBackground,
+  },
+  introTile: {
+    marginBottom: 12,
   },
   searchContainer: {
     paddingHorizontal: 16,
@@ -269,27 +271,4 @@ const styles = StyleSheet.create({
   darkText: {
     color: '#fff',
   },
-  explanation: {
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    backgroundColor: '#e8f5e9',
-    borderRadius: 12,
-    marginBottom: 16,
-  },
-  explanationText: {
-    fontSize: 14,
-    color: '#2c3e50',
-    textAlign: 'center',
-    lineHeight: 20,
-  },
-  title: {
-  fontSize: 30,
-  fontWeight: '700',          // slightly heavier than 'bold'
-  color: '#1a3c34',           // deeper, richer green-teal (Islamic feel)
-  textAlign: 'center',
-  marginTop: 8,
-  marginBottom: 14,
-  letterSpacing: 0.5,         // subtle spacing for elegance
-  fontFamily: 'AmiriQuran',   // if you want Quranic font (optional)
-},
 });

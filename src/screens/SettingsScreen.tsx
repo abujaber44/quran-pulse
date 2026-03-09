@@ -12,6 +12,7 @@ import {
 import { useSettings } from '../context/SettingsContext';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { UI_COLORS, UI_RADII, UI_SHADOWS } from '../theme/ui';
+import ScreenIntroTile from '../components/ScreenIntroTile';
 
 const FONT_MIN = 24;
 const FONT_MAX = 48;
@@ -48,13 +49,11 @@ export default function SettingsScreen() {
   return (
     <SafeAreaView style={styles.container} edges={['left', 'right', 'bottom']}>
       <ScrollView contentContainerStyle={styles.scroll}>
-        <Text style={styles.title}>Settings</Text>
-
-        <View style={styles.infoCard}>
-          <Text style={styles.infoText}>
-            Adjust Arabic text size across Quran screens and set the memorization pause between repeated ayahs.
-          </Text>
-        </View>
+        <ScreenIntroTile
+          title="Settings"
+          description="Adjust Arabic text size across Quran screens and set the memorization pause between repeated ayahs."
+          style={styles.introTile}
+        />
 
         {/* Arabic Font Size */}
         <View style={styles.section}>
@@ -157,15 +156,9 @@ export default function SettingsScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: UI_COLORS.background },
   scroll: { padding: 20, paddingBottom: 42 },
-  title: {
-    fontSize: 32,
-    fontWeight: '700',
-    textAlign: 'center',
-    marginTop: 8,
-    marginBottom: 14,
-    color: UI_COLORS.primaryDeep,
-    letterSpacing: 0.4,
-    fontFamily: 'AmiriQuran',
+  introTile: {
+    marginHorizontal: 0,
+    marginBottom: 16,
   },
   section: {
     marginBottom: 16,
@@ -176,15 +169,6 @@ const styles = StyleSheet.create({
     padding: 16,
     ...UI_SHADOWS.card,
   },
-  infoCard: {
-    marginBottom: 16,
-    backgroundColor: UI_COLORS.primarySoft,
-    borderRadius: UI_RADII.sm,
-    borderWidth: 1,
-    borderColor: '#cde9d5',
-    padding: 14,
-  },
-  infoText: { fontSize: 14, color: UI_COLORS.text, textAlign: 'center', lineHeight: 21 },
   sectionTitle: { fontSize: 17, fontWeight: '600', color: UI_COLORS.text, marginBottom: 8 },
   valueText: { fontSize: 24, fontWeight: 'bold', textAlign: 'center', color: UI_COLORS.primary },
   helperText: { fontSize: 13, color: UI_COLORS.textMuted, lineHeight: 20, textAlign: 'center', marginTop: 8 },

@@ -1,23 +1,93 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
-  View,
-  Text,
+  ActivityIndicator,
+  Alert,
   FlatList,
-  TouchableOpacity,
   StyleSheet,
+  Text,
   TextInput,
+  TouchableOpacity,
   TouchableWithoutFeedback,
+  View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { fetchSurahs } from '../services/quranApi';
 import { Surah } from '../types';
 import { useSettings } from '../context/SettingsContext';
 import { UI_COLORS, UI_RADII, UI_SHADOWS } from '../theme/ui';
+import ScreenIntroTile from '../components/ScreenIntroTile';
+
+type QuranSearchEntry = {
+  surahId: number;
+  surahNameEnglish: string;
+  surahNameArabic: string;
+  ayahNumber: number;
+  ayahText: string;
+  ayahTextNormalized: string;
+};
+
+type SearchResultItem =
+  | { type: 'surah'; key: string; surah: Surah }
+  | {
+      type: 'ayah';
+      key: string;
+      surahId: number;
+      surahNameEnglish: string;
+      surahNameArabic: string;
+      ayahNumber: number;
+      ayahText: string;
+    };
+
+const stripArabicDiacritics = (value: string): string =>
+  value
+    .replace(/[\u0610-\u061A\u064B-\u065F\u0670\u06D6-\u06ED]/g, '')
+    .replace(/\u0640/g, '');
+
+const normalizeForSearch = (value: string): string =>
+  stripArabicDiacritics(value)
+    .replace(/[إأآٱ]/g, 'ا')
+    .replace(/ى/g, 'ي')
+    .replace(/ة/g, 'ه')
+    .toLowerCase()
+    .trim();
+
+const renderHighlightedText = (
+  text: string,
+  query: string,
+  baseStyle: any,
+  highlightStyle: any
+) => {
+  const cleanQuery = query.trim();
+  if (!cleanQuery) return <Text style={baseStyle}>{text}</Text>;
+
+  const lowerText = text.toLowerCase();
+  const lowerQuery = cleanQuery.toLowerCase();
+  const start = lowerText.indexOf(lowerQuery);
+
+  if (start === -1) return <Text style={baseStyle}>{text}</Text>;
+
+  const end = start + cleanQuery.length;
+  const before = text.slice(0, start);
+  const match = text.slice(start, end);
+  const after = text.slice(end);
+
+  return (
+    <Text style={baseStyle}>
+      {before}
+      <Text style={highlightStyle}>{match}</Text>
+      {after}
+    </Text>
+  );
+};
 
 export default function MemorizeUnderstandScreen({ navigation }: any) {
   const [surahs, setSurahs] = useState<Surah[]>([]);
-  const [filteredSurahs, setFilteredSurahs] = useState<Surah[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
+  const [quranIndex, setQuranIndex] = useState<QuranSearchEntry[] | null>(null);
+  const [isIndexLoading, setIsIndexLoading] = useState(false);
+  const [indexError, setIndexError] = useState<string | null>(null);
+  const isIndexRequestInFlightRef = useRef(false);
+
   const { settings } = useSettings();
   const isDark = settings.isDarkMode;
   const arabicNameFontSize = Math.max(20, settings.arabicFontSize - 10);
@@ -25,37 +95,144 @@ export default function MemorizeUnderstandScreen({ navigation }: any) {
   useEffect(() => {
     fetchSurahs().then((data) => {
       setSurahs(data);
-      setFilteredSurahs(data);
     });
   }, []);
 
-  // Real-time search filter
-  useEffect(() => {
-    if (!searchQuery.trim()) {
-      setFilteredSurahs(surahs);
-      return;
-    }
+  const surahLookupById = useMemo(
+    () => new Map(surahs.map((surah) => [Number(surah.id), surah])),
+    [surahs]
+  );
 
-    const query = searchQuery.toLowerCase().trim();
-    const filtered = surahs.filter((surah) => {
+  const ensureQuranIndex = useCallback(async () => {
+    if (quranIndex || isIndexRequestInFlightRef.current || surahs.length === 0) return;
+
+    isIndexRequestInFlightRef.current = true;
+    setIsIndexLoading(true);
+    setIndexError(null);
+
+    try {
+      const response = await fetch('https://api.alquran.cloud/v1/quran/quran-uthmani');
+      const payload = (await response.json()) as any;
+      const apiSurahs = payload?.data?.surahs;
+
+      if (!response.ok || !Array.isArray(apiSurahs)) {
+        throw new Error('Invalid Quran search response');
+      }
+
+      const entries: QuranSearchEntry[] = [];
+
+      for (const apiSurah of apiSurahs) {
+        const surahId = Number(apiSurah.number);
+        const surahMeta = surahLookupById.get(surahId);
+        const surahNameEnglish =
+          surahMeta?.name_simple || apiSurah.englishName || `Surah ${surahId}`;
+        const surahNameArabic = surahMeta?.name_arabic || apiSurah.name || '';
+        const ayahs = Array.isArray(apiSurah.ayahs) ? apiSurah.ayahs : [];
+
+        for (const ayah of ayahs) {
+          const ayahNumber = Number(ayah.numberInSurah);
+          const ayahText = typeof ayah.text === 'string' ? ayah.text : '';
+          const ayahTextNormalized = normalizeForSearch(ayahText);
+
+          if (!ayahText || !ayahTextNormalized || !Number.isFinite(ayahNumber)) continue;
+
+          entries.push({
+            surahId,
+            surahNameEnglish,
+            surahNameArabic,
+            ayahNumber,
+            ayahText: stripArabicDiacritics(ayahText),
+            ayahTextNormalized,
+          });
+        }
+      }
+
+      setQuranIndex(entries);
+      setIndexError(null);
+    } catch (error) {
+      console.error('Global Quran search index load failed:', error);
+      setIndexError('Could not load full Quran search right now. Please try again.');
+    } finally {
+      isIndexRequestInFlightRef.current = false;
+      setIsIndexLoading(false);
+    }
+  }, [quranIndex, surahs.length, surahLookupById]);
+
+  const trimmedSearch = searchQuery.trim();
+  const normalizedQuery = useMemo(() => normalizeForSearch(trimmedSearch), [trimmedSearch]);
+
+  useEffect(() => {
+    if (trimmedSearch.length < 2) return;
+    if (!quranIndex && surahs.length > 0) {
+      void ensureQuranIndex();
+    }
+  }, [trimmedSearch.length, quranIndex, surahs.length, ensureQuranIndex]);
+
+  const surahNameMatches = useMemo(() => {
+    if (!trimmedSearch) return surahs;
+    return surahs.filter((surah) => {
       return (
-        surah.name_simple.toLowerCase().includes(query) ||
-        surah.name_arabic.includes(searchQuery)
+        normalizeForSearch(surah.name_simple).includes(normalizedQuery) ||
+        normalizeForSearch(surah.name_arabic).includes(normalizedQuery)
       );
     });
+  }, [surahs, trimmedSearch, normalizedQuery]);
 
-    setFilteredSurahs(filtered);
-  }, [searchQuery, surahs]);
+  const ayahMatches = useMemo(() => {
+    if (!trimmedSearch || normalizedQuery.length < 2 || !quranIndex) return [];
 
-  // Clear search function
+    const matches: QuranSearchEntry[] = [];
+    for (const entry of quranIndex) {
+      if (entry.ayahTextNormalized.includes(normalizedQuery)) {
+        matches.push(entry);
+      }
+      if (matches.length >= 60) break;
+    }
+    return matches;
+  }, [trimmedSearch, normalizedQuery, quranIndex]);
+
+  const searchResults = useMemo<SearchResultItem[]>(() => {
+    if (!trimmedSearch) return [];
+
+    const surahResults: SearchResultItem[] = surahNameMatches.slice(0, 20).map((surah) => ({
+      type: 'surah',
+      key: `surah-${surah.id}`,
+      surah,
+    }));
+
+    const ayahResults: SearchResultItem[] = ayahMatches.map((entry, index) => ({
+      type: 'ayah',
+      key: `ayah-${entry.surahId}-${entry.ayahNumber}-${index}`,
+      surahId: entry.surahId,
+      surahNameEnglish: entry.surahNameEnglish,
+      surahNameArabic: entry.surahNameArabic,
+      ayahNumber: entry.ayahNumber,
+      ayahText: entry.ayahText,
+    }));
+
+    return [...surahResults, ...ayahResults];
+  }, [trimmedSearch, surahNameMatches, ayahMatches]);
+
   const clearSearch = () => {
     setSearchQuery('');
   };
 
-  const renderSurah = ({ item }: { item: Surah }) => (
+  const navigateToSurah = useCallback(
+    (surah: Surah, initialAyah?: number) => {
+      const params: any = { surah, surahs };
+      if (initialAyah) {
+        params.initialAyah = initialAyah;
+        params.scrollNonce = Date.now();
+      }
+      navigation.navigate('Surah', params);
+    },
+    [navigation, surahs]
+  );
+
+  const renderBrowseSurah = ({ item }: { item: Surah }) => (
     <TouchableOpacity
       style={[styles.surahCard, isDark && styles.darkCard]}
-      onPress={() => navigation.navigate('Surah', { surah: item, surahs })}
+      onPress={() => navigateToSurah(item)}
     >
       <View style={styles.surahInfo}>
         <Text style={styles.surahNumber}>{item.id}</Text>
@@ -70,34 +247,89 @@ export default function MemorizeUnderstandScreen({ navigation }: any) {
     </TouchableOpacity>
   );
 
+  const renderSearchResult = ({ item }: { item: SearchResultItem }) => {
+    if (item.type === 'surah') {
+      return (
+        <TouchableOpacity
+          style={[styles.searchResultCard, isDark && styles.darkCard]}
+          onPress={() => navigateToSurah(item.surah)}
+        >
+          <View style={styles.resultBadgeRow}>
+            <Text style={styles.resultBadge}>Surah Match</Text>
+          </View>
+          {renderHighlightedText(
+            item.surah.name_simple,
+            trimmedSearch,
+            [styles.searchResultTitle, isDark && styles.darkText],
+            styles.highlightText
+          )}
+          {renderHighlightedText(
+            item.surah.name_arabic,
+            trimmedSearch,
+            [styles.searchResultArabic, isDark && styles.darkText],
+            styles.highlightText
+          )}
+        </TouchableOpacity>
+      );
+    }
+
+    const targetSurah = surahLookupById.get(item.surahId);
+    const handlePress = () => {
+      if (!targetSurah) {
+        Alert.alert('Error', 'Could not load the selected surah.');
+        return;
+      }
+      navigateToSurah(targetSurah, item.ayahNumber);
+    };
+
+    return (
+      <TouchableOpacity
+        style={[styles.searchResultCard, isDark && styles.darkCard]}
+        onPress={handlePress}
+      >
+        <View style={styles.resultBadgeRow}>
+          <Text style={styles.resultBadge}>Ayah Match</Text>
+          <Text style={styles.searchResultMeta}>Ayah {item.ayahNumber}</Text>
+        </View>
+        {renderHighlightedText(
+          item.surahNameEnglish,
+          trimmedSearch,
+          [styles.searchResultTitle, isDark && styles.darkText],
+          styles.highlightText
+        )}
+        <Text style={[styles.searchResultSubMeta, isDark && styles.darkMutedText]}>
+          {item.surahNameArabic}
+        </Text>
+        {renderHighlightedText(
+          item.ayahText,
+          stripArabicDiacritics(trimmedSearch),
+          [styles.searchResultAyahText, isDark && styles.darkText],
+          styles.highlightText
+        )}
+      </TouchableOpacity>
+    );
+  };
+
+  const isSearchMode = trimmedSearch.length > 0;
+  const shouldShowGlobalLoading =
+    isSearchMode && normalizedQuery.length >= 2 && !quranIndex && isIndexLoading;
+
   return (
     <SafeAreaView style={[styles.safeArea, isDark && styles.darkBg]} edges={['left', 'right', 'bottom']}>
       <View style={[styles.container, isDark && styles.darkBg]}>
-        {/* <TouchableOpacity 
-          style={styles.backButton}
-          onPress={() => navigation.navigate('Landing')}
-        >
-          <Text style={styles.backIcon}>← Home</Text>
-        </TouchableOpacity> */}
+        <ScreenIntroTile
+          title="Memorize & Understand"
+          subtitle="Explore the Quran to memorize and reflect"
+          description="A dedicated space to memorize, reflect, and understand the Quran ayah by ayah, with deep search across all surahs so you can jump straight to any matching surah or ayah."
+          isDark={isDark}
+          style={styles.introTile}
+        />
 
-        <View style={styles.header}>
-          <View style={styles.titleContainer}>
-            <Text style={styles.title}>Memorize & Understand</Text>
-            <Text style={[styles.subtitle, isDark && styles.darkMutedText]}>Explore the Quran to memorize and reflect</Text>
-          </View>
-        </View>
-        <View style={[styles.explanation, isDark && styles.darkExplanation]}>
-                <Text style={[styles.explanationText, isDark && styles.darkText]}>
-                  A dedicated space to memorize and deeply understand the Quran. Listen, read, reflect, and repeat — ayah by ayah — until the words of Allah settle firmly in your heart and mind.
-                </Text>
-          </View>
-
-        {/* Search Bar with Clear (×) Button */}
         <View style={styles.searchContainer}>
           <View style={[styles.searchWrapper, isDark && styles.darkCard]}>
             <TextInput
               style={[styles.searchInput, isDark && styles.darkText]}
-              placeholder="Search Surah (English or Arabic)..."
+              placeholder="Search Surah or Quran words..."
               placeholderTextColor="#aaa"
               value={searchQuery}
               onChangeText={setSearchQuery}
@@ -105,7 +337,6 @@ export default function MemorizeUnderstandScreen({ navigation }: any) {
               autoCorrect={false}
             />
 
-            {/* Clear Button (×) */}
             {searchQuery.length > 0 && (
               <TouchableWithoutFeedback onPress={clearSearch}>
                 <View style={styles.clearButton}>
@@ -116,14 +347,39 @@ export default function MemorizeUnderstandScreen({ navigation }: any) {
           </View>
         </View>
 
-        {/* Surahs List */}
-        <FlatList
-          data={filteredSurahs}
-          keyExtractor={(item) => item.id.toString()}
-          renderItem={renderSurah}
-          contentContainerStyle={styles.list}
-          showsVerticalScrollIndicator={false}
-        />
+        {shouldShowGlobalLoading && (
+          <View style={styles.loadingRow}>
+            <ActivityIndicator size="small" color={UI_COLORS.primary} />
+            <Text style={[styles.loadingRowText, isDark && styles.darkMutedText]}>
+              Searching the full Quran...
+            </Text>
+          </View>
+        )}
+
+        {isSearchMode && indexError && <Text style={styles.errorText}>{indexError}</Text>}
+
+        {isSearchMode ? (
+          <FlatList
+            data={searchResults}
+            keyExtractor={(item) => item.key}
+            renderItem={renderSearchResult}
+            contentContainerStyle={styles.list}
+            showsVerticalScrollIndicator={false}
+            ListEmptyComponent={
+              <Text style={[styles.emptyText, isDark && styles.darkMutedText]}>
+                No matches found. Try another word or surah name.
+              </Text>
+            }
+          />
+        ) : (
+          <FlatList
+            data={surahs}
+            keyExtractor={(item) => item.id.toString()}
+            renderItem={renderBrowseSurah}
+            contentContainerStyle={styles.list}
+            showsVerticalScrollIndicator={false}
+          />
+        )}
       </View>
     </SafeAreaView>
   );
@@ -133,42 +389,7 @@ const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: UI_COLORS.background },
   container: { flex: 1, backgroundColor: UI_COLORS.background },
   darkBg: { backgroundColor: UI_COLORS.darkBackground },
-  header: { 
-    flexDirection: 'row', 
-    alignItems: 'center', 
-    paddingHorizontal: 16,
-    paddingTop: 4,
-    paddingBottom: 18,
-  },
-  settingsBtn: {
-    width: 50,
-    height: 50,
-    backgroundColor: 'rgba(255, 255, 255, 0.15)',
-    borderRadius: 25,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 16,
-  },
-  settingsIcon: {
-    fontSize: 24,
-    color: '#fff',
-  },
-  titleContainer: { flex: 1 },
-  title: { 
-    fontSize: 34, 
-    fontWeight: 'bold', 
-    color: UI_COLORS.primaryDeep, 
-    fontFamily: 'AmiriQuran',
-    textAlign: 'center', 
-    letterSpacing: 0.4,
-  },
-  subtitle: { 
-    fontSize: 17, 
-    color: UI_COLORS.textMuted, 
-    marginTop: 4,
-    fontStyle: 'italic',
-    textAlign: 'center', 
-  },
+  introTile: { marginBottom: 12 },
   searchContainer: {
     paddingHorizontal: 16,
     paddingBottom: 12,
@@ -197,81 +418,118 @@ const styles = StyleSheet.create({
     fontSize: 20,
     color: UI_COLORS.textMuted,
   },
-  featureButtonsContainer: {
+  loadingRow: {
     flexDirection: 'row',
-    flexWrap: 'wrap', // ← Allows wrapping on small screens
-    paddingHorizontal: 16,
-    marginBottom: 12,
-    gap: 10,
-  },
-  featureButton: {
-    flex: 1,
-    minWidth: 140, // Ensures buttons don't get too narrow
-    backgroundColor: '#27ae60',
-    paddingVertical: 16,
-    borderRadius: 16,
     alignItems: 'center',
-    elevation: 4,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    marginBottom: 10,
+    justifyContent: 'center',
+    marginTop: 2,
+    marginBottom: 8,
+    gap: 8,
   },
-  featureButtonText: {
-    color: '#fff',
-    fontSize: 14,
-    fontWeight: '600',
+  loadingRowText: {
+    fontSize: 13,
+    color: UI_COLORS.textMuted,
+  },
+  errorText: {
+    color: UI_COLORS.danger,
     textAlign: 'center',
+    marginBottom: 8,
+    fontSize: 13,
+    paddingHorizontal: 16,
   },
   list: { paddingHorizontal: 16, paddingBottom: 22 },
-  surahCard: { 
+  surahCard: {
     backgroundColor: UI_COLORS.surface,
-    padding: 20, 
-    marginVertical: 8, 
+    padding: 20,
+    marginVertical: 8,
     borderRadius: UI_RADII.lg,
-    flexDirection: 'row', 
-    justifyContent: 'space-between', 
-    alignItems: 'center', 
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     borderWidth: 1,
     borderColor: UI_COLORS.border,
     borderLeftWidth: 5,
     borderLeftColor: UI_COLORS.primary,
     ...UI_SHADOWS.card,
   },
+  searchResultCard: {
+    backgroundColor: UI_COLORS.surface,
+    padding: 16,
+    marginVertical: 6,
+    borderRadius: UI_RADII.lg,
+    borderWidth: 1,
+    borderColor: UI_COLORS.border,
+    ...UI_SHADOWS.card,
+  },
   darkCard: { backgroundColor: UI_COLORS.darkSurface, borderColor: '#30353b' },
   surahInfo: { flexDirection: 'row', alignItems: 'center' },
-  surahNumber: { fontSize: 24, fontWeight: 'bold', color: UI_COLORS.accent, marginRight: 20, width: 50, textAlign: 'center' },
+  surahNumber: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: UI_COLORS.accent,
+    marginRight: 20,
+    width: 50,
+    textAlign: 'center',
+  },
   surahNameEnglish: { fontSize: 16, color: UI_COLORS.text, fontWeight: '600' },
   surahNameArabic: { fontFamily: 'AmiriQuran', fontSize: 24, color: UI_COLORS.text, marginTop: 4 },
   versesCount: { fontSize: 14, color: UI_COLORS.textMuted },
-  backButton: { 
-    padding: 6, 
-    alignSelf: 'flex-start', // ← Align left
-    marginTop: 40,
-    marginLeft: 16,
-    marginBottom: 20, // ← Increased space below so header appears clearly below
+  resultBadgeRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
   },
-  backIcon: { fontSize: 18, color: '#3498db', fontWeight: '600' },
-  explanation: {
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    backgroundColor: UI_COLORS.primarySoft,
-    borderRadius: UI_RADII.sm,
-    borderWidth: 1,
-    borderColor: '#cde9d5',
-    marginHorizontal: 16,
-    marginBottom: 16,
+  resultBadge: {
+    fontSize: 11,
+    color: UI_COLORS.white,
+    backgroundColor: UI_COLORS.accent,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 10,
+    overflow: 'hidden',
+    fontWeight: '700',
   },
-  darkExplanation: {
-    backgroundColor: '#1f2d2f',
-    borderColor: '#2f474a',
+  searchResultMeta: {
+    fontSize: 12,
+    color: UI_COLORS.textMuted,
+    fontWeight: '600',
   },
-  explanationText: {
-    fontSize: 14,
+  searchResultTitle: {
+    fontSize: 18,
+    fontWeight: '700',
     color: UI_COLORS.text,
+  },
+  searchResultArabic: {
+    fontSize: 24,
+    marginTop: 4,
+    color: UI_COLORS.text,
+    fontFamily: 'AmiriQuran',
+  },
+  searchResultSubMeta: {
+    fontSize: 15,
+    marginTop: 2,
+    color: UI_COLORS.textMuted,
+    fontFamily: 'AmiriQuran',
+  },
+  searchResultAyahText: {
+    fontSize: 15,
+    lineHeight: 24,
+    marginTop: 8,
+    color: UI_COLORS.text,
+    textAlign: 'right',
+    fontFamily: 'AmiriQuran',
+  },
+  highlightText: {
+    backgroundColor: '#ffe58f',
+    color: UI_COLORS.primaryDeep,
+    fontWeight: '700',
+  },
+  emptyText: {
+    fontSize: 15,
+    color: UI_COLORS.textMuted,
     textAlign: 'center',
-    lineHeight: 21,
+    marginTop: 40,
   },
   darkText: { color: UI_COLORS.white },
   darkMutedText: { color: '#a8b3bd' },

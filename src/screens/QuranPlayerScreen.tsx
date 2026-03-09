@@ -18,6 +18,7 @@ import { useSettings } from '../context/SettingsContext';
 import { fetchSurahs } from '../services/quranApi';
 import { getSurahAudioUrl } from '../services/quranApi';
 import { UI_COLORS, UI_RADII, UI_SHADOWS } from '../theme/ui';
+import ScreenIntroTile from '../components/ScreenIntroTile';
 
 interface Surah {
   id: number;
@@ -300,14 +301,12 @@ export default function QuranPlayerScreen() {
 
   return (
     <View style={[styles.container, isDark && styles.darkContainer]}>
-      {/* Reciter Selector */}
-      <Text style={[styles.title, isDark && styles.darkText]}>Listen to Quran</Text>
-      
-      <View style={[styles.explanation, isDark && styles.darkExplanation]}>
-        <Text style={[styles.explanationText, isDark && styles.darkText]}>
-          Listen to the beautiful recitation of the Quran with your favorite reciters. Let the words of Allah soothe your soul, guide your day, and bring tranquility to your heart.
-        </Text>
-      </View>
+      <ScreenIntroTile
+        title="Listen to Quran"
+        description="Listen to the beautiful recitation of the Quran with your favorite reciters. Let the words of Allah soothe your soul, guide your day, and bring tranquility to your heart."
+        isDark={isDark}
+        style={styles.introTile}
+      />
 
       <TouchableOpacity
         style={[styles.reciterSelector, isDark && styles.darkReciterSelector]}
@@ -526,33 +525,5 @@ const styles = StyleSheet.create({
   reciterModalText: { fontSize: 16 },
   modalClose: { textAlign: 'center', padding: 14, color: UI_COLORS.danger, fontWeight: 'bold' },
   darkText: { color: UI_COLORS.white },
-  explanation: {
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    backgroundColor: UI_COLORS.primarySoft,
-    borderRadius: UI_RADII.sm,
-    borderWidth: 1,
-    borderColor: '#cde9d5',
-    marginBottom: 16,
-  },
-  darkExplanation: {
-    backgroundColor: '#1f2d2f',
-    borderColor: '#2f474a',
-  },
-  explanationText: {
-    fontSize: 14,
-    color: UI_COLORS.text,
-    textAlign: 'center',
-    lineHeight: 21,
-  },
-  title: {
-    fontSize: 30,
-    fontWeight: '700',
-    color: UI_COLORS.primaryDeep,
-    textAlign: 'center',
-    marginTop: 8,
-    marginBottom: 14,
-    letterSpacing: 0.5,
-    fontFamily: 'AmiriQuran',
-  },
+  introTile: { marginBottom: 12 },
 });
