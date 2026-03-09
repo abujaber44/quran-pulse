@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useSettings } from '../context/SettingsContext';
 import { UI_COLORS, UI_RADII, UI_SHADOWS } from '../theme/ui';
 import { fetchRandomDailyHadith, DailyHadith } from '../services/hadithService';
 
@@ -44,6 +45,9 @@ export default function CalendarScreen() {
   const [loading, setLoading] = useState<boolean>(true);
   const [dailyHadith, setDailyHadith] = useState<DailyHadith | null>(null);
   const [selectedDay, setSelectedDay] = useState<CalendarDay | null>(null);
+  const { settings } = useSettings();
+  const isDark = settings.isDarkMode;
+  const hadithArabicFontSize = Math.max(18, settings.arabicFontSize - 10);
 
 
   // Automatically set to today's Hijri month on first load
@@ -211,23 +215,26 @@ export default function CalendarScreen() {
       >
         <View style={[
           styles.dayCard,
+          isDark && styles.darkCard,
           greg.weekday.en === 'Friday' && styles.fridayCell,
           isToday && styles.todayCell,
           isSelected && !isToday && styles.selectedCell,
         ]}>
           <Text style={[
             styles.hijriDay,
+            isDark && !isToday && styles.darkText,
             isToday && styles.todayText,
           ]}>
             {hij.day}
           </Text>
           <Text style={[
             styles.gregDay,
+            isDark && !isToday && styles.darkMutedText,
             isToday && styles.todayText,
           ]}>
             {greg.day}
           </Text>
-          <Text style={styles.gregMonthSmall}>
+          <Text style={[styles.gregMonthSmall, isDark && !isToday && styles.darkMutedText]}>
             {greg.month.en.substring(0, 3)}
           </Text>
         </View>
@@ -237,11 +244,11 @@ export default function CalendarScreen() {
 
   return (
     //<SafeAreaView style={styles.safeArea}>
-      <View style={styles.container}>
+      <View style={[styles.container, isDark && styles.darkBg]}>
         <Text style={styles.title}>Islamic Calendar</Text>
 
-        <View style={styles.explanation}>
-          <Text style={styles.explanationText}>
+        <View style={[styles.explanation, isDark && styles.darkExplanation]}>
+          <Text style={[styles.explanationText, isDark && styles.darkText]}>
             This calendar displays the current Islamic (Hijri) month with corresponding Gregorian dates. 
             Tap any day to highlight it and view its full Hijri and Gregorian date details. 
             The Hadith of the Day is shown below for daily reflection.
@@ -253,7 +260,7 @@ export default function CalendarScreen() {
             <Text style={styles.navButton}>← Prev</Text>
           </TouchableOpacity>
 
-          <Text style={styles.monthTitle}>
+          <Text style={[styles.monthTitle, isDark && styles.darkText]}>
             {getMonthName(hijriMonth)} {hijriYear} AH
           </Text>
 
@@ -265,16 +272,16 @@ export default function CalendarScreen() {
         {loading ? (
           <ActivityIndicator size="large" color="#27ae60" />
         ) : monthData.length === 0 ? (
-          <Text style={styles.noData}>No data available for this month</Text>
+          <Text style={[styles.noData, isDark && styles.darkMutedText]}>No data available for this month</Text>
         ) : (
           <>
             <ScrollView contentContainerStyle={styles.scrollContent}>
 
               {/* Centered calendar grid wrapper */}
               <View style={styles.gridWrapper}>
-                <View style={styles.weekdayHeader}>
+                <View style={[styles.weekdayHeader, isDark && styles.darkWeekdayHeader]}>
                   {WEEKDAYS.map((weekday) => (
-                    <Text key={weekday} style={styles.weekdayText}>
+                    <Text key={weekday} style={[styles.weekdayText, isDark && styles.darkText]}>
                       {weekday}
                     </Text>
                   ))}
@@ -287,12 +294,12 @@ export default function CalendarScreen() {
               </View>
 
               {selectedDay && (
-                <View style={styles.selectedDayContainer}>
+                <View style={[styles.selectedDayContainer, isDark && styles.darkExplanation]}>
                   <Text style={styles.selectedDayTitle}>Selected Day</Text>
-                  <Text style={styles.selectedDayText}>
+                  <Text style={[styles.selectedDayText, isDark && styles.darkText]}>
                     Hijri: {selectedDay.hijri.day} {selectedDay.hijri.month.en} {selectedDay.hijri.year} AH
                   </Text>
-                  <Text style={styles.selectedDayText}>
+                  <Text style={[styles.selectedDayText, isDark && styles.darkText]}>
                     Gregorian: {selectedDay.gregorian.weekday.en}, {selectedDay.gregorian.day} {selectedDay.gregorian.month.en} {selectedDay.gregorian.year}
                   </Text>
                 </View>
@@ -300,11 +307,13 @@ export default function CalendarScreen() {
 
               {/* Hadith of the Day - displayed below the calendar */}
               {dailyHadith && (
-                <View style={styles.hadithContainer}>
-                  <Text style={styles.hadithTitle}>Hadith of the Day</Text>
-                  <Text style={styles.hadithArabic}>{dailyHadith.arabic}</Text>
-                  <Text style={styles.hadithEnglish}>{dailyHadith.english}</Text>
-                  <Text style={styles.hadithSource}>({dailyHadith.source})</Text>
+                <View style={[styles.hadithContainer, isDark && styles.darkCard]}>
+                  <Text style={[styles.hadithTitle, isDark && styles.darkText]}>Hadith of the Day</Text>
+                  <Text style={[styles.hadithArabic, { fontSize: hadithArabicFontSize }, isDark && styles.darkText]}>
+                    {dailyHadith.arabic}
+                  </Text>
+                  <Text style={[styles.hadithEnglish, isDark && styles.darkMutedText]}>{dailyHadith.english}</Text>
+                  <Text style={[styles.hadithSource, isDark && styles.darkMutedText]}>({dailyHadith.source})</Text>
                 </View>
               )}
 
@@ -312,11 +321,11 @@ export default function CalendarScreen() {
               <View style={styles.legend}>
                 <View style={styles.legendItem}>
                   <View style={[styles.legendColor, { backgroundColor: '#27ae60' }]} />
-                  <Text style={styles.legendText}>Today</Text>
+                  <Text style={[styles.legendText, isDark && styles.darkText]}>Today</Text>
                 </View>
                 <View style={styles.legendItem}>
                   <View style={[styles.legendColor, { backgroundColor: '#b3e0f9' }]} />
-                  <Text style={styles.legendText}>Friday (Jumu'ah)</Text>
+                  <Text style={[styles.legendText, isDark && styles.darkText]}>Friday (Jumu'ah)</Text>
                 </View>
               </View>
             </ScrollView>
@@ -330,6 +339,7 @@ export default function CalendarScreen() {
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: UI_COLORS.text },
   container: { flex: 1, backgroundColor: UI_COLORS.background, padding: 16 },
+  darkBg: { backgroundColor: UI_COLORS.darkBackground },
   scrollContent: { 
     paddingBottom: 40,
     alignItems: 'center',
@@ -364,6 +374,9 @@ const styles = StyleSheet.create({
     width: '100%',
     maxWidth: 400,
   },
+  darkWeekdayHeader: {
+    backgroundColor: '#1f2d2f',
+  },
   weekdayText: { flex: 1, textAlign: 'center', fontWeight: 'bold', color: UI_COLORS.text },
   gridWrapper: {
     alignItems: 'center',
@@ -393,6 +406,10 @@ const styles = StyleSheet.create({
     alignItems: 'center', 
     borderWidth: 1, 
     borderColor: UI_COLORS.border,
+  },
+  darkCard: {
+    backgroundColor: UI_COLORS.darkSurface,
+    borderColor: '#30353b',
   },
   fridayCell: { backgroundColor: UI_COLORS.friday },
   todayCell: { backgroundColor: UI_COLORS.primary },
@@ -493,10 +510,16 @@ const styles = StyleSheet.create({
     borderColor: '#cde9d5',
     marginBottom: 16,
   },
+  darkExplanation: {
+    backgroundColor: '#1f2d2f',
+    borderColor: '#2f474a',
+  },
   explanationText: {
     fontSize: 14,
     color: UI_COLORS.text,
     textAlign: 'center',
     lineHeight: 21,
   },
+  darkText: { color: UI_COLORS.white },
+  darkMutedText: { color: '#a8b3bd' },
 });

@@ -1,5 +1,5 @@
 // src/screens/SettingsScreen.tsx
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import {
   View,
   Text,
@@ -7,149 +7,145 @@ import {
   StyleSheet,
   ScrollView,
   Alert,
-  Switch,
+  Linking,
 } from 'react-native';
-import Slider from '@react-native-community/slider';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useAudio } from '../context/AudioContext';
+import { useSettings } from '../context/SettingsContext';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { UI_COLORS, UI_RADII, UI_SHADOWS } from '../theme/ui';
 
-const SETTINGS_KEY = '@quran_pulse_settings';
+const FONT_MIN = 24;
+const FONT_MAX = 48;
+const FONT_STEP = 2;
+
+const PAUSE_MIN = 3;
+const PAUSE_MAX = 8;
+const PAUSE_STEP = 1;
 
 export default function SettingsScreen() {
-  const { memorizationMode } = useAudio(); // Just to show current state
+  const { settings, updateSetting } = useSettings();
+  const { arabicFontSize, memorizationPause } = settings;
 
-  const [arabicFontSize, setArabicFontSize] = useState(32);
-  const [memorizationPause, setMemorizationPause] = useState(4);
-  const [isDarkMode, setIsDarkMode] = useState(false);
-  const [autoPlayOnStart, setAutoPlayOnStart] = useState(true);
+  const resetFontSize = () => {
+    void updateSetting('arabicFontSize', FONT_MIN);
+  };
 
-  // Load settings on mount
-  useEffect(() => {
-    const loadSettings = async () => {
-      try {
-        const saved = await AsyncStorage.getItem(SETTINGS_KEY);
-        if (saved) {
-          const settings = JSON.parse(saved);
-          setArabicFontSize(settings.arabicFontSize || 32);
-          setMemorizationPause(settings.memorizationPause || 4);
-          setIsDarkMode(settings.isDarkMode || false);
-          setAutoPlayOnStart(settings.autoPlayOnStart !== false); // default true
-        }
-      } catch (e) {
-        console.warn('Failed to load settings');
-      }
-    };
-    loadSettings();
-  }, []);
+  const openAppSettings = () => {
+    Linking.openSettings().catch(() => {
+      Alert.alert('Unavailable', 'Could not open app settings on this device.');
+    });
+  };
 
-  // Save settings whenever they change
-  useEffect(() => {
-    const saveSettings = async () => {
-      try {
-        const settings = {
-          arabicFontSize,
-          memorizationPause,
-          isDarkMode,
-          autoPlayOnStart,
-        };
-        await AsyncStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
-      } catch (e) {
-        console.warn('Failed to save settings');
-      }
-    };
-    saveSettings();
-  }, [arabicFontSize, memorizationPause, isDarkMode, autoPlayOnStart]);
+  const adjustArabicFontSize = (delta: number) => {
+    const next = Math.max(FONT_MIN, Math.min(FONT_MAX, arabicFontSize + delta));
+    void updateSetting('arabicFontSize', next);
+  };
 
-  // Placeholder for offline downloads (to be implemented later)
-  const downloadedSurahs = ['Al-Fatihah', 'Al-Baqarah']; // Example
-
-  const deleteDownload = (surah: string) => {
-    Alert.alert('Delete Download', `Remove ${surah} from offline storage?`, [
-      { text: 'Cancel' },
-      { text: 'Delete', style: 'destructive', onPress: () => Alert.alert('Deleted', `${surah} removed.`) },
-    ]);
+  const adjustMemorizationPause = (delta: number) => {
+    const next = Math.max(PAUSE_MIN, Math.min(PAUSE_MAX, memorizationPause + delta));
+    void updateSetting('memorizationPause', next);
   };
 
   return (
-    <SafeAreaView style={[styles.container, isDarkMode && styles.darkContainer]} edges={['left', 'right', 'bottom']}>
+    <SafeAreaView style={styles.container} edges={['left', 'right', 'bottom']}>
       <ScrollView contentContainerStyle={styles.scroll}>
-        <Text style={[styles.title, isDarkMode && styles.darkText]}>Settings</Text>
+        <Text style={styles.title}>Settings</Text>
+
+        <View style={styles.infoCard}>
+          <Text style={styles.infoText}>
+            Adjust Arabic text size across Quran screens and set the memorization pause between repeated ayahs.
+          </Text>
+        </View>
 
         {/* Arabic Font Size */}
-        <View style={[styles.section, isDarkMode && styles.darkSection]}>
-          <Text style={[styles.sectionTitle, isDarkMode && styles.darkText]}>
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>
             Arabic Font Size
           </Text>
-          <Text style={[styles.valueText, isDarkMode && styles.darkText]}>
-            {arabicFontSize}
+          <Text style={styles.helperText}>
+            Default is the smallest size. Increase only if you need larger text.
           </Text>
-          <Slider
-            minimumValue={24}
-            maximumValue={48}
-            step={2}
-            value={arabicFontSize}
-            onValueChange={setArabicFontSize}
-            minimumTrackTintColor="#27ae60"
-            thumbTintColor="#27ae60"
-          />
+          <View style={styles.stepperRow}>
+            <TouchableOpacity
+              style={[styles.stepButton, arabicFontSize <= FONT_MIN && styles.stepButtonDisabled]}
+              onPress={() => adjustArabicFontSize(-FONT_STEP)}
+              disabled={arabicFontSize <= FONT_MIN}
+            >
+              <Text style={styles.stepButtonText}>−</Text>
+            </TouchableOpacity>
+
+            <View style={styles.valuePill}>
+              <Text style={styles.valueText}>{arabicFontSize}</Text>
+            </View>
+
+            <TouchableOpacity
+              style={[styles.stepButton, arabicFontSize >= FONT_MAX && styles.stepButtonDisabled]}
+              onPress={() => adjustArabicFontSize(FONT_STEP)}
+              disabled={arabicFontSize >= FONT_MAX}
+            >
+              <Text style={styles.stepButtonText}>+</Text>
+            </TouchableOpacity>
+          </View>
+          <View style={styles.previewBox}>
+            <Text
+              style={[
+                styles.previewArabic,
+                {
+                  fontSize: Math.max(18, arabicFontSize - 6),
+                  lineHeight: Math.round(Math.max(18, arabicFontSize - 6) * 1.35),
+                },
+              ]}
+              numberOfLines={2}
+              adjustsFontSizeToFit
+              minimumFontScale={0.7}
+            >
+              بِسْمِ اللَّهِ الرَّحْمٰنِ الرَّحِيمِ
+            </Text>
+          </View>
         </View>
 
         {/* Memorization Pause */}
-        <View style={[styles.section, isDarkMode && styles.darkSection]}>
-          <Text style={[styles.sectionTitle, isDarkMode && styles.darkText]}>
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>
             Memorization Pause (seconds)
           </Text>
-          <Text style={[styles.valueText, isDarkMode && styles.darkText]}>
-            {memorizationPause}s
+          <View style={styles.stepperRow}>
+            <TouchableOpacity
+              style={[styles.stepButton, memorizationPause <= PAUSE_MIN && styles.stepButtonDisabled]}
+              onPress={() => adjustMemorizationPause(-PAUSE_STEP)}
+              disabled={memorizationPause <= PAUSE_MIN}
+            >
+              <Text style={styles.stepButtonText}>−</Text>
+            </TouchableOpacity>
+
+            <View style={styles.valuePill}>
+              <Text style={styles.valueText}>{memorizationPause}s</Text>
+            </View>
+
+            <TouchableOpacity
+              style={[styles.stepButton, memorizationPause >= PAUSE_MAX && styles.stepButtonDisabled]}
+              onPress={() => adjustMemorizationPause(PAUSE_STEP)}
+              disabled={memorizationPause >= PAUSE_MAX}
+            >
+              <Text style={styles.stepButtonText}>+</Text>
+            </TouchableOpacity>
+          </View>
+          <Text style={styles.helperText}>
+            Range: {PAUSE_MIN}-{PAUSE_MAX} seconds
           </Text>
-          <Slider
-            minimumValue={3}
-            maximumValue={10}
-            step={1}
-            value={memorizationPause}
-            onValueChange={setMemorizationPause}
-            minimumTrackTintColor="#27ae60"
-            thumbTintColor="#27ae60"
-          />
         </View>
 
-        {/* Theme */}
-        <View style={[styles.section, isDarkMode && styles.darkSection]}>
-          <Text style={[styles.sectionTitle, isDarkMode && styles.darkText]}>
-            Dark Mode
+        {/* Suggestions / quick actions */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Quick Actions</Text>
+          <TouchableOpacity style={styles.actionButton} onPress={resetFontSize}>
+            <Text style={styles.actionButtonText}>Reset Font Size to Default</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.actionButton} onPress={openAppSettings}>
+            <Text style={styles.actionButtonText}>Open App System Settings</Text>
+          </TouchableOpacity>
+          <Text style={styles.helperText}>
+            Tip: Athan notification on/off controls are available on the Prayer Times screen for each prayer.
           </Text>
-          <Switch value={isDarkMode} onValueChange={setIsDarkMode} thumbColor="#27ae60" />
-        </View>
-
-        {/* Auto-play on start */}
-        <View style={[styles.section, isDarkMode && styles.darkSection]}>
-          <Text style={[styles.sectionTitle, isDarkMode && styles.darkText]}>
-            Auto-play first ayah when opening surah
-          </Text>
-          <Switch value={autoPlayOnStart} onValueChange={setAutoPlayOnStart} thumbColor="#27ae60" />
-        </View>
-
-        {/* Offline Downloads */}
-        <View style={[styles.section, isDarkMode && styles.darkSection]}>
-          <Text style={[styles.sectionTitle, isDarkMode && styles.darkText]}>
-            Offline Downloads
-          </Text>
-          {downloadedSurahs.length === 0 ? (
-            <Text style={[styles.placeholder, isDarkMode && styles.darkText]}>
-              No surahs downloaded yet
-            </Text>
-          ) : (
-            downloadedSurahs.map((surah) => (
-              <View key={surah} style={styles.downloadItem}>
-                <Text style={[styles.downloadText, isDarkMode && styles.darkText]}>{surah}</Text>
-                <TouchableOpacity onPress={() => deleteDownload(surah)}>
-                  <Text style={styles.deleteBtn}>Delete</Text>
-                </TouchableOpacity>
-              </View>
-            ))
-          )}
         </View>
 
         <View style={{ height: 50 }} />
@@ -160,7 +156,6 @@ export default function SettingsScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: UI_COLORS.background },
-  darkContainer: { backgroundColor: UI_COLORS.darkBackground },
   scroll: { padding: 20, paddingBottom: 42 },
   title: {
     fontSize: 32,
@@ -181,22 +176,84 @@ const styles = StyleSheet.create({
     padding: 16,
     ...UI_SHADOWS.card,
   },
-  darkSection: {
-    backgroundColor: UI_COLORS.darkSurface,
-    borderColor: '#30353b',
+  infoCard: {
+    marginBottom: 16,
+    backgroundColor: UI_COLORS.primarySoft,
+    borderRadius: UI_RADII.sm,
+    borderWidth: 1,
+    borderColor: '#cde9d5',
+    padding: 14,
   },
+  infoText: { fontSize: 14, color: UI_COLORS.text, textAlign: 'center', lineHeight: 21 },
   sectionTitle: { fontSize: 17, fontWeight: '600', color: UI_COLORS.text, marginBottom: 8 },
-  valueText: { fontSize: 24, fontWeight: 'bold', textAlign: 'center', marginVertical: 10, color: UI_COLORS.primary },
-  placeholder: { fontStyle: 'italic', color: UI_COLORS.textMuted, textAlign: 'center' },
-  downloadItem: {
+  valueText: { fontSize: 24, fontWeight: 'bold', textAlign: 'center', color: UI_COLORS.primary },
+  helperText: { fontSize: 13, color: UI_COLORS.textMuted, lineHeight: 20, textAlign: 'center', marginTop: 8 },
+  stepperRow: {
+    marginTop: 8,
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderColor: UI_COLORS.border,
+    justifyContent: 'space-between',
   },
-  downloadText: { fontSize: 16, color: UI_COLORS.text },
-  deleteBtn: { color: UI_COLORS.danger, fontWeight: '600' },
-  darkText: { color: UI_COLORS.white },
+  stepButton: {
+    width: 56,
+    height: 48,
+    borderRadius: UI_RADII.md,
+    backgroundColor: UI_COLORS.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  stepButtonDisabled: {
+    opacity: 0.35,
+  },
+  stepButtonText: {
+    fontSize: 28,
+    lineHeight: 32,
+    color: UI_COLORS.white,
+    fontWeight: '700',
+  },
+  valuePill: {
+    minWidth: 120,
+    paddingVertical: 8,
+    paddingHorizontal: 10,
+    borderRadius: UI_RADII.md,
+    backgroundColor: UI_COLORS.primarySoft,
+    borderWidth: 1,
+    borderColor: '#cde9d5',
+  },
+  previewBox: {
+    marginTop: 12,
+    width: '100%',
+    minHeight: 68,
+    borderWidth: 1,
+    borderColor: UI_COLORS.border,
+    borderRadius: UI_RADII.md,
+    backgroundColor: UI_COLORS.background,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    overflow: 'hidden',
+  },
+  previewArabic: {
+    width: '100%',
+    color: UI_COLORS.text,
+    textAlign: 'center',
+    writingDirection: 'rtl',
+    fontFamily: 'AmiriQuran',
+  },
+  actionButton: {
+    marginTop: 10,
+    borderWidth: 1,
+    borderColor: UI_COLORS.border,
+    backgroundColor: UI_COLORS.surface,
+    borderRadius: UI_RADII.md,
+    paddingVertical: 12,
+    paddingHorizontal: 12,
+  },
+  actionButtonText: {
+    fontSize: 15,
+    color: UI_COLORS.text,
+    textAlign: 'center',
+    fontWeight: '600',
+  },
 });

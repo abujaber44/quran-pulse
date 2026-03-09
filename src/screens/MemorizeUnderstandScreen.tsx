@@ -11,12 +11,16 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { fetchSurahs } from '../services/quranApi';
 import { Surah } from '../types';
+import { useSettings } from '../context/SettingsContext';
 import { UI_COLORS, UI_RADII, UI_SHADOWS } from '../theme/ui';
 
 export default function MemorizeUnderstandScreen({ navigation }: any) {
   const [surahs, setSurahs] = useState<Surah[]>([]);
   const [filteredSurahs, setFilteredSurahs] = useState<Surah[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
+  const { settings } = useSettings();
+  const isDark = settings.isDarkMode;
+  const arabicNameFontSize = Math.max(20, settings.arabicFontSize - 10);
 
   useEffect(() => {
     fetchSurahs().then((data) => {
@@ -50,23 +54,25 @@ export default function MemorizeUnderstandScreen({ navigation }: any) {
 
   const renderSurah = ({ item }: { item: Surah }) => (
     <TouchableOpacity
-      style={styles.surahCard}
+      style={[styles.surahCard, isDark && styles.darkCard]}
       onPress={() => navigation.navigate('Surah', { surah: item, surahs })}
     >
       <View style={styles.surahInfo}>
         <Text style={styles.surahNumber}>{item.id}</Text>
         <View>
-          <Text style={styles.surahNameEnglish}>{item.name_simple}</Text>
-          <Text style={styles.surahNameArabic}>{item.name_arabic}</Text>
+          <Text style={[styles.surahNameEnglish, isDark && styles.darkText]}>{item.name_simple}</Text>
+          <Text style={[styles.surahNameArabic, { fontSize: arabicNameFontSize }, isDark && styles.darkText]}>
+            {item.name_arabic}
+          </Text>
         </View>
       </View>
-      <Text style={styles.versesCount}>{item.verses_count} verses</Text>
+      <Text style={[styles.versesCount, isDark && styles.darkMutedText]}>{item.verses_count} verses</Text>
     </TouchableOpacity>
   );
 
   return (
-    <SafeAreaView style={styles.safeArea} edges={['left', 'right', 'bottom']}>
-      <View style={styles.container}>
+    <SafeAreaView style={[styles.safeArea, isDark && styles.darkBg]} edges={['left', 'right', 'bottom']}>
+      <View style={[styles.container, isDark && styles.darkBg]}>
         {/* <TouchableOpacity 
           style={styles.backButton}
           onPress={() => navigation.navigate('Landing')}
@@ -77,20 +83,20 @@ export default function MemorizeUnderstandScreen({ navigation }: any) {
         <View style={styles.header}>
           <View style={styles.titleContainer}>
             <Text style={styles.title}>Memorize & Understand</Text>
-            <Text style={styles.subtitle}>Explore the Quran to memorize and reflect</Text>
+            <Text style={[styles.subtitle, isDark && styles.darkMutedText]}>Explore the Quran to memorize and reflect</Text>
           </View>
         </View>
-        <View style={styles.explanation}>
-                <Text style={styles.explanationText}>
+        <View style={[styles.explanation, isDark && styles.darkExplanation]}>
+                <Text style={[styles.explanationText, isDark && styles.darkText]}>
                   A dedicated space to memorize and deeply understand the Quran. Listen, read, reflect, and repeat — ayah by ayah — until the words of Allah settle firmly in your heart and mind.
                 </Text>
           </View>
 
         {/* Search Bar with Clear (×) Button */}
         <View style={styles.searchContainer}>
-          <View style={styles.searchWrapper}>
+          <View style={[styles.searchWrapper, isDark && styles.darkCard]}>
             <TextInput
-              style={styles.searchInput}
+              style={[styles.searchInput, isDark && styles.darkText]}
               placeholder="Search Surah (English or Arabic)..."
               placeholderTextColor="#aaa"
               value={searchQuery}
@@ -103,7 +109,7 @@ export default function MemorizeUnderstandScreen({ navigation }: any) {
             {searchQuery.length > 0 && (
               <TouchableWithoutFeedback onPress={clearSearch}>
                 <View style={styles.clearButton}>
-                  <Text style={styles.clearIcon}>×</Text>
+                  <Text style={[styles.clearIcon, isDark && styles.darkMutedText]}>×</Text>
                 </View>
               </TouchableWithoutFeedback>
             )}
@@ -126,6 +132,7 @@ export default function MemorizeUnderstandScreen({ navigation }: any) {
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: UI_COLORS.background },
   container: { flex: 1, backgroundColor: UI_COLORS.background },
+  darkBg: { backgroundColor: UI_COLORS.darkBackground },
   header: { 
     flexDirection: 'row', 
     alignItems: 'center', 
@@ -232,6 +239,7 @@ const styles = StyleSheet.create({
     borderLeftColor: UI_COLORS.primary,
     ...UI_SHADOWS.card,
   },
+  darkCard: { backgroundColor: UI_COLORS.darkSurface, borderColor: '#30353b' },
   surahInfo: { flexDirection: 'row', alignItems: 'center' },
   surahNumber: { fontSize: 24, fontWeight: 'bold', color: UI_COLORS.accent, marginRight: 20, width: 50, textAlign: 'center' },
   surahNameEnglish: { fontSize: 16, color: UI_COLORS.text, fontWeight: '600' },
@@ -255,10 +263,16 @@ const styles = StyleSheet.create({
     marginHorizontal: 16,
     marginBottom: 16,
   },
+  darkExplanation: {
+    backgroundColor: '#1f2d2f',
+    borderColor: '#2f474a',
+  },
   explanationText: {
     fontSize: 14,
     color: UI_COLORS.text,
     textAlign: 'center',
     lineHeight: 21,
   },
+  darkText: { color: UI_COLORS.white },
+  darkMutedText: { color: '#a8b3bd' },
 });

@@ -14,6 +14,7 @@ import { fetchSurahs } from '../services/quranApi';
 import { getBookmarks, removeBookmark, Bookmark } from '../services/bookmarkService';
 import { useNavigation } from '@react-navigation/native';
 import type { StackNavigationProp } from '@react-navigation/stack';
+import { useSettings } from '../context/SettingsContext';
 import { UI_COLORS, UI_RADII, UI_SHADOWS } from '../theme/ui';
 
 type RootStackParamList = {
@@ -31,6 +32,9 @@ export default function BookmarksScreen() {
   const [surahs, setSurahs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
+  const { settings } = useSettings();
+  const isDark = settings.isDarkMode;
+  const ayahFontSize = Math.max(24, settings.arabicFontSize - 6);
 
   useEffect(() => {
     loadData();
@@ -81,10 +85,10 @@ export default function BookmarksScreen() {
   };
 
   const renderItem = ({ item }: { item: Bookmark }) => (
-    <TouchableOpacity style={styles.card} onPress={() => handlePress(item)}>
+    <TouchableOpacity style={[styles.card, isDark && styles.darkCard]} onPress={() => handlePress(item)}>
       <View style={styles.header}>
         <View>
-          <Text style={styles.surahName}>{item.surahName}</Text>
+          <Text style={[styles.surahName, isDark && styles.darkText]}>{item.surahName}</Text>
           <Text style={styles.ayahNumber}>Ayah {item.ayahNum}</Text>
         </View>
         <TouchableOpacity onPress={() => handleRemove(item.surahId, item.ayahNum)}>
@@ -92,24 +96,26 @@ export default function BookmarksScreen() {
         </TouchableOpacity>
       </View>
 
-      <Text style={styles.ayahText}>{item.ayahText}</Text>
-      <Text style={styles.translation}>{item.translation}</Text>
+      <Text style={[styles.ayahText, { fontSize: ayahFontSize, lineHeight: Math.round(ayahFontSize * 1.6) }, isDark && styles.darkText]}>
+        {item.ayahText}
+      </Text>
+      <Text style={[styles.translation, isDark && styles.darkText]}>{item.translation}</Text>
     </TouchableOpacity>
   );
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView style={[styles.container, isDark && styles.darkBg]}>
         <ActivityIndicator size="large" color="#27ae60" />
-        <Text style={styles.loadingText}>Loading bookmarks...</Text>
+        <Text style={[styles.loadingText, isDark && styles.darkText]}>Loading bookmarks...</Text>
       </SafeAreaView>
     );
   }
 
   if (bookmarks.length === 0) {
     return (
-      <SafeAreaView style={styles.container}>
-        <Text style={styles.emptyText}>
+      <SafeAreaView style={[styles.container, isDark && styles.darkBg]}>
+        <Text style={[styles.emptyText, isDark && styles.darkMutedText]}>
           No bookmarks yet. Tap ★ on any ayah to save it here.
         </Text>
       </SafeAreaView>
@@ -118,11 +124,11 @@ export default function BookmarksScreen() {
 
   return (
     //<SafeAreaView style={styles.container}>
-    <View style={styles.container}>
+    <View style={[styles.container, isDark && styles.darkBg]}>
       <Text style={styles.title}>My Bookmarks</Text>
       
-            <View style={styles.explanation}>
-              <Text style={styles.explanationText}>
+            <View style={[styles.explanation, isDark && styles.darkExplanation]}>
+              <Text style={[styles.explanationText, isDark && styles.darkText]}>
                 Your personal collection of cherished ayahs, moments of reflection, and verses that touched your heart. Return here anytime to revisit what inspires and strengthens your connection with the Quran.
               </Text>
             </View>
@@ -139,6 +145,7 @@ export default function BookmarksScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: UI_COLORS.background },
+  darkBg: { backgroundColor: UI_COLORS.darkBackground },
   list: { paddingHorizontal: 16, paddingBottom: 24 },
   card: {
     backgroundColor: UI_COLORS.surface,
@@ -148,6 +155,10 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: UI_COLORS.border,
     ...UI_SHADOWS.card,
+  },
+  darkCard: {
+    backgroundColor: UI_COLORS.darkSurface,
+    borderColor: '#30353b',
   },
   header: {
     flexDirection: 'row',
@@ -208,12 +219,18 @@ const styles = StyleSheet.create({
     marginHorizontal: 16,
     marginBottom: 16,
   },
+  darkExplanation: {
+    backgroundColor: '#1f2d2f',
+    borderColor: '#2f474a',
+  },
   explanationText: {
     fontSize: 14,
     color: UI_COLORS.text,
     textAlign: 'center',
     lineHeight: 21,
   },
+  darkText: { color: UI_COLORS.white },
+  darkMutedText: { color: '#a8b3bd' },
   title: {
     fontSize: 30,
     fontWeight: '700',

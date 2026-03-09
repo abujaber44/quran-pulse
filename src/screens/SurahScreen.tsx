@@ -37,6 +37,7 @@ const INITIAL_AYAH_SCROLL_MAX_ATTEMPTS = 6;
 type AyahItemProps = {
   ayah: any;
   isDark: boolean;
+  arabicFontSize: number;
   isActiveAyah: boolean;
   isBookmarked: boolean;
   expandedTranslation: number | null;
@@ -52,6 +53,7 @@ type AyahItemProps = {
 const AyahItem = memo(({
   ayah,
   isDark,
+  arabicFontSize,
   isActiveAyah,
   isBookmarked,
   expandedTranslation,
@@ -84,7 +86,16 @@ const AyahItem = memo(({
         </Text>
       </TouchableOpacity>
 
-      <Text style={[styles.ayahText, { fontSize: 24 }, isDark && styles.darkText]}>
+      <Text
+        style={[
+          styles.ayahText,
+          {
+            fontSize: arabicFontSize,
+            lineHeight: Math.round(arabicFontSize * 2.2),
+          },
+          isDark && styles.darkText,
+        ]}
+      >
         {ayah.text_uthmani}
       </Text>
 
@@ -530,6 +541,7 @@ export default function SurahScreen({ route }: any) {
   }, [ayahs, bookmarkedAyahs, surah.id]);
 
   const isDark = settings.isDarkMode;
+  const ayahArabicFontSize = Math.max(24, settings.arabicFontSize);
   const currentAyahNumForThisSurah = currentAyah?.surah === surah.id ? currentAyah?.ayah : null;
 
   const listExtraData = useMemo(() => ({
@@ -583,6 +595,7 @@ export default function SurahScreen({ route }: any) {
       <AyahItem
         ayah={item}
         isDark={isDark}
+        arabicFontSize={ayahArabicFontSize}
         isActiveAyah={isActiveAyah}
         isBookmarked={isBookmarked}
         expandedTranslation={expandedTranslation}
@@ -600,6 +613,7 @@ export default function SurahScreen({ route }: any) {
     surah.id,
     currentAyahNumForThisSurah,
     isDark,
+    ayahArabicFontSize,
     expandedTranslation,
     expandedTafseer,
     loadingTafseer,
