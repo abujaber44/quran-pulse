@@ -19,6 +19,7 @@ import BookmarksScreen from './src/screens/BookmarksScreen';
 import QuranPlayerScreen from './src/screens/QuranPlayerScreen';
 import CalendarScreen from './src/screens/CalendarScreen';
 import AthanDiagnosticsScreen from './src/screens/AthanDiagnosticsScreen';
+import QiblaCompassScreen from './src/screens/QiblaCompassScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -142,6 +143,20 @@ export default function App() {
             <Stack.Screen
               name="AthanDiagnostics"
               component={AthanDiagnosticsScreen}
+              options={{
+                title: 'Quran Pulse',
+                headerTitleAlign: 'center' as const,
+                headerShadowVisible: false,
+                headerStyle: { backgroundColor: UI_COLORS.surface },
+                headerTitleStyle: { color: UI_COLORS.text, fontWeight: '700' as const },
+                headerBackVisible: true,
+                headerBackTitle: 'Prayer Times',
+                headerTintColor: UI_COLORS.accent,
+              }}
+            />
+            <Stack.Screen
+              name="QiblaCompass"
+              component={QiblaCompassScreen}
               options={{
                 title: 'Quran Pulse',
                 headerTitleAlign: 'center' as const,
