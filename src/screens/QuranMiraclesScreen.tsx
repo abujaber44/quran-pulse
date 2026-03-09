@@ -151,6 +151,36 @@ export default function QuranMiraclesScreen() {
           </View>
         ) : null}
 
+        {item.examples && item.examples.length > 0 ? (
+          <View style={[styles.examplesBox, isDark && styles.darkExamplesBox]}>
+            <Text style={[styles.examplesTitle, isDark && styles.darkText]}>Examples</Text>
+            {item.examples.slice(0, 2).map((example, index) => (
+              <View key={`${item.id}-example-${index}`} style={styles.exampleItem}>
+                <Text style={[styles.exampleItemTitle, isDark && styles.darkText]}>{example.title}</Text>
+                <Text style={[styles.exampleItemText, isDark && styles.darkMutedText]}>{example.description}</Text>
+                {example.ayahRef ? (
+                  <Text style={[styles.exampleMeta, isDark && styles.darkMutedText]}>Ayah: {example.ayahRef}</Text>
+                ) : null}
+                {(() => {
+                  const sourceUrl = example.sourceUrl;
+                  if (!sourceUrl) return null;
+
+                  return (
+                  <TouchableOpacity
+                    style={[styles.exampleSourceButton, isDark && styles.darkSourceButton]}
+                    onPress={() => {
+                      void openSourceUrl(sourceUrl);
+                    }}
+                  >
+                    <Text style={styles.sourceButtonText}>Open Example Source</Text>
+                  </TouchableOpacity>
+                  );
+                })()}
+              </View>
+            ))}
+          </View>
+        ) : null}
+
         {item.caution ? (
           <View style={[styles.cautionBox, isDark && styles.darkCautionBox]}>
             <Text style={[styles.cautionLabel, isDark && styles.darkText]}>Note</Text>
@@ -195,7 +225,7 @@ export default function QuranMiraclesScreen() {
         <ScreenIntroTile
           title="Quran Miracles"
           subtitle="Dynamic Categories with Sources"
-          description="Explore Quran reflection cards grouped by real miracle categories, with ayah references and source links. Content loads from CMS when available with automatic fallback for reliability."
+          description="Explore Quran reflection cards grouped by real miracle categories, with ayah references and source links."
           isDark={isDark}
           style={styles.introTile}
         />
@@ -430,6 +460,54 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: UI_COLORS.textMuted,
     lineHeight: 17,
+  },
+  examplesBox: {
+    marginTop: 10,
+    borderRadius: UI_RADII.sm,
+    backgroundColor: '#edf6ff',
+    borderWidth: 1,
+    borderColor: '#c9def2',
+    padding: 10,
+  },
+  darkExamplesBox: {
+    backgroundColor: '#1f2f40',
+    borderColor: '#3e5468',
+  },
+  examplesTitle: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: UI_COLORS.text,
+    marginBottom: 6,
+  },
+  exampleItem: {
+    marginBottom: 8,
+  },
+  exampleItemTitle: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: UI_COLORS.text,
+  },
+  exampleItemText: {
+    marginTop: 2,
+    fontSize: 12,
+    lineHeight: 17,
+    color: UI_COLORS.textMuted,
+  },
+  exampleMeta: {
+    marginTop: 3,
+    fontSize: 11,
+    fontWeight: '600',
+    color: UI_COLORS.textMuted,
+  },
+  exampleSourceButton: {
+    marginTop: 6,
+    alignSelf: 'flex-start',
+    borderRadius: UI_RADII.sm,
+    borderWidth: 1,
+    borderColor: '#b6d2e8',
+    backgroundColor: '#ecf6ff',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
   },
   sourcesWrap: {
     marginTop: 11,

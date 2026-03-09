@@ -7,10 +7,29 @@
       "title": "Oath Openings and Thematic Framing",
       "summary": "Many surahs open with oaths that frame the core message of the chapter.",
       "detail": "These openings are studied in balaghah as attention-setting devices that prepare the reader for a central moral argument.",
-      "ayahRefs": ["91:1-10", "95:1-8", "103:1-3"],
-      "tags": ["balaghah", "structure", "rhetoric"],
+      "ayahRefs": [
+        "91:1-10",
+        "95:1-8",
+        "103:1-3"
+      ],
+      "tags": [
+        "balaghah",
+        "structure",
+        "rhetoric"
+      ],
       "sources": [
-        { "label": "Quran.com", "url": "https://quran.com" }
+        {
+          "label": "Quran.com",
+          "url": "https://quran.com"
+        }
+      ],
+      "examples": [
+        {
+          "title": "Primary reference",
+          "description": "Read 91:1-10 with trusted tafsir context before deriving conclusions.",
+          "ayahRef": "91:1-10",
+          "sourceUrl": "https://quran.com"
+        }
       ]
     },
     {
@@ -19,10 +38,29 @@
       "title": "Repetition with Variation",
       "summary": "Narratives are repeated across surahs with deliberate variation in emphasis.",
       "detail": "Comparative reading reveals pedagogical design: same message, adapted presentation according to context and audience.",
-      "ayahRefs": ["20:9-99", "26:10-191", "54:17"],
-      "tags": ["narrative", "comparison", "tadabbur"],
+      "ayahRefs": [
+        "20:9-99",
+        "26:10-191",
+        "54:17"
+      ],
+      "tags": [
+        "narrative",
+        "comparison",
+        "tadabbur"
+      ],
       "sources": [
-        { "label": "Quran.com", "url": "https://quran.com" }
+        {
+          "label": "Quran.com",
+          "url": "https://quran.com"
+        }
+      ],
+      "examples": [
+        {
+          "title": "Primary reference",
+          "description": "Read 20:9-99 with trusted tafsir context before deriving conclusions.",
+          "ayahRef": "20:9-99",
+          "sourceUrl": "https://quran.com"
+        }
       ]
     },
     {
@@ -31,12 +69,30 @@
       "title": "Ring Composition Patterns",
       "summary": "Several passages exhibit chiastic or ring-like structure.",
       "detail": "Structural studies often show mirrored beginnings/endings with central thematic pivot points.",
-      "ayahRefs": ["2:1-286", "12:1-111"],
-      "tags": ["composition", "chiastic", "coherence"],
-      "sources": [
-        { "label": "Quran.com Surah Al-Baqarah", "url": "https://quran.com/2" }
+      "ayahRefs": [
+        "2:1-286",
+        "12:1-111"
       ],
-      "caution": "Macro-structure proposals vary across researchers."
+      "tags": [
+        "composition",
+        "chiastic",
+        "coherence"
+      ],
+      "sources": [
+        {
+          "label": "Quran.com Surah Al-Baqarah",
+          "url": "https://quran.com/2"
+        }
+      ],
+      "caution": "Macro-structure proposals vary across researchers.",
+      "examples": [
+        {
+          "title": "Primary reference",
+          "description": "Read 2:1-286 with trusted tafsir context before deriving conclusions.",
+          "ayahRef": "2:1-286",
+          "sourceUrl": "https://quran.com/2"
+        }
+      ]
     },
     {
       "id": "lang-root-coherence",
@@ -44,10 +100,29 @@
       "title": "Root-Based Semantic Coherence",
       "summary": "Arabic roots build thematic webs across related ayahs.",
       "detail": "Root analysis can connect lexical choices to recurring moral motifs in Quranic discourse.",
-      "ayahRefs": ["1:1-7", "2:2", "39:23"],
-      "tags": ["arabic-roots", "semantics", "lexical-analysis"],
+      "ayahRefs": [
+        "1:1-7",
+        "2:2",
+        "39:23"
+      ],
+      "tags": [
+        "arabic-roots",
+        "semantics",
+        "lexical-analysis"
+      ],
       "sources": [
-        { "label": "Quranic Arabic Corpus", "url": "https://corpus.quran.com/searchhelp.jsp" }
+        {
+          "label": "Quranic Arabic Corpus",
+          "url": "https://corpus.quran.com/searchhelp.jsp"
+        }
+      ],
+      "examples": [
+        {
+          "title": "Primary reference",
+          "description": "Read 1:1-7 with trusted tafsir context before deriving conclusions.",
+          "ayahRef": "1:1-7",
+          "sourceUrl": "https://corpus.quran.com/searchhelp.jsp"
+        }
       ]
     },
     {
@@ -56,12 +131,31 @@
       "title": "Paired Concept Frequency Studies",
       "summary": "Some studies compare frequencies of concept pairs (for example dunya/akhirah).",
       "detail": "Such studies depend heavily on normalization rules, root selection, and derivative handling.",
-      "ayahRefs": ["2:201", "28:77", "87:16-17"],
-      "tags": ["word-frequency", "methodology", "lexicon"],
-      "sources": [
-        { "label": "Quranic Arabic Corpus", "url": "https://corpus.quran.com" }
+      "ayahRefs": [
+        "2:201",
+        "28:77",
+        "87:16-17"
       ],
-      "caution": "Counts vary based on methodology."
+      "tags": [
+        "word-frequency",
+        "methodology",
+        "lexicon"
+      ],
+      "sources": [
+        {
+          "label": "Quranic Arabic Corpus",
+          "url": "https://corpus.quran.com"
+        }
+      ],
+      "caution": "Counts vary based on methodology.",
+      "examples": [
+        {
+          "title": "Primary reference",
+          "description": "Read 2:201 with trusted tafsir context before deriving conclusions.",
+          "ayahRef": "2:201",
+          "sourceUrl": "https://corpus.quran.com"
+        }
+      ]
     },
     {
       "id": "num-day-night-theme",
@@ -69,10 +163,29 @@
       "title": "Day-Night Count Discussions",
       "summary": "Day and night terms are often examined in numerical reflection studies.",
       "detail": "These studies are most useful when accompanied by transparent counting criteria and reproducible methods.",
-      "ayahRefs": ["3:190", "10:6", "24:44"],
-      "tags": ["day-night", "counting", "transparency"],
+      "ayahRefs": [
+        "3:190",
+        "10:6",
+        "24:44"
+      ],
+      "tags": [
+        "day-night",
+        "counting",
+        "transparency"
+      ],
       "sources": [
-        { "label": "Quran.com Search", "url": "https://quran.com/search" }
+        {
+          "label": "Quran.com Search",
+          "url": "https://quran.com/search"
+        }
+      ],
+      "examples": [
+        {
+          "title": "Primary reference",
+          "description": "Read 3:190 with trusted tafsir context before deriving conclusions.",
+          "ayahRef": "3:190",
+          "sourceUrl": "https://quran.com/search"
+        }
       ]
     },
     {
@@ -81,12 +194,28 @@
       "title": "Nineteen Theme Analyses",
       "summary": "Surah Al-Muddaththir includes a reference to nineteen that has inspired numerical analyses.",
       "detail": "The app presents this as a study topic and encourages cross-checking with scholarly critique.",
-      "ayahRefs": ["74:30-31"],
-      "tags": ["historical-studies", "number-theme"],
-      "sources": [
-        { "label": "Quran.com 74:30", "url": "https://quran.com/74/30-31" }
+      "ayahRefs": [
+        "74:30-31"
       ],
-      "caution": "Interpretive topic; avoid definitive claims without method disclosure."
+      "tags": [
+        "historical-studies",
+        "number-theme"
+      ],
+      "sources": [
+        {
+          "label": "Quran.com 74:30",
+          "url": "https://quran.com/74/30-31"
+        }
+      ],
+      "caution": "Interpretive topic; avoid definitive claims without method disclosure.",
+      "examples": [
+        {
+          "title": "Primary reference",
+          "description": "Read 74:30-31 with trusted tafsir context before deriving conclusions.",
+          "ayahRef": "74:30-31",
+          "sourceUrl": "https://quran.com/74/30-31"
+        }
+      ]
     },
     {
       "id": "num-surah-ayah-balance",
@@ -94,12 +223,30 @@
       "title": "Surah-Ayah Pattern Exploration",
       "summary": "Researchers explore structural arithmetic links between surah ordering and ayah sets.",
       "detail": "This area combines textual indexing and thematic alignment and should be presented as exploratory.",
-      "ayahRefs": ["1:1-7", "36:1-83"],
-      "tags": ["structure", "indexing", "exploratory"],
-      "sources": [
-        { "label": "Quran.com", "url": "https://quran.com" }
+      "ayahRefs": [
+        "1:1-7",
+        "36:1-83"
       ],
-      "caution": "Pattern-based studies can be sensitive to selection bias."
+      "tags": [
+        "structure",
+        "indexing",
+        "exploratory"
+      ],
+      "sources": [
+        {
+          "label": "Quran.com",
+          "url": "https://quran.com"
+        }
+      ],
+      "caution": "Pattern-based studies can be sensitive to selection bias.",
+      "examples": [
+        {
+          "title": "Primary reference",
+          "description": "Read 1:1-7 with trusted tafsir context before deriving conclusions.",
+          "ayahRef": "1:1-7",
+          "sourceUrl": "https://quran.com"
+        }
+      ]
     },
     {
       "id": "cosmo-night-day-signs",
@@ -107,10 +254,29 @@
       "title": "Alternation of Night and Day as Signs",
       "summary": "Night/day alternation is repeatedly used as a sign for people of understanding.",
       "detail": "The Quran ties observable cosmic order to reflection, gratitude, and humility.",
-      "ayahRefs": ["3:190", "10:6", "45:5"],
-      "tags": ["signs", "cosmos", "reflection"],
+      "ayahRefs": [
+        "3:190",
+        "10:6",
+        "45:5"
+      ],
+      "tags": [
+        "signs",
+        "cosmos",
+        "reflection"
+      ],
       "sources": [
-        { "label": "Quran.com 3:190", "url": "https://quran.com/3/190" }
+        {
+          "label": "Quran.com 3:190",
+          "url": "https://quran.com/3/190"
+        }
+      ],
+      "examples": [
+        {
+          "title": "Primary reference",
+          "description": "Read 3:190 with trusted tafsir context before deriving conclusions.",
+          "ayahRef": "3:190",
+          "sourceUrl": "https://quran.com/3/190"
+        }
       ]
     },
     {
@@ -119,12 +285,31 @@
       "title": "Heavens, Power, and Vast Creation",
       "summary": "Verses describing the heavens are often discussed in relation to cosmic vastness.",
       "detail": "Classical tafsir remains primary, while modern cosmological reflection may be used as secondary contemplation.",
-      "ayahRefs": ["51:47", "67:3-4", "79:27-30"],
-      "tags": ["heavens", "creation", "tafsir-first"],
-      "sources": [
-        { "label": "Quran.com 51:47", "url": "https://quran.com/51/47" }
+      "ayahRefs": [
+        "51:47",
+        "67:3-4",
+        "79:27-30"
       ],
-      "caution": "Do not detach scientific reading from tafsir context."
+      "tags": [
+        "heavens",
+        "creation",
+        "tafsir-first"
+      ],
+      "sources": [
+        {
+          "label": "Quran.com 51:47",
+          "url": "https://quran.com/51/47"
+        }
+      ],
+      "caution": "Do not detach scientific reading from tafsir context.",
+      "examples": [
+        {
+          "title": "Primary reference",
+          "description": "Read 51:47 with trusted tafsir context before deriving conclusions.",
+          "ayahRef": "51:47",
+          "sourceUrl": "https://quran.com/51/47"
+        }
+      ]
     },
     {
       "id": "cosmo-orbits-order",
@@ -132,10 +317,29 @@
       "title": "Celestial Orbits and Order",
       "summary": "Sun, moon, and celestial motion are described with language of order and course.",
       "detail": "The Quranic focus is on signs of divine order; technical models should remain interpretive overlays.",
-      "ayahRefs": ["21:33", "36:38-40", "55:5"],
-      "tags": ["orbits", "sun-moon", "order"],
+      "ayahRefs": [
+        "21:33",
+        "36:38-40",
+        "55:5"
+      ],
+      "tags": [
+        "orbits",
+        "sun-moon",
+        "order"
+      ],
       "sources": [
-        { "label": "Quran.com 21:33", "url": "https://quran.com/21/33" }
+        {
+          "label": "Quran.com 21:33",
+          "url": "https://quran.com/21/33"
+        }
+      ],
+      "examples": [
+        {
+          "title": "Primary reference",
+          "description": "Read 21:33 with trusted tafsir context before deriving conclusions.",
+          "ayahRef": "21:33",
+          "sourceUrl": "https://quran.com/21/33"
+        }
       ]
     },
     {
@@ -144,12 +348,31 @@
       "title": "Layered Heavens Language",
       "summary": "Several verses refer to seven heavens, widely discussed in theological and cosmological reading.",
       "detail": "Interpretation is primarily theological; scientific mapping is speculative and should be labeled as such.",
-      "ayahRefs": ["67:3", "71:15", "41:12"],
-      "tags": ["seven-heavens", "theology", "cosmology"],
-      "sources": [
-        { "label": "Quran.com 67:3", "url": "https://quran.com/67/3" }
+      "ayahRefs": [
+        "67:3",
+        "71:15",
+        "41:12"
       ],
-      "caution": "Maintain distinction between creed and scientific analogy."
+      "tags": [
+        "seven-heavens",
+        "theology",
+        "cosmology"
+      ],
+      "sources": [
+        {
+          "label": "Quran.com 67:3",
+          "url": "https://quran.com/67/3"
+        }
+      ],
+      "caution": "Maintain distinction between creed and scientific analogy.",
+      "examples": [
+        {
+          "title": "Primary reference",
+          "description": "Read 67:3 with trusted tafsir context before deriving conclusions.",
+          "ayahRef": "67:3",
+          "sourceUrl": "https://quran.com/67/3"
+        }
+      ]
     },
     {
       "id": "water-life-origin",
@@ -157,10 +380,29 @@
       "title": "Life and Water Connection",
       "summary": "The Quran repeatedly connects life with water.",
       "detail": "This recurring theme serves as both a natural observation and a spiritual sign for gratitude.",
-      "ayahRefs": ["21:30", "24:45", "25:54"],
-      "tags": ["water", "life", "creation"],
+      "ayahRefs": [
+        "21:30",
+        "24:45",
+        "25:54"
+      ],
+      "tags": [
+        "water",
+        "life",
+        "creation"
+      ],
       "sources": [
-        { "label": "Quran.com 21:30", "url": "https://quran.com/21/30" }
+        {
+          "label": "Quran.com 21:30",
+          "url": "https://quran.com/21/30"
+        }
+      ],
+      "examples": [
+        {
+          "title": "Primary reference",
+          "description": "Read 21:30 with trusted tafsir context before deriving conclusions.",
+          "ayahRef": "21:30",
+          "sourceUrl": "https://quran.com/21/30"
+        }
       ]
     },
     {
@@ -169,12 +411,30 @@
       "title": "Two Bodies of Water Passages",
       "summary": "Verses mention two seas and a separating barrier, often discussed in marine studies.",
       "detail": "Interpretations differ across linguistic, geographic, and scientific perspectives.",
-      "ayahRefs": ["55:19-20", "25:53"],
-      "tags": ["marine", "barrier", "interpretation"],
-      "sources": [
-        { "label": "Quran.com 55:19", "url": "https://quran.com/55/19-20" }
+      "ayahRefs": [
+        "55:19-20",
+        "25:53"
       ],
-      "caution": "Use with methodological caution and multiple tafsir references."
+      "tags": [
+        "marine",
+        "barrier",
+        "interpretation"
+      ],
+      "sources": [
+        {
+          "label": "Quran.com 55:19",
+          "url": "https://quran.com/55/19-20"
+        }
+      ],
+      "caution": "Use with methodological caution and multiple tafsir references.",
+      "examples": [
+        {
+          "title": "Primary reference",
+          "description": "Read 55:19-20 with trusted tafsir context before deriving conclusions.",
+          "ayahRef": "55:19-20",
+          "sourceUrl": "https://quran.com/55/19-20"
+        }
+      ]
     },
     {
       "id": "water-rain-cycle",
@@ -182,10 +442,29 @@
       "title": "Rain, Winds, and Revived Earth",
       "summary": "Cloud movement, winds, and rainfall appear in repeated ecological cycles.",
       "detail": "The Quran links these cycles to resurrection imagery and responsibility toward creation.",
-      "ayahRefs": ["30:48-50", "7:57", "35:9"],
-      "tags": ["rain", "winds", "ecology"],
+      "ayahRefs": [
+        "30:48-50",
+        "7:57",
+        "35:9"
+      ],
+      "tags": [
+        "rain",
+        "winds",
+        "ecology"
+      ],
       "sources": [
-        { "label": "Quran.com 30:48", "url": "https://quran.com/30/48-50" }
+        {
+          "label": "Quran.com 30:48",
+          "url": "https://quran.com/30/48-50"
+        }
+      ],
+      "examples": [
+        {
+          "title": "Primary reference",
+          "description": "Read 30:48-50 with trusted tafsir context before deriving conclusions.",
+          "ayahRef": "30:48-50",
+          "sourceUrl": "https://quran.com/30/48-50"
+        }
       ]
     },
     {
@@ -194,12 +473,29 @@
       "title": "Layers of Darkness in Deep Waters",
       "summary": "A verse describes layered darkness in deep seas with waves above waves.",
       "detail": "Commonly discussed in oceanic reflection contexts; interpretive claims should remain proportionate.",
-      "ayahRefs": ["24:40"],
-      "tags": ["deep-sea", "darkness", "waves"],
-      "sources": [
-        { "label": "Quran.com 24:40", "url": "https://quran.com/24/40" }
+      "ayahRefs": [
+        "24:40"
       ],
-      "caution": "Avoid over-reading beyond textual scope."
+      "tags": [
+        "deep-sea",
+        "darkness",
+        "waves"
+      ],
+      "sources": [
+        {
+          "label": "Quran.com 24:40",
+          "url": "https://quran.com/24/40"
+        }
+      ],
+      "caution": "Avoid over-reading beyond textual scope.",
+      "examples": [
+        {
+          "title": "Primary reference",
+          "description": "Read 24:40 with trusted tafsir context before deriving conclusions.",
+          "ayahRef": "24:40",
+          "sourceUrl": "https://quran.com/24/40"
+        }
+      ]
     },
     {
       "id": "earth-mountains-stability",
@@ -207,10 +503,29 @@
       "title": "Mountains as Stabilizing Imagery",
       "summary": "Mountains are described as pegs/anchors in several passages.",
       "detail": "Scholars discuss literal, analogical, and rhetorical dimensions of this imagery.",
-      "ayahRefs": ["16:15", "21:31", "78:6-7"],
-      "tags": ["mountains", "earth", "imagery"],
+      "ayahRefs": [
+        "16:15",
+        "21:31",
+        "78:6-7"
+      ],
+      "tags": [
+        "mountains",
+        "earth",
+        "imagery"
+      ],
       "sources": [
-        { "label": "Quran.com 16:15", "url": "https://quran.com/16/15" }
+        {
+          "label": "Quran.com 16:15",
+          "url": "https://quran.com/16/15"
+        }
+      ],
+      "examples": [
+        {
+          "title": "Primary reference",
+          "description": "Read 16:15 with trusted tafsir context before deriving conclusions.",
+          "ayahRef": "16:15",
+          "sourceUrl": "https://quran.com/16/15"
+        }
       ]
     },
     {
@@ -219,10 +534,28 @@
       "title": "Earthly Diversity and Terrain Contrast",
       "summary": "Verses describe adjacent lands and varied outcomes despite shared rainfall.",
       "detail": "This pattern is often used in reflection on divine wisdom in natural diversity.",
-      "ayahRefs": ["13:4", "35:27-28"],
-      "tags": ["terrain", "diversity", "agriculture"],
+      "ayahRefs": [
+        "13:4",
+        "35:27-28"
+      ],
+      "tags": [
+        "terrain",
+        "diversity",
+        "agriculture"
+      ],
       "sources": [
-        { "label": "Quran.com 13:4", "url": "https://quran.com/13/4" }
+        {
+          "label": "Quran.com 13:4",
+          "url": "https://quran.com/13/4"
+        }
+      ],
+      "examples": [
+        {
+          "title": "Primary reference",
+          "description": "Read 13:4 with trusted tafsir context before deriving conclusions.",
+          "ayahRef": "13:4",
+          "sourceUrl": "https://quran.com/13/4"
+        }
       ]
     },
     {
@@ -231,10 +564,27 @@
       "title": "Iron and Material Benefit",
       "summary": "Iron is described with both strength and benefit for people.",
       "detail": "The verse is discussed in ethical and civilizational context, not only as material science commentary.",
-      "ayahRefs": ["57:25"],
-      "tags": ["iron", "civilization", "ethics"],
+      "ayahRefs": [
+        "57:25"
+      ],
+      "tags": [
+        "iron",
+        "civilization",
+        "ethics"
+      ],
       "sources": [
-        { "label": "Quran.com 57:25", "url": "https://quran.com/57/25" }
+        {
+          "label": "Quran.com 57:25",
+          "url": "https://quran.com/57/25"
+        }
+      ],
+      "examples": [
+        {
+          "title": "Primary reference",
+          "description": "Read 57:25 with trusted tafsir context before deriving conclusions.",
+          "ayahRef": "57:25",
+          "sourceUrl": "https://quran.com/57/25"
+        }
       ]
     },
     {
@@ -243,10 +593,28 @@
       "title": "Earthquake and Uplift Imagery",
       "summary": "Quranic passages use seismic imagery as reminders of accountability.",
       "detail": "Natural events are framed morally and existentially, not only physically.",
-      "ayahRefs": ["99:1-8", "22:1-2"],
-      "tags": ["earthquake", "akhira", "warning"],
+      "ayahRefs": [
+        "99:1-8",
+        "22:1-2"
+      ],
+      "tags": [
+        "earthquake",
+        "akhira",
+        "warning"
+      ],
       "sources": [
-        { "label": "Quran.com 99", "url": "https://quran.com/99" }
+        {
+          "label": "Quran.com 99",
+          "url": "https://quran.com/99"
+        }
+      ],
+      "examples": [
+        {
+          "title": "Primary reference",
+          "description": "Read 99:1-8 with trusted tafsir context before deriving conclusions.",
+          "ayahRef": "99:1-8",
+          "sourceUrl": "https://quran.com/99"
+        }
       ]
     },
     {
@@ -255,10 +623,29 @@
       "title": "Embryonic Stage Terminology",
       "summary": "Human creation stages are described in concise developmental terms.",
       "detail": "Interpretation should include classical tafsir and modern linguistic care to avoid anachronism.",
-      "ayahRefs": ["23:12-14", "22:5", "75:37-39"],
-      "tags": ["embryology", "development", "tafsir"],
+      "ayahRefs": [
+        "23:12-14",
+        "22:5",
+        "75:37-39"
+      ],
+      "tags": [
+        "embryology",
+        "development",
+        "tafsir"
+      ],
       "sources": [
-        { "label": "Quran.com 23:12", "url": "https://quran.com/23/12-14" }
+        {
+          "label": "Quran.com 23:12",
+          "url": "https://quran.com/23/12-14"
+        }
+      ],
+      "examples": [
+        {
+          "title": "Primary reference",
+          "description": "Read 23:12-14 with trusted tafsir context before deriving conclusions.",
+          "ayahRef": "23:12-14",
+          "sourceUrl": "https://quran.com/23/12-14"
+        }
       ]
     },
     {
@@ -267,10 +654,29 @@
       "title": "Hearing, Sight, and Heart Sequence",
       "summary": "Multiple verses pair sensory faculties with inner cognition and gratitude.",
       "detail": "The sequence is often discussed in spiritual psychology and moral responsibility discourse.",
-      "ayahRefs": ["16:78", "23:78", "67:23"],
-      "tags": ["cognition", "gratitude", "accountability"],
+      "ayahRefs": [
+        "16:78",
+        "23:78",
+        "67:23"
+      ],
+      "tags": [
+        "cognition",
+        "gratitude",
+        "accountability"
+      ],
       "sources": [
-        { "label": "Quran.com 16:78", "url": "https://quran.com/16/78" }
+        {
+          "label": "Quran.com 16:78",
+          "url": "https://quran.com/16/78"
+        }
+      ],
+      "examples": [
+        {
+          "title": "Primary reference",
+          "description": "Read 16:78 with trusted tafsir context before deriving conclusions.",
+          "ayahRef": "16:78",
+          "sourceUrl": "https://quran.com/16/78"
+        }
       ]
     },
     {
@@ -279,10 +685,27 @@
       "title": "Precision in Human Reconstruction",
       "summary": "A verse references restoration even of fingertips, discussed in identity reflection contexts.",
       "detail": "The primary message concerns resurrection power; modern parallels are secondary reflections.",
-      "ayahRefs": ["75:3-4"],
-      "tags": ["resurrection", "identity", "precision"],
+      "ayahRefs": [
+        "75:3-4"
+      ],
+      "tags": [
+        "resurrection",
+        "identity",
+        "precision"
+      ],
       "sources": [
-        { "label": "Quran.com 75:3", "url": "https://quran.com/75/3-4" }
+        {
+          "label": "Quran.com 75:3",
+          "url": "https://quran.com/75/3-4"
+        }
+      ],
+      "examples": [
+        {
+          "title": "Primary reference",
+          "description": "Read 75:3-4 with trusted tafsir context before deriving conclusions.",
+          "ayahRef": "75:3-4",
+          "sourceUrl": "https://quran.com/75/3-4"
+        }
       ]
     },
     {
@@ -291,10 +714,27 @@
       "title": "Skin Renewal Imagery in Punishment Context",
       "summary": "A verse describes skin replacement in punishment scenes, often noted in biomedical reflection.",
       "detail": "The core Quranic context is moral warning; biomedical parallels should be treated as auxiliary.",
-      "ayahRefs": ["4:56"],
-      "tags": ["skin", "warning", "akhira"],
+      "ayahRefs": [
+        "4:56"
+      ],
+      "tags": [
+        "skin",
+        "warning",
+        "akhira"
+      ],
       "sources": [
-        { "label": "Quran.com 4:56", "url": "https://quran.com/4/56" }
+        {
+          "label": "Quran.com 4:56",
+          "url": "https://quran.com/4/56"
+        }
+      ],
+      "examples": [
+        {
+          "title": "Primary reference",
+          "description": "Read 4:56 with trusted tafsir context before deriving conclusions.",
+          "ayahRef": "4:56",
+          "sourceUrl": "https://quran.com/4/56"
+        }
       ]
     },
     {
@@ -303,10 +743,27 @@
       "title": "Bee Guidance Passage",
       "summary": "The Quran describes directed behavior of bees and benefits emerging from it.",
       "detail": "The passage invites observation of animal systems as signs of wisdom.",
-      "ayahRefs": ["16:68-69"],
-      "tags": ["bees", "honey", "guidance"],
+      "ayahRefs": [
+        "16:68-69"
+      ],
+      "tags": [
+        "bees",
+        "honey",
+        "guidance"
+      ],
       "sources": [
-        { "label": "Quran.com 16:68", "url": "https://quran.com/16/68-69" }
+        {
+          "label": "Quran.com 16:68",
+          "url": "https://quran.com/16/68-69"
+        }
+      ],
+      "examples": [
+        {
+          "title": "Primary reference",
+          "description": "Read 16:68-69 with trusted tafsir context before deriving conclusions.",
+          "ayahRef": "16:68-69",
+          "sourceUrl": "https://quran.com/16/68-69"
+        }
       ]
     },
     {
@@ -315,10 +772,28 @@
       "title": "Bird Flight as Sign",
       "summary": "Bird flight appears as a repeated sign of divine order and sustaining power.",
       "detail": "These verses connect natural observation with remembrance and gratitude.",
-      "ayahRefs": ["16:79", "67:19"],
-      "tags": ["birds", "flight", "signs"],
+      "ayahRefs": [
+        "16:79",
+        "67:19"
+      ],
+      "tags": [
+        "birds",
+        "flight",
+        "signs"
+      ],
       "sources": [
-        { "label": "Quran.com 67:19", "url": "https://quran.com/67/19" }
+        {
+          "label": "Quran.com 67:19",
+          "url": "https://quran.com/67/19"
+        }
+      ],
+      "examples": [
+        {
+          "title": "Primary reference",
+          "description": "Read 16:79 with trusted tafsir context before deriving conclusions.",
+          "ayahRef": "16:79",
+          "sourceUrl": "https://quran.com/67/19"
+        }
       ]
     },
     {
@@ -327,10 +802,27 @@
       "title": "Ant Communication Narrative",
       "summary": "A narrative in Surah An-Naml includes communication among ants.",
       "detail": "The passage is theological and narrative first, and can also support ecological reflection.",
-      "ayahRefs": ["27:18-19"],
-      "tags": ["ants", "communication", "sulayman"],
+      "ayahRefs": [
+        "27:18-19"
+      ],
+      "tags": [
+        "ants",
+        "communication",
+        "sulayman"
+      ],
       "sources": [
-        { "label": "Quran.com 27:18", "url": "https://quran.com/27/18-19" }
+        {
+          "label": "Quran.com 27:18",
+          "url": "https://quran.com/27/18-19"
+        }
+      ],
+      "examples": [
+        {
+          "title": "Primary reference",
+          "description": "Read 27:18-19 with trusted tafsir context before deriving conclusions.",
+          "ayahRef": "27:18-19",
+          "sourceUrl": "https://quran.com/27/18-19"
+        }
       ]
     },
     {
@@ -339,10 +831,28 @@
       "title": "Livestock Utility and Mercy",
       "summary": "Livestock are described as sources of food, clothing, transport, and beauty.",
       "detail": "The theme grounds ecological dependence in gratitude and ethical use.",
-      "ayahRefs": ["16:5-8", "23:21"],
-      "tags": ["livestock", "benefit", "ethics"],
+      "ayahRefs": [
+        "16:5-8",
+        "23:21"
+      ],
+      "tags": [
+        "livestock",
+        "benefit",
+        "ethics"
+      ],
       "sources": [
-        { "label": "Quran.com 16:5", "url": "https://quran.com/16/5-8" }
+        {
+          "label": "Quran.com 16:5",
+          "url": "https://quran.com/16/5-8"
+        }
+      ],
+      "examples": [
+        {
+          "title": "Primary reference",
+          "description": "Read 16:5-8 with trusted tafsir context before deriving conclusions.",
+          "ayahRef": "16:5-8",
+          "sourceUrl": "https://quran.com/16/5-8"
+        }
       ]
     },
     {
@@ -351,10 +861,27 @@
       "title": "Roman-Persian Conflict Reference",
       "summary": "Surah Ar-Rum contains a near-term reversal statement in a known geopolitical conflict.",
       "detail": "The passage is frequently discussed in historical-prophetic reading traditions.",
-      "ayahRefs": ["30:2-4"],
-      "tags": ["ar-rum", "history", "prophecy"],
+      "ayahRefs": [
+        "30:2-4"
+      ],
+      "tags": [
+        "ar-rum",
+        "history",
+        "prophecy"
+      ],
       "sources": [
-        { "label": "Quran.com 30:2", "url": "https://quran.com/30/2-4" }
+        {
+          "label": "Quran.com 30:2",
+          "url": "https://quran.com/30/2-4"
+        }
+      ],
+      "examples": [
+        {
+          "title": "Primary reference",
+          "description": "Read 30:2-4 with trusted tafsir context before deriving conclusions.",
+          "ayahRef": "30:2-4",
+          "sourceUrl": "https://quran.com/30/2-4"
+        }
       ]
     },
     {
@@ -363,10 +890,27 @@
       "title": "Pharaoh as Sign for Later People",
       "summary": "A verse states Pharaoh would be preserved as a sign for those after him.",
       "detail": "Commonly discussed in historical awareness themes with moral emphasis.",
-      "ayahRefs": ["10:92"],
-      "tags": ["pharaoh", "sign", "history"],
+      "ayahRefs": [
+        "10:92"
+      ],
+      "tags": [
+        "pharaoh",
+        "sign",
+        "history"
+      ],
       "sources": [
-        { "label": "Quran.com 10:92", "url": "https://quran.com/10/92" }
+        {
+          "label": "Quran.com 10:92",
+          "url": "https://quran.com/10/92"
+        }
+      ],
+      "examples": [
+        {
+          "title": "Primary reference",
+          "description": "Read 10:92 with trusted tafsir context before deriving conclusions.",
+          "ayahRef": "10:92",
+          "sourceUrl": "https://quran.com/10/92"
+        }
       ]
     },
     {
@@ -375,10 +919,27 @@
       "title": "Promise of Safe Entry to the Sacred Mosque",
       "summary": "A verse references safe entry into the Sacred Mosque, tied to later historical fulfillment.",
       "detail": "This is read within seerah context and treaty-era developments.",
-      "ayahRefs": ["48:27"],
-      "tags": ["hudaybiyyah", "seerah", "fulfillment"],
+      "ayahRefs": [
+        "48:27"
+      ],
+      "tags": [
+        "hudaybiyyah",
+        "seerah",
+        "fulfillment"
+      ],
       "sources": [
-        { "label": "Quran.com 48:27", "url": "https://quran.com/48/27" }
+        {
+          "label": "Quran.com 48:27",
+          "url": "https://quran.com/48/27"
+        }
+      ],
+      "examples": [
+        {
+          "title": "Primary reference",
+          "description": "Read 48:27 with trusted tafsir context before deriving conclusions.",
+          "ayahRef": "48:27",
+          "sourceUrl": "https://quran.com/48/27"
+        }
       ]
     },
     {
@@ -387,10 +948,27 @@
       "title": "Surah Al-Masad Historical Significance",
       "summary": "The surah addressing Abu Lahab is frequently examined in historical-prophetic discourse.",
       "detail": "Its discussion centers on public opposition and eventual historical outcome.",
-      "ayahRefs": ["111:1-5"],
-      "tags": ["al-masad", "makkan-period", "history"],
+      "ayahRefs": [
+        "111:1-5"
+      ],
+      "tags": [
+        "al-masad",
+        "makkan-period",
+        "history"
+      ],
       "sources": [
-        { "label": "Quran.com 111", "url": "https://quran.com/111" }
+        {
+          "label": "Quran.com 111",
+          "url": "https://quran.com/111"
+        }
+      ],
+      "examples": [
+        {
+          "title": "Primary reference",
+          "description": "Read 111:1-5 with trusted tafsir context before deriving conclusions.",
+          "ayahRef": "111:1-5",
+          "sourceUrl": "https://quran.com/111"
+        }
       ]
     },
     {
@@ -399,10 +977,29 @@
       "title": "Gradual Prohibition Methodology",
       "summary": "Legal reform on intoxicants appears in stages across revelation.",
       "detail": "This is often cited as a model for ethical reform with social readiness.",
-      "ayahRefs": ["2:219", "4:43", "5:90-91"],
-      "tags": ["law", "gradualism", "social-change"],
+      "ayahRefs": [
+        "2:219",
+        "4:43",
+        "5:90-91"
+      ],
+      "tags": [
+        "law",
+        "gradualism",
+        "social-change"
+      ],
       "sources": [
-        { "label": "Quran.com 5:90", "url": "https://quran.com/5/90-91" }
+        {
+          "label": "Quran.com 5:90",
+          "url": "https://quran.com/5/90-91"
+        }
+      ],
+      "examples": [
+        {
+          "title": "Primary reference",
+          "description": "Read 2:219 with trusted tafsir context before deriving conclusions.",
+          "ayahRef": "2:219",
+          "sourceUrl": "https://quran.com/5/90-91"
+        }
       ]
     },
     {
@@ -411,10 +1008,29 @@
       "title": "Financial Justice Framework",
       "summary": "Verses on riba, charity, and wealth circulation form a social-ethical system.",
       "detail": "The Quranic model emphasizes fairness, social protection, and reduced exploitation.",
-      "ayahRefs": ["2:275-279", "59:7", "9:60"],
-      "tags": ["economics", "justice", "zakat"],
+      "ayahRefs": [
+        "2:275-279",
+        "59:7",
+        "9:60"
+      ],
+      "tags": [
+        "economics",
+        "justice",
+        "zakat"
+      ],
       "sources": [
-        { "label": "Quran.com 2:275", "url": "https://quran.com/2/275-279" }
+        {
+          "label": "Quran.com 2:275",
+          "url": "https://quran.com/2/275-279"
+        }
+      ],
+      "examples": [
+        {
+          "title": "Primary reference",
+          "description": "Read 2:275-279 with trusted tafsir context before deriving conclusions.",
+          "ayahRef": "2:275-279",
+          "sourceUrl": "https://quran.com/2/275-279"
+        }
       ]
     },
     {
@@ -423,10 +1039,28 @@
       "title": "Family Law and Rights Balance",
       "summary": "Family legislation passages are often studied for balance of rights and duties.",
       "detail": "The framework addresses care, justice, inheritance, and protection in social life.",
-      "ayahRefs": ["4:1-12", "2:228-233"],
-      "tags": ["family-law", "rights", "inheritance"],
+      "ayahRefs": [
+        "4:1-12",
+        "2:228-233"
+      ],
+      "tags": [
+        "family-law",
+        "rights",
+        "inheritance"
+      ],
       "sources": [
-        { "label": "Quran.com 4", "url": "https://quran.com/4" }
+        {
+          "label": "Quran.com 4",
+          "url": "https://quran.com/4"
+        }
+      ],
+      "examples": [
+        {
+          "title": "Primary reference",
+          "description": "Read 4:1-12 with trusted tafsir context before deriving conclusions.",
+          "ayahRef": "4:1-12",
+          "sourceUrl": "https://quran.com/4"
+        }
       ]
     },
     {
@@ -435,10 +1069,27 @@
       "title": "Hearts and Remembrance",
       "summary": "A core spiritual principle links remembrance of Allah with inner tranquility.",
       "detail": "This verse is central in discussions of emotional regulation and spiritual grounding.",
-      "ayahRefs": ["13:28"],
-      "tags": ["dhikr", "tranquility", "heart"],
+      "ayahRefs": [
+        "13:28"
+      ],
+      "tags": [
+        "dhikr",
+        "tranquility",
+        "heart"
+      ],
       "sources": [
-        { "label": "Quran.com 13:28", "url": "https://quran.com/13/28" }
+        {
+          "label": "Quran.com 13:28",
+          "url": "https://quran.com/13/28"
+        }
+      ],
+      "examples": [
+        {
+          "title": "Primary reference",
+          "description": "Read 13:28 with trusted tafsir context before deriving conclusions.",
+          "ayahRef": "13:28",
+          "sourceUrl": "https://quran.com/13/28"
+        }
       ]
     },
     {
@@ -447,10 +1098,29 @@
       "title": "Hope and Fear Balance",
       "summary": "The Quran repeatedly balances hope in mercy with fear of accountability.",
       "detail": "This balance is treated as a core psychological and spiritual discipline.",
-      "ayahRefs": ["15:49-50", "39:53", "32:16"],
-      "tags": ["hope", "fear", "balance"],
+      "ayahRefs": [
+        "15:49-50",
+        "39:53",
+        "32:16"
+      ],
+      "tags": [
+        "hope",
+        "fear",
+        "balance"
+      ],
       "sources": [
-        { "label": "Quran.com 39:53", "url": "https://quran.com/39/53" }
+        {
+          "label": "Quran.com 39:53",
+          "url": "https://quran.com/39/53"
+        }
+      ],
+      "examples": [
+        {
+          "title": "Primary reference",
+          "description": "Read 15:49-50 with trusted tafsir context before deriving conclusions.",
+          "ayahRef": "15:49-50",
+          "sourceUrl": "https://quran.com/39/53"
+        }
       ]
     },
     {
@@ -459,10 +1129,28 @@
       "title": "Self-Purification (Tazkiyah)",
       "summary": "Purification of the self is presented as a central success criterion.",
       "detail": "This theme is linked to disciplined habits, moral sincerity, and conscious accountability.",
-      "ayahRefs": ["91:9-10", "87:14-15"],
-      "tags": ["tazkiyah", "discipline", "soul"],
+      "ayahRefs": [
+        "91:9-10",
+        "87:14-15"
+      ],
+      "tags": [
+        "tazkiyah",
+        "discipline",
+        "soul"
+      ],
       "sources": [
-        { "label": "Quran.com 91:9", "url": "https://quran.com/91/9-10" }
+        {
+          "label": "Quran.com 91:9",
+          "url": "https://quran.com/91/9-10"
+        }
+      ],
+      "examples": [
+        {
+          "title": "Primary reference",
+          "description": "Read 91:9-10 with trusted tafsir context before deriving conclusions.",
+          "ayahRef": "91:9-10",
+          "sourceUrl": "https://quran.com/91/9-10"
+        }
       ]
     },
     {
@@ -471,10 +1159,29 @@
       "title": "Reflection on Signs and Reasoning",
       "summary": "Many verses call for thinking, reasoning, and deep reflection over signs.",
       "detail": "The Quran repeatedly activates cognitive engagement rather than passive reading.",
-      "ayahRefs": ["2:164", "30:21-25", "45:13"],
-      "tags": ["reason", "reflection", "ayat"],
+      "ayahRefs": [
+        "2:164",
+        "30:21-25",
+        "45:13"
+      ],
+      "tags": [
+        "reason",
+        "reflection",
+        "ayat"
+      ],
       "sources": [
-        { "label": "Quran.com 2:164", "url": "https://quran.com/2/164" }
+        {
+          "label": "Quran.com 2:164",
+          "url": "https://quran.com/2/164"
+        }
+      ],
+      "examples": [
+        {
+          "title": "Primary reference",
+          "description": "Read 2:164 with trusted tafsir context before deriving conclusions.",
+          "ayahRef": "2:164",
+          "sourceUrl": "https://quran.com/2/164"
+        }
       ]
     },
     {
@@ -483,10 +1190,27 @@
       "title": "Promise of Preservation",
       "summary": "The Quran states a direct promise of preserving the Reminder.",
       "detail": "This verse is foundational in discussions of transmission, memorization, and manuscript tradition.",
-      "ayahRefs": ["15:9"],
-      "tags": ["preservation", "revelation", "hifz"],
+      "ayahRefs": [
+        "15:9"
+      ],
+      "tags": [
+        "preservation",
+        "revelation",
+        "hifz"
+      ],
       "sources": [
-        { "label": "Quran.com 15:9", "url": "https://quran.com/15/9" }
+        {
+          "label": "Quran.com 15:9",
+          "url": "https://quran.com/15/9"
+        }
+      ],
+      "examples": [
+        {
+          "title": "Primary reference",
+          "description": "Read 15:9 with trusted tafsir context before deriving conclusions.",
+          "ayahRef": "15:9",
+          "sourceUrl": "https://quran.com/15/9"
+        }
       ]
     },
     {
@@ -495,10 +1219,27 @@
       "title": "Internal Coherence Challenge",
       "summary": "A verse invites reflection on consistency as evidence of divine origin.",
       "detail": "The challenge highlights textual coherence and invites sustained study rather than superficial reading.",
-      "ayahRefs": ["4:82"],
-      "tags": ["coherence", "challenge", "origin"],
+      "ayahRefs": [
+        "4:82"
+      ],
+      "tags": [
+        "coherence",
+        "challenge",
+        "origin"
+      ],
       "sources": [
-        { "label": "Quran.com 4:82", "url": "https://quran.com/4/82" }
+        {
+          "label": "Quran.com 4:82",
+          "url": "https://quran.com/4/82"
+        }
+      ],
+      "examples": [
+        {
+          "title": "Primary reference",
+          "description": "Read 4:82 with trusted tafsir context before deriving conclusions.",
+          "ayahRef": "4:82",
+          "sourceUrl": "https://quran.com/4/82"
+        }
       ]
     }
   ]
