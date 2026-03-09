@@ -3,6 +3,7 @@ import {
   ActivityIndicator,
   Alert,
   FlatList,
+  Keyboard,
   StyleSheet,
   Text,
   TextInput,
@@ -179,17 +180,24 @@ export default function MemorizeUnderstandScreen({ navigation }: any) {
   }, [surahs, trimmedSearch, normalizedQuery]);
 
   const ayahMatches = useMemo(() => {
-    if (!trimmedSearch || normalizedQuery.length < 2 || !quranIndex) return [];
+    if (!trimmedSearch || normalizedQuery.length < 2 || !quranIndex) {
+      return { items: [] as QuranSearchEntry[], totalCount: 0 };
+    }
 
     const matches: QuranSearchEntry[] = [];
+    let totalCount = 0;
     for (const entry of quranIndex) {
       if (entry.ayahTextNormalized.includes(normalizedQuery)) {
-        matches.push(entry);
+        totalCount += 1;
+        if (matches.length < 60) {
+          matches.push(entry);
+        }
       }
-      if (matches.length >= 60) break;
     }
-    return matches;
+    return { items: matches, totalCount };
   }, [trimmedSearch, normalizedQuery, quranIndex]);
+
+  const ayahMatchCount = ayahMatches.totalCount;
 
   const searchResults = useMemo<SearchResultItem[]>(() => {
     if (!trimmedSearch) return [];
@@ -200,7 +208,7 @@ export default function MemorizeUnderstandScreen({ navigation }: any) {
       surah,
     }));
 
-    const ayahResults: SearchResultItem[] = ayahMatches.map((entry, index) => ({
+    const ayahResults: SearchResultItem[] = ayahMatches.items.map((entry, index) => ({
       type: 'ayah',
       key: `ayah-${entry.surahId}-${entry.ayahNumber}-${index}`,
       surahId: entry.surahId,
@@ -211,7 +219,7 @@ export default function MemorizeUnderstandScreen({ navigation }: any) {
     }));
 
     return [...surahResults, ...ayahResults];
-  }, [trimmedSearch, surahNameMatches, ayahMatches]);
+  }, [trimmedSearch, surahNameMatches, ayahMatches.items]);
 
   const clearSearch = () => {
     setSearchQuery('');
@@ -335,6 +343,8 @@ export default function MemorizeUnderstandScreen({ navigation }: any) {
               onChangeText={setSearchQuery}
               autoCapitalize="none"
               autoCorrect={false}
+              returnKeyType="search"
+              onSubmitEditing={Keyboard.dismiss}
             />
 
             {searchQuery.length > 0 && (
@@ -346,6 +356,20 @@ export default function MemorizeUnderstandScreen({ navigation }: any) {
             )}
           </View>
         </View>
+
+        {isSearchMode && (
+          <View style={styles.searchMetaRow}>
+            <Text style={[styles.searchMetaText, isDark && styles.darkMutedText]}>
+              Surah matches {surahNameMatches.length}
+            </Text>
+            <Text style={[styles.searchMetaText, isDark && styles.darkMutedText]}>
+              Ayah matches {ayahMatchCount}
+            </Text>
+            <TouchableOpacity style={styles.searchDoneButton} onPress={Keyboard.dismiss}>
+              <Text style={styles.searchDoneButtonText}>Done</Text>
+            </TouchableOpacity>
+          </View>
+        )}
 
         {shouldShowGlobalLoading && (
           <View style={styles.loadingRow}>
@@ -429,6 +453,30 @@ const styles = StyleSheet.create({
   loadingRowText: {
     fontSize: 13,
     color: UI_COLORS.textMuted,
+  },
+  searchMetaRow: {
+    paddingHorizontal: 16,
+    marginBottom: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  searchMetaText: {
+    fontSize: 13,
+    color: UI_COLORS.textMuted,
+    fontWeight: '600',
+  },
+  searchDoneButton: {
+    marginLeft: 'auto',
+    backgroundColor: UI_COLORS.primary,
+    borderRadius: UI_RADII.xl,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+  },
+  searchDoneButtonText: {
+    color: UI_COLORS.white,
+    fontSize: 12,
+    fontWeight: '700',
   },
   errorText: {
     color: UI_COLORS.danger,
