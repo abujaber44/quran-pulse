@@ -17,6 +17,7 @@ import ScreenIntroTile from '../components/ScreenIntroTile';
 
 const API_BASE = 'https://api.aladhan.com/v1';
 const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+const DAILY_INSIGHT_CACHE_PREFIX = 'onThisDateInsight:';
 
 type CalendarDay = {
   gregorian: {
@@ -28,9 +29,144 @@ type CalendarDay = {
   };
   hijri: {
     day: string;
-    month: { en: string };
+    month: { en: string; number?: number | string };
     year: string;
+    holidays?: string[];
   };
+};
+
+type OnThisDateReflection = {
+  title: string;
+  text: string;
+  source: string;
+  arabicText?: string;
+};
+
+type QuranInsightEdition = {
+  text?: string;
+  numberInSurah?: number;
+  surah?: {
+    englishName?: string;
+    name?: string;
+  };
+  edition?: {
+    identifier?: string;
+    language?: string;
+    englishName?: string;
+  };
+};
+
+const ON_THIS_DATE_REFLECTIONS: OnThisDateReflection[] = [
+  {
+    title: 'Ayah Insight',
+    text: 'Consistent remembrance brings calm to the heart, even on busy days.',
+    source: 'Quran reflection',
+  },
+  {
+    title: 'Hadith Insight',
+    text: 'Small acts done regularly are beloved, so keep your worship steady.',
+    source: 'Hadith reflection',
+  },
+  {
+    title: 'Ayah Insight',
+    text: 'Patience with prayer and gratitude strengthens your daily rhythm.',
+    source: 'Quran reflection',
+  },
+  {
+    title: 'Hadith Insight',
+    text: 'Mercy toward others opens doors of mercy for you.',
+    source: 'Hadith reflection',
+  },
+  {
+    title: 'Ayah Insight',
+    text: 'When intentions are sincere, even simple deeds carry lasting value.',
+    source: 'Quran reflection',
+  },
+  {
+    title: 'Hadith Insight',
+    text: 'A believer benefits others through good speech, service, and character.',
+    source: 'Hadith reflection',
+  },
+];
+
+const toSingleLine = (value: string): string => value.replace(/\s+/g, ' ').trim();
+
+const dayOfYear = (date: Date): number => {
+  const start = new Date(date.getFullYear(), 0, 0);
+  const diff = date.getTime() - start.getTime();
+  return Math.floor(diff / 86400000);
+};
+
+const getAyahNumberForDate = (date: Date): number => {
+  const seed =
+    dayOfYear(date) +
+    date.getFullYear() * 11 +
+    (date.getMonth() + 1) * 31 +
+    date.getDate() * 17;
+  return (seed % 6236) + 1;
+};
+
+const parseGregorianDateFromCalendarDay = (day: CalendarDay): Date | null => {
+  const parts = day.gregorian.date.split('-').map((part) => Number(part));
+  if (parts.length === 3 && parts.every((value) => Number.isFinite(value))) {
+    // Aladhan returns DD-MM-YYYY for gregorian.date.
+    const [dd, mm, yyyy] = parts;
+    const parsed = new Date(yyyy, mm - 1, dd);
+    if (!Number.isNaN(parsed.getTime())) {
+      return parsed;
+    }
+  }
+
+  const dayNum = Number(day.gregorian.day);
+  const monthNum = Number(day.gregorian.month.number);
+  const yearNum = Number(day.gregorian.year);
+  if (!Number.isFinite(dayNum) || !Number.isFinite(monthNum) || !Number.isFinite(yearNum)) {
+    return null;
+  }
+
+  const parsed = new Date(yearNum, monthNum - 1, dayNum);
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+};
+
+const fetchInsightForDateFromApi = async (date: Date): Promise<OnThisDateReflection | null> => {
+  try {
+    const ayahNumber = getAyahNumberForDate(date);
+    const response = await axios.get(`https://api.alquran.cloud/v1/ayah/${ayahNumber}/editions/quran-uthmani,en.sahih`);
+    const payload = response.data?.data;
+    const editions: QuranInsightEdition[] = Array.isArray(payload)
+      ? payload
+      : payload
+        ? [payload]
+        : [];
+
+    if (editions.length === 0) return null;
+
+    const englishEdition =
+      editions.find((item) => item.edition?.language === 'en') ||
+      editions.find((item) => item.edition?.identifier === 'en.sahih');
+    const arabicEdition =
+      editions.find((item) => item.edition?.identifier === 'quran-uthmani') ||
+      editions.find((item) => item.edition?.language === 'ar');
+
+    const englishText = englishEdition?.text ? toSingleLine(englishEdition.text) : '';
+    const arabicText = arabicEdition?.text ? toSingleLine(arabicEdition.text) : '';
+    if (!englishText && !arabicText) return null;
+
+    const limitedEnglish = englishText.length > 210 ? `${englishText.slice(0, 207)}...` : englishText;
+    const text = limitedEnglish || '';
+    const surahName = englishEdition?.surah?.englishName || arabicEdition?.surah?.englishName || 'Quran';
+    const ayahInSurah = englishEdition?.numberInSurah || arabicEdition?.numberInSurah || '';
+
+    return {
+      title: 'Quran Insight',
+      text,
+      source: ayahInSurah ? `${surahName} ${ayahInSurah}` : surahName,
+      arabicText,
+    };
+  } catch (error) {
+    console.error('Daily insight API fetch failed:', error);
+    return null;
+  }
 };
 
 const FALLBACK_HADITH: DailyHadith = {
@@ -46,9 +182,11 @@ export default function CalendarScreen() {
   const [loading, setLoading] = useState<boolean>(true);
   const [dailyHadith, setDailyHadith] = useState<DailyHadith | null>(null);
   const [selectedDay, setSelectedDay] = useState<CalendarDay | null>(null);
+  const [selectedDayApiInsight, setSelectedDayApiInsight] = useState<OnThisDateReflection | null>(null);
   const { settings } = useSettings();
   const isDark = settings.isDarkMode;
   const hadithArabicFontSize = Math.max(18, settings.arabicFontSize - 10);
+  const onDateArabicFontSize = Math.max(20, settings.arabicFontSize - 12);
 
 
   // Automatically set to today's Hijri month on first load
@@ -135,6 +273,54 @@ export default function CalendarScreen() {
    loadDailyHadith();
   }, []);
 
+  useEffect(() => {
+    let isActive = true;
+
+    const loadInsightForSelectedDay = async () => {
+      if (!selectedDay) {
+        setSelectedDayApiInsight(null);
+        return;
+      }
+
+      const cacheKey = `${DAILY_INSIGHT_CACHE_PREFIX}${selectedDay.gregorian.date}`;
+      try {
+        const cachedInsight = await AsyncStorage.getItem(cacheKey);
+        if (cachedInsight) {
+          if (isActive) {
+            setSelectedDayApiInsight(JSON.parse(cachedInsight) as OnThisDateReflection);
+          }
+          return;
+        }
+
+        const parsedDate = parseGregorianDateFromCalendarDay(selectedDay);
+        if (!parsedDate) {
+          if (isActive) setSelectedDayApiInsight(null);
+          return;
+        }
+
+        const insight = await fetchInsightForDateFromApi(parsedDate);
+        if (!isActive) return;
+
+        if (insight) {
+          setSelectedDayApiInsight(insight);
+          await AsyncStorage.setItem(cacheKey, JSON.stringify(insight));
+        } else {
+          setSelectedDayApiInsight(null);
+        }
+      } catch (error) {
+        console.error('Selected-day insight load failed:', error);
+        if (isActive) {
+          setSelectedDayApiInsight(null);
+        }
+      }
+    };
+
+    void loadInsightForSelectedDay();
+    return () => {
+      isActive = false;
+    };
+  }, [selectedDay]);
+
   const fetchHijriMonth = async (): Promise<void> => {
     setLoading(true);
     try {
@@ -193,6 +379,28 @@ export default function CalendarScreen() {
     return [...baseGrid, ...trailingEmptyCells];
   }, [monthData]);
 
+  const selectedDayEvents = useMemo<string[]>(() => {
+    if (!selectedDay || !Array.isArray(selectedDay.hijri.holidays)) return [];
+    return selectedDay.hijri.holidays
+      .filter((event): event is string => typeof event === 'string')
+      .map((event) => event.trim())
+      .filter((event) => event.length > 0);
+  }, [selectedDay]);
+
+  const selectedDayReflection = useMemo<OnThisDateReflection | null>(() => {
+    if (!selectedDay) return null;
+
+    const dayNum = Number(selectedDay.hijri.day);
+    const monthRaw = selectedDay.hijri.month.number;
+    const monthNum = Number(monthRaw);
+    const fallbackMonth = Number.isFinite(monthNum) && monthNum > 0 ? monthNum : hijriMonth;
+    const safeDay = Number.isFinite(dayNum) && dayNum > 0 ? dayNum : 1;
+
+    const index = (safeDay + fallbackMonth * 7) % ON_THIS_DATE_REFLECTIONS.length;
+    return ON_THIS_DATE_REFLECTIONS[index];
+  }, [selectedDay, hijriMonth]);
+  const onThisDateInsight = selectedDayApiInsight ?? selectedDayReflection;
+
   const renderDay = (day: CalendarDay | null, index: number) => {
     if (!day) {
       return <View key={`empty-${index}`} style={styles.emptyCell} />;
@@ -248,7 +456,7 @@ export default function CalendarScreen() {
       <View style={[styles.container, isDark && styles.darkBg]}>
         <ScreenIntroTile
           title="Islamic Calendar"
-          description="This calendar displays the current Islamic (Hijri) month with corresponding Gregorian dates. Tap any day to highlight it and view its full Hijri and Gregorian date details. The Hadith of the Day is shown below for daily reflection."
+          description="This calendar displays the current Islamic (Hijri) month with corresponding Gregorian dates. Tap any day to view On This Date content, including Islamic events when available or a short reflection."
           isDark={isDark}
           style={styles.introTile}
         />
@@ -293,13 +501,44 @@ export default function CalendarScreen() {
 
               {selectedDay && (
                 <View style={[styles.selectedDayContainer, isDark && styles.darkSelectedDayContainer]}>
-                  <Text style={styles.selectedDayTitle}>Selected Day</Text>
+                  <Text style={styles.selectedDayTitle}>On This Date</Text>
                   <Text style={[styles.selectedDayText, isDark && styles.darkText]}>
                     Hijri: {selectedDay.hijri.day} {selectedDay.hijri.month.en} {selectedDay.hijri.year} AH
                   </Text>
                   <Text style={[styles.selectedDayText, isDark && styles.darkText]}>
                     Gregorian: {selectedDay.gregorian.weekday.en}, {selectedDay.gregorian.day} {selectedDay.gregorian.month.en} {selectedDay.gregorian.year}
                   </Text>
+                  {selectedDayEvents.length > 0 ? (
+                    <View style={styles.onDateSection}>
+                      <Text style={styles.onDateSectionTitle}>Islamic Event</Text>
+                      {selectedDayEvents.map((event) => (
+                        <Text key={event} style={[styles.onDateInsightText, isDark && styles.darkText]}>
+                          • {event}
+                        </Text>
+                      ))}
+                    </View>
+                  ) : (
+                    <View style={styles.onDateSection}>
+                      <Text style={styles.onDateSectionTitle}>{onThisDateInsight?.title || 'Reflection'}</Text>
+                      {onThisDateInsight?.arabicText ? (
+                        <Text
+                          style={[
+                            styles.onDateArabicText,
+                            { fontSize: onDateArabicFontSize },
+                            isDark && styles.darkText,
+                          ]}
+                        >
+                          {onThisDateInsight.arabicText}
+                        </Text>
+                      ) : null}
+                      <Text style={[styles.onDateInsightText, isDark && styles.darkText]}>
+                        {onThisDateInsight?.text || 'Reflect on this day with gratitude and sincere intention.'}
+                      </Text>
+                      <Text style={[styles.onDateSourceText, isDark && styles.darkMutedText]}>
+                        {onThisDateInsight?.source || 'Daily reflection'}
+                      </Text>
+                    </View>
+                  )}
                 </View>
               )}
 
@@ -453,6 +692,41 @@ const styles = StyleSheet.create({
     color: UI_COLORS.text,
     textAlign: 'center',
     lineHeight: 20,
+  },
+  onDateSection: {
+    marginTop: 10,
+    paddingTop: 10,
+    borderTopWidth: 1,
+    borderTopColor: '#cde9d5',
+  },
+  onDateSectionTitle: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: UI_COLORS.primaryDeep,
+    textAlign: 'center',
+    marginBottom: 6,
+    letterSpacing: 0.2,
+  },
+  onDateInsightText: {
+    fontSize: 14,
+    color: UI_COLORS.text,
+    lineHeight: 21,
+    textAlign: 'center',
+  },
+  onDateArabicText: {
+    marginBottom: 8,
+    color: UI_COLORS.text,
+    lineHeight: 36,
+    textAlign: 'right',
+    writingDirection: 'rtl',
+    fontFamily: 'AmiriQuran',
+  },
+  onDateSourceText: {
+    marginTop: 5,
+    fontSize: 12,
+    color: UI_COLORS.textMuted,
+    textAlign: 'center',
+    fontStyle: 'italic',
   },
   hadithTitle: {
     fontSize: 18,
