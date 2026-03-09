@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { fetchSurahs } from '../services/quranApi';
-import { getBookmarks, removeBookmark, Bookmark } from '../services/bookmarkService';
+import { getBookmarks, removeBookmark, Bookmark, BookmarkTag } from '../services/bookmarkService';
 import { useNavigation } from '@react-navigation/native';
 import type { StackNavigationProp } from '@react-navigation/stack';
 import { useSettings } from '../context/SettingsContext';
@@ -32,10 +32,15 @@ export default function BookmarksScreen() {
   const [bookmarks, setBookmarks] = useState<Bookmark[]>([]);
   const [surahs, setSurahs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedTag, setSelectedTag] = useState<'all' | BookmarkTag>('all');
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
   const { settings } = useSettings();
   const isDark = settings.isDarkMode;
   const ayahFontSize = Math.max(24, settings.arabicFontSize - 6);
+
+  const getTagLabel = (tag: BookmarkTag) => (tag === 'memorize' ? 'Memorize' : 'Read/Recite');
+  const visibleBookmarks =
+    selectedTag === 'all' ? bookmarks : bookmarks.filter((bookmark) => bookmark.tag === selectedTag);
 
   useEffect(() => {
     loadData();
@@ -92,9 +97,14 @@ export default function BookmarksScreen() {
           <Text style={[styles.surahName, isDark && styles.darkText]}>{item.surahName}</Text>
           <Text style={styles.ayahNumber}>Ayah {item.ayahNum}</Text>
         </View>
+        <View style={styles.headerRight}>
+          <View style={[styles.tagPill, item.tag === 'memorize' ? styles.tagMemorize : styles.tagRead]}>
+            <Text style={styles.tagPillText}>{getTagLabel(item.tag)}</Text>
+          </View>
         <TouchableOpacity onPress={() => handleRemove(item.surahId, item.ayahNum)}>
           <Text style={styles.removeText}>Remove</Text>
         </TouchableOpacity>
+        </View>
       </View>
 
       <Text style={[styles.ayahText, { fontSize: ayahFontSize, lineHeight: Math.round(ayahFontSize * 1.6) }, isDark && styles.darkText]}>
@@ -132,8 +142,39 @@ export default function BookmarksScreen() {
         isDark={isDark}
         style={styles.introTile}
       />
+      <View style={styles.filtersRow}>
+        <TouchableOpacity
+          style={[styles.filterChip, selectedTag === 'all' && styles.filterChipActive]}
+          onPress={() => setSelectedTag('all')}
+        >
+          <Text style={[styles.filterChipText, selectedTag === 'all' && styles.filterChipTextActive]}>
+            All
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.filterChip, selectedTag === 'memorize' && styles.filterChipActive]}
+          onPress={() => setSelectedTag('memorize')}
+        >
+          <Text style={[styles.filterChipText, selectedTag === 'memorize' && styles.filterChipTextActive]}>
+            Memorize
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.filterChip, selectedTag === 'read_recite' && styles.filterChipActive]}
+          onPress={() => setSelectedTag('read_recite')}
+        >
+          <Text style={[styles.filterChipText, selectedTag === 'read_recite' && styles.filterChipTextActive]}>
+            Read/Recite
+          </Text>
+        </TouchableOpacity>
+      </View>
+      {visibleBookmarks.length === 0 ? (
+        <Text style={[styles.filteredEmptyText, isDark && styles.darkMutedText]}>
+          No bookmarks found for this tag.
+        </Text>
+      ) : null}
       <FlatList
-        data={bookmarks}
+        data={visibleBookmarks}
         keyExtractor={(item) => `${item.surahId}-${item.ayahNum}`}
         renderItem={renderItem}
         contentContainerStyle={styles.list}
@@ -147,6 +188,38 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: UI_COLORS.background },
   darkBg: { backgroundColor: UI_COLORS.darkBackground },
   introTile: { marginBottom: 12 },
+  filtersRow: {
+    flexDirection: 'row',
+    paddingHorizontal: 16,
+    marginBottom: 12,
+    gap: 8,
+  },
+  filterChip: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: UI_COLORS.border,
+    backgroundColor: UI_COLORS.surface,
+  },
+  filterChipActive: {
+    backgroundColor: UI_COLORS.primary,
+    borderColor: UI_COLORS.primary,
+  },
+  filterChipText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: UI_COLORS.textMuted,
+  },
+  filterChipTextActive: {
+    color: UI_COLORS.white,
+  },
+  filteredEmptyText: {
+    fontSize: 14,
+    color: UI_COLORS.textMuted,
+    textAlign: 'center',
+    marginBottom: 12,
+  },
   list: { paddingHorizontal: 16, paddingBottom: 24 },
   card: {
     backgroundColor: UI_COLORS.surface,
@@ -167,6 +240,26 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
     marginBottom: 12,
   },
+  headerRight: {
+    alignItems: 'flex-end',
+    gap: 8,
+  },
+  tagPill: {
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 999,
+  },
+  tagMemorize: {
+    backgroundColor: '#d7efe1',
+  },
+  tagRead: {
+    backgroundColor: '#d6ecfb',
+  },
+  tagPillText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: UI_COLORS.primaryDeep,
+  },
   surahName: {
     fontSize: 18,
     fontWeight: '600',
@@ -180,9 +273,9 @@ const styles = StyleSheet.create({
   removeText: {
     color: UI_COLORS.danger,
     fontWeight: '700',
-    fontSize: 17,
-    paddingVertical: 8,
-    paddingHorizontal: 12,
+    fontSize: 14,
+    paddingVertical: 4,
+    paddingHorizontal: 8,
   },
   ayahText: {
     fontFamily: 'AmiriQuran',

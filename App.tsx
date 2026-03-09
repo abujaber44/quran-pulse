@@ -18,6 +18,7 @@ import PrayerTimesScreen from './src/screens/PrayerTimesScreen';
 import BookmarksScreen from './src/screens/BookmarksScreen';
 import QuranPlayerScreen from './src/screens/QuranPlayerScreen';
 import CalendarScreen from './src/screens/CalendarScreen';
+import AthanDiagnosticsScreen from './src/screens/AthanDiagnosticsScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -136,6 +137,11 @@ export default function App() {
             <Stack.Screen
               name="PrayerTimes"
               component={PrayerTimesScreen}
+              options={({ navigation }) => getSharedHeaderOptions(navigation)}
+            />
+            <Stack.Screen
+              name="AthanDiagnostics"
+              component={AthanDiagnosticsScreen}
               options={({ navigation }) => getSharedHeaderOptions(navigation)}
             />
             <Stack.Screen

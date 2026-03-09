@@ -320,7 +320,7 @@ export default function MemorizeUnderstandScreen({ navigation }: any) {
         <ScreenIntroTile
           title="Memorize & Understand"
           subtitle="Explore the Quran to memorize and reflect"
-          description="A dedicated space to memorize, reflect, and understand the Quran ayah by ayah, with deep search across all surahs so you can jump straight to any matching surah or ayah."
+          description="A dedicated space to memorize, reflect, and understand the Quran ayah by ayah, with deep search across all surahs and smart bookmark folders so you can save ayahs under Memorize or Read/Recite."
           isDark={isDark}
           style={styles.introTile}
         />

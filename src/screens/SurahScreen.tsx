@@ -16,7 +16,7 @@ import { useSettings } from '../context/SettingsContext';
 import { getGlobalAyahNumber } from '../utils/quranUtils';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
-import { getBookmarks, addBookmark, removeBookmark } from '../services/bookmarkService';
+import { getBookmarks, addBookmark, removeBookmark, BookmarkTag } from '../services/bookmarkService';
 import { UI_COLORS, UI_RADII, UI_SHADOWS } from '../theme/ui';
 
 const reciters = [
@@ -510,6 +510,24 @@ export default function SurahScreen({ route }: any) {
     }
   }, [expandedTranslation]);
 
+  const saveBookmarkWithTag = useCallback(async (ayahNum: number, tag: BookmarkTag) => {
+    const key = `${surah.id}-${ayahNum}`;
+    const ayah = ayahs.find(a => a.verse_number === ayahNum);
+    if (!ayah) return;
+
+    await addBookmark({
+      surahId: surah.id,
+      surahName: surah.name_simple,
+      ayahNum: ayah.verse_number,
+      ayahText: ayah.text_uthmani,
+      translation: ayah.translation,
+      timestamp: Date.now(),
+      tag,
+    });
+    setBookmarkedAyahs(prev => new Set(prev).add(key));
+    Alert.alert('Saved', `Ayah added to bookmarks (${tag === 'memorize' ? 'Memorize' : 'Read/Recite'})`);
+  }, [ayahs, surah.id, surah.name_simple]);
+
   // Toggle bookmark
   const toggleBookmark = useCallback(async (ayahNum: number) => {
     const key = `${surah.id}-${ayahNum}`;
@@ -524,21 +542,27 @@ export default function SurahScreen({ route }: any) {
       });
       Alert.alert('Removed', 'Ayah removed from bookmarks');
     } else {
-      const ayah = ayahs.find(a => a.verse_number === ayahNum);
-      if (ayah) {
-        await addBookmark({
-          surahId: surah.id,
-          surahName: surah.name_simple,
-          ayahNum: ayah.verse_number,
-          ayahText: ayah.text_uthmani,
-          translation: ayah.translation,
-          timestamp: Date.now(),
-        });
-        setBookmarkedAyahs(prev => new Set(prev).add(key));
-        Alert.alert('Saved', 'Ayah added to bookmarks');
-      }
+      Alert.alert(
+        'Save Bookmark',
+        'Choose a bookmark folder tag:',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          {
+            text: 'Memorize',
+            onPress: () => {
+              void saveBookmarkWithTag(ayahNum, 'memorize');
+            },
+          },
+          {
+            text: 'Read/Recite',
+            onPress: () => {
+              void saveBookmarkWithTag(ayahNum, 'read_recite');
+            },
+          },
+        ]
+      );
     }
-  }, [ayahs, bookmarkedAyahs, surah.id]);
+  }, [bookmarkedAyahs, saveBookmarkWithTag, surah.id]);
 
   const isDark = settings.isDarkMode;
   const ayahArabicFontSize = Math.max(24, settings.arabicFontSize);

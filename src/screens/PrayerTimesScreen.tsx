@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback, useRef } from 'react';
+import React, { useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import {
   View,
   Text,
@@ -21,6 +21,12 @@ import { useSettings } from '../context/SettingsContext';
 import debounce from 'lodash.debounce';
 import { UI_COLORS, UI_RADII, UI_SHADOWS } from '../theme/ui';
 import ScreenIntroTile from '../components/ScreenIntroTile';
+import {
+  ATHAN_CHANNEL_ID,
+  ATHAN_NOTIFICATION_ID_PREFIX,
+  ATHAN_NOTIFICATION_TITLE_PREFIX,
+  buildAthanNotificationId,
+} from '../utils/athanNotifications';
 
 interface Prayer {
   name: string;
@@ -57,11 +63,6 @@ const KAABA_COORDINATES: Coordinates = {
   latitude: 21.4225,
   longitude: 39.8262,
 };
-// Bump when notification sound asset changes so Android recreates channel with new sound.
-const ATHAN_CHANNEL_ID = 'athan-alerts-v3';
-const ATHAN_NOTIFICATION_ID_PREFIX = 'athan-prayer-';
-const ATHAN_NOTIFICATION_TITLE_PREFIX = 'حان الآن موعد صلاة';
-
 const parsePrayerTime = (raw: string): { hour: number; minute: number } | null => {
   const match = raw.match(/(\d{1,2}):(\d{2})/);
   if (!match) return null;
@@ -150,7 +151,7 @@ const fetchOpenMeteoSuggestions = async (query: string): Promise<string[]> => {
   return dedupeCities(results.map((item) => item.name || '')).slice(0, 5);
 };
 
-export default function PrayerTimesScreen() {
+export default function PrayerTimesScreen({ navigation }: any) {
   const [prayers, setPrayers] = useState<Prayer[]>([]);
   const [nextPrayer, setNextPrayer] = useState<string>('');
   const [city, setCity] = useState<string>(DEFAULT_CITY);
@@ -505,7 +506,7 @@ export default function PrayerTimesScreen() {
                 };
 
           await Notifications.scheduleNotificationAsync({
-            identifier: `${ATHAN_NOTIFICATION_ID_PREFIX}${prayer.name.toLowerCase()}`,
+            identifier: buildAthanNotificationId(prayer.name),
             content,
             trigger,
           });
@@ -578,13 +579,55 @@ export default function PrayerTimesScreen() {
     return signedTurnDelta > 0 ? `Turn right ${delta}°` : `Turn left ${delta}°`;
   };
 
-  const compassCalibrationGuidance = () => {
-    if (!isCompassAvailable) return 'Compass sensor is unavailable on this device/runtime.';
-    if (headingAccuracy === null) return 'Move your phone slowly to initialize compass direction.';
-    if (headingAccuracy <= 1) return 'Low accuracy: move phone in a figure-8 and keep away from metal objects.';
-    if (headingAccuracy === 2) return 'Medium accuracy: keep phone flat and away from magnetic interference.';
-    return 'Compass calibrated.';
-  };
+  const compassQuality = useMemo(() => {
+    if (!isCompassAvailable) {
+      return {
+        label: 'Unavailable',
+        badgeColor: UI_COLORS.danger,
+        textColor: UI_COLORS.white,
+        needsCalibrationPrompt: true,
+        guidance: 'Compass sensor is unavailable on this device/runtime.',
+      };
+    }
+
+    if (headingAccuracy === null) {
+      return {
+        label: 'Initializing',
+        badgeColor: '#c98200',
+        textColor: UI_COLORS.white,
+        needsCalibrationPrompt: true,
+        guidance: 'Move your phone slowly to initialize compass direction.',
+      };
+    }
+
+    if (headingAccuracy <= 1) {
+      return {
+        label: 'Low Accuracy',
+        badgeColor: '#c98200',
+        textColor: UI_COLORS.white,
+        needsCalibrationPrompt: true,
+        guidance: 'Re-calibrate by moving phone in a figure-8 and keep away from metal objects.',
+      };
+    }
+
+    if (headingAccuracy === 2) {
+      return {
+        label: 'Medium Accuracy',
+        badgeColor: UI_COLORS.accent,
+        textColor: UI_COLORS.white,
+        needsCalibrationPrompt: true,
+        guidance: 'Keep phone flat and away from magnetic interference for better heading confidence.',
+      };
+    }
+
+    return {
+      label: 'Calibrated',
+      badgeColor: UI_COLORS.primary,
+      textColor: UI_COLORS.white,
+      needsCalibrationPrompt: false,
+      guidance: '',
+    };
+  }, [headingAccuracy, isCompassAvailable]);
 
   if (loading) {
     return (
@@ -686,6 +729,14 @@ export default function PrayerTimesScreen() {
 
         <View style={[styles.qiblaCard, isDark && styles.darkCard]}>
           <Text style={[styles.qiblaTitle, isDark && styles.darkText]}>Qibla Compass</Text>
+          <View style={styles.qiblaStatusRow}>
+            <Text style={[styles.qiblaStatusLabel, isDark && styles.darkText]}>Compass Status</Text>
+            <View style={[styles.qiblaStatusBadge, { backgroundColor: compassQuality.badgeColor }]}>
+              <Text style={[styles.qiblaStatusBadgeText, { color: compassQuality.textColor }]}>
+                {compassQuality.label}
+              </Text>
+            </View>
+          </View>
           {qiblaBearing === null ? (
             <Text style={[styles.qiblaHint, isDark && styles.darkText]}>
               Choose a city or tap "Use My Location" to calculate Qibla direction.
@@ -712,11 +763,26 @@ export default function PrayerTimesScreen() {
                 {heading !== null ? ` • Heading: ${Math.round(heading)}°` : ''}
               </Text>
               <Text style={styles.qiblaInstruction}>{qiblaTurnInstruction()}</Text>
-              <Text style={[styles.qiblaCalibration, isDark && styles.darkText]}>
-                Calibration: {compassCalibrationGuidance()}
-              </Text>
+              {compassQuality.needsCalibrationPrompt ? (
+                <Text style={[styles.qiblaCalibration, isDark && styles.darkText]}>
+                  {compassQuality.guidance}
+                </Text>
+              ) : null}
             </>
           )}
+        </View>
+
+        <View style={[styles.diagnosticsCard, isDark && styles.darkCard]}>
+          <Text style={[styles.diagnosticsTitle, isDark && styles.darkText]}>Athan Diagnostics</Text>
+          <Text style={[styles.diagnosticsText, isDark && styles.darkText]}>
+            Verify exact scheduled trigger timestamps, notification IDs, and channel settings on this device.
+          </Text>
+          <TouchableOpacity
+            style={styles.diagnosticsButton}
+            onPress={() => navigation.navigate('AthanDiagnostics', { city, prayers })}
+          >
+            <Text style={styles.diagnosticsButtonText}>Open Diagnostics</Text>
+          </TouchableOpacity>
         </View>
 
         {/* Next Prayer */}
@@ -902,6 +968,26 @@ qiblaTitle: {
   textAlign: 'center',
   marginBottom: 12,
 },
+qiblaStatusRow: {
+  flexDirection: 'row',
+  justifyContent: 'space-between',
+  alignItems: 'center',
+  marginBottom: 10,
+},
+qiblaStatusLabel: {
+  fontSize: 13,
+  fontWeight: '600',
+  color: UI_COLORS.textMuted,
+},
+qiblaStatusBadge: {
+  borderRadius: 999,
+  paddingHorizontal: 10,
+  paddingVertical: 5,
+},
+qiblaStatusBadgeText: {
+  fontSize: 11,
+  fontWeight: '700',
+},
 qiblaHint: {
   fontSize: 14,
   textAlign: 'center',
@@ -955,5 +1041,39 @@ qiblaCalibration: {
   textAlign: 'center',
   color: UI_COLORS.textMuted,
   lineHeight: 18,
+  marginTop: 4,
+},
+diagnosticsCard: {
+  backgroundColor: UI_COLORS.surface,
+  borderRadius: UI_RADII.lg,
+  borderWidth: 1,
+  borderColor: UI_COLORS.border,
+  padding: 16,
+  marginBottom: 24,
+  ...UI_SHADOWS.card,
+},
+diagnosticsTitle: {
+  fontSize: 18,
+  fontWeight: '700',
+  color: UI_COLORS.text,
+  marginBottom: 6,
+},
+diagnosticsText: {
+  fontSize: 14,
+  lineHeight: 21,
+  color: UI_COLORS.textMuted,
+},
+diagnosticsButton: {
+  alignSelf: 'flex-start',
+  marginTop: 12,
+  backgroundColor: UI_COLORS.accent,
+  borderRadius: UI_RADII.md,
+  paddingHorizontal: 14,
+  paddingVertical: 10,
+},
+diagnosticsButtonText: {
+  color: UI_COLORS.white,
+  fontSize: 13,
+  fontWeight: '700',
 },
 });

@@ -2,6 +2,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const BOOKMARKS_KEY = 'quran_pulse_bookmarks';
 
+export type BookmarkTag = 'memorize' | 'read_recite';
+
 export interface Bookmark {
   surahId: number;
   surahName: string;
@@ -9,6 +11,7 @@ export interface Bookmark {
   ayahText: string;
   translation: string;
   timestamp: number;
+  tag: BookmarkTag;
 }
 
 export const addBookmark = async (bookmark: Bookmark): Promise<void> => {
@@ -36,7 +39,31 @@ export const removeBookmark = async (surahId: number, ayahNum: number): Promise<
 export const getBookmarks = async (): Promise<Bookmark[]> => {
   try {
     const data = await AsyncStorage.getItem(BOOKMARKS_KEY);
-    return data ? JSON.parse(data) : [];
+    if (!data) return [];
+
+    const parsed = JSON.parse(data) as Array<Partial<Bookmark> & {
+      surahId?: unknown;
+      surahName?: unknown;
+      ayahNum?: unknown;
+      ayahText?: unknown;
+      translation?: unknown;
+      timestamp?: unknown;
+      tag?: unknown;
+    }>;
+
+    if (!Array.isArray(parsed)) return [];
+
+    return parsed
+      .filter((item) => typeof item.surahId === 'number' && typeof item.ayahNum === 'number')
+      .map((item) => ({
+        surahId: Number(item.surahId),
+        surahName: typeof item.surahName === 'string' ? item.surahName : '',
+        ayahNum: Number(item.ayahNum),
+        ayahText: typeof item.ayahText === 'string' ? item.ayahText : '',
+        translation: typeof item.translation === 'string' ? item.translation : '',
+        timestamp: typeof item.timestamp === 'number' ? item.timestamp : Date.now(),
+        tag: item.tag === 'memorize' || item.tag === 'read_recite' ? item.tag : 'read_recite',
+      }));
   } catch (error) {
     console.error('Failed to load bookmarks', error);
     return [];

@@ -24,6 +24,7 @@ Quran Pulse is a peaceful, modern companion app to help you connect deeply with 
 - **Prayer Times, Athan & Qibla Compass** – accurate timings, full Athan audio alerts, and live Qibla direction guidance
 - **Islamic Calendar** – full Hijri month view with corresponding Gregorian dates
 - **Bookmarks** – save and revisit your favorite ayahs anytime
+- **Smart bookmark folders** – tag ayahs as **Memorize** or **Read/Recite** and filter quickly with chips
 - **Clean, spiritual UI** with focus on Arabic typography
 
 ### 📱 Screenshots
