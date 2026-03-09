@@ -20,6 +20,7 @@ import QuranPlayerScreen from './src/screens/QuranPlayerScreen';
 import CalendarScreen from './src/screens/CalendarScreen';
 import AthanDiagnosticsScreen from './src/screens/AthanDiagnosticsScreen';
 import QiblaCompassScreen from './src/screens/QiblaCompassScreen';
+import QuranMiraclesScreen from './src/screens/QuranMiraclesScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -181,6 +182,11 @@ export default function App() {
             <Stack.Screen
               name="Calendar"
               component={CalendarScreen}
+              options={({ navigation }) => getSharedHeaderOptions(navigation)}
+            />
+            <Stack.Screen
+              name="QuranMiracles"
+              component={QuranMiraclesScreen}
               options={({ navigation }) => getSharedHeaderOptions(navigation)}
             />
           </Stack.Navigator>

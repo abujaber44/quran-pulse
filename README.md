@@ -22,6 +22,7 @@ Quran Pulse is a peaceful, modern companion app to help you connect deeply with 
 - **Deep Quran search** in Memorize & Understand — search by surah name or any Arabic/English Quran word across all ayahs, then jump directly to the matching surah/ayah
 - **99 Names of Allah (Asma Al-Husna)** – elegant display with meaning and transliteration
 - **Prayer Times, Athan & Qibla Compass** – accurate timings, full Athan audio alerts, and live Qibla direction guidance
+- **Quran Miracles** – curated reflection cards across real miracle categories with ayah references and source links
 - **Islamic Calendar** – full Hijri month view with corresponding Gregorian dates
 - **Bookmarks** – save and revisit your favorite ayahs anytime
 - **Smart bookmark folders** – tag ayahs as **Memorize** or **Read/Recite** and filter quickly with chips
@@ -54,6 +55,54 @@ Quran Pulse is a peaceful, modern companion app to help you connect deeply with 
 - Live Qibla compass with turn-by-turn direction to the Kaaba
 - Calibration guidance when compass accuracy is low
 - Haptic confirmation when Qibla alignment is achieved
+
+### 🧠 Quran Miracles (CMS + Fallback)
+- New dedicated page for Quran miracle/reflection themes with **real categories** (examples):
+  - `Language & Eloquence`
+  - `Numerical Patterns`
+  - `Cosmology & Natural World`
+  - `History & Prophecy`
+  - `Law, Society & Civilization`
+- Dynamic category chips are generated from your dataset automatically (no hardcoded 4-category model)
+- Each card includes:
+  - concise claim summary
+  - ayah references
+  - source links
+  - caution note (when needed)
+- Content loading strategy:
+  - Uses CMS JSON endpoint if configured
+  - Falls back automatically to bundled local dataset if CMS is unavailable
+
+Set CMS endpoint in environment variables:
+
+```bash
+EXPO_PUBLIC_MIRACLES_CMS_URL=https://your-domain.com/quran-miracles.json
+```
+
+Starter dataset (ready to host): [`cms/quran-miracles.json`](cms/quran-miracles.json)
+
+Expected CMS JSON shape:
+
+```json
+{
+  "updatedAt": "2026-03-09",
+  "items": [
+    {
+      "id": "words-paired-concepts",
+      "category": "Language & Eloquence",
+      "title": "Paired Concept Patterns",
+      "summary": "Short summary",
+      "detail": "Detailed explanation",
+      "ayahRefs": ["2:201", "87:16-17"],
+      "tags": ["word-frequency", "reflection"],
+      "sources": [
+        { "label": "Quranic Arabic Corpus", "url": "https://corpus.quran.com" }
+      ],
+      "caution": "Optional caution note"
+    }
+  ]
+}
+```
 
 ### 📿 Asma Al-Husna
 - All 99 Beautiful Names of Allah

@@ -8,6 +8,7 @@ type RootStackParamList = {
   MemorizeUnderstand: undefined;
   AsmaAlHusna: undefined;
   PrayerTimes: undefined;
+  QuranMiracles: undefined;
   Bookmarks: undefined;
   QuranPlayer: undefined;
   Calendar: undefined;
@@ -78,14 +79,19 @@ export default function LandingScreen() {
             <Text style={styles.secondaryCardSubtitle}>Athan + Qibla guidance</Text>
           </TouchableOpacity>
 
+          <TouchableOpacity style={styles.secondaryCard} onPress={() => navigation.navigate('Calendar')}>
+            <Text style={styles.secondaryCardTitle}>Islamic Calendar</Text>
+            <Text style={styles.secondaryCardSubtitle}>Hijri month view + daily hadith</Text>
+          </TouchableOpacity>
+
           <TouchableOpacity style={styles.secondaryCard} onPress={() => navigation.navigate('AsmaAlHusna')}>
             <Text style={styles.secondaryCardTitle}>Asma Al-Husna</Text>
             <Text style={styles.secondaryCardSubtitle}>99 names with meaning</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity style={[styles.secondaryCard, styles.secondaryCardWide]} onPress={() => navigation.navigate('Calendar')}>
-            <Text style={styles.secondaryCardTitle}>Islamic Calendar</Text>
-            <Text style={styles.secondaryCardSubtitle}>Hijri month view + daily hadith</Text>
+          <TouchableOpacity style={styles.secondaryCard} onPress={() => navigation.navigate('QuranMiracles')}>
+            <Text style={styles.secondaryCardTitle}>Quran Miracles</Text>
+            <Text style={styles.secondaryCardSubtitle}>Real categories with ayah refs and sources</Text>
           </TouchableOpacity>
         </View>
 
@@ -238,9 +244,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     marginBottom: 10,
     ...UI_SHADOWS.input,
-  },
-  secondaryCardWide: {
-    width: '100%',
   },
   secondaryCardTitle: {
     fontSize: 15,
