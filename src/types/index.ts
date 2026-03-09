@@ -20,6 +20,13 @@ export interface MiracleSourceLink {
   url: string;
 }
 
+export interface MiracleExample {
+  title: string;
+  description: string;
+  ayahRef?: string;
+  sourceUrl?: string;
+}
+
 export interface MiracleItem {
   id: string;
   category: MiracleCategory;
@@ -29,5 +36,6 @@ export interface MiracleItem {
   ayahRefs: string[];
   tags: string[];
   sources: MiracleSourceLink[];
+  examples?: MiracleExample[];
   caution?: string;
 }

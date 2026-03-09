@@ -1,5 +1,5 @@
 import { MIRACLES_FALLBACK } from '../data/miraclesFallback';
-import { MiracleCategory, MiracleItem, MiracleSourceLink } from '../types';
+import { MiracleCategory, MiracleExample, MiracleItem, MiracleSourceLink } from '../types';
 
 export type MiraclesContentResult = {
   items: MiracleItem[];
@@ -44,6 +44,67 @@ const normalizeSourceLinks = (value: unknown): MiracleSourceLink[] => {
     .filter((item): item is MiracleSourceLink => item !== null);
 };
 
+const normalizeExamples = (value: unknown): MiracleExample[] => {
+  if (!Array.isArray(value)) return [];
+
+  const normalized: MiracleExample[] = [];
+
+  for (const item of value) {
+    const raw = item as {
+      title?: unknown;
+      description?: unknown;
+      ayahRef?: unknown;
+      sourceUrl?: unknown;
+    };
+
+    const title = typeof raw?.title === 'string' ? raw.title.trim() : '';
+    const description = typeof raw?.description === 'string' ? raw.description.trim() : '';
+    if (!title || !description) continue;
+
+    const ayahRef = typeof raw?.ayahRef === 'string' && raw.ayahRef.trim() ? raw.ayahRef.trim() : undefined;
+    const sourceUrl =
+      typeof raw?.sourceUrl === 'string' && /^https?:\/\//i.test(raw.sourceUrl.trim())
+        ? raw.sourceUrl.trim()
+        : undefined;
+
+    const entry: MiracleExample = {
+      title,
+      description,
+      ...(ayahRef ? { ayahRef } : {}),
+      ...(sourceUrl ? { sourceUrl } : {}),
+    };
+
+    normalized.push(entry);
+  }
+
+  return normalized;
+};
+
+const ensureExamples = (item: MiracleItem): MiracleItem => {
+  if (Array.isArray(item.examples) && item.examples.length > 0) {
+    return item;
+  }
+
+  const firstAyah = item.ayahRefs[0];
+  const firstSource = item.sources[0]?.url;
+
+  const autoDescription = firstAyah
+    ? `Begin with ayah ${firstAyah} and review tafsir context before drawing conclusions.`
+    : 'Review the linked sources with tafsir context for this theme.';
+
+  const autoExample: MiracleExample = {
+    title: 'Primary reference',
+    description: autoDescription,
+    ayahRef: firstAyah,
+    sourceUrl: firstSource,
+  };
+
+  return {
+    ...item,
+    examples: [autoExample],
+  };
+};
+
 const normalizeMiracleItem = (value: unknown, index: number): MiracleItem | null => {
   const raw = value as {
     id?: unknown;
@@ -54,6 +115,7 @@ const normalizeMiracleItem = (value: unknown, index: number): MiracleItem | null
     ayahRefs?: unknown;
     tags?: unknown;
     sources?: unknown;
+    examples?: unknown;
     caution?: unknown;
   };
 
@@ -69,9 +131,10 @@ const normalizeMiracleItem = (value: unknown, index: number): MiracleItem | null
   const ayahRefs = toStringArray(raw.ayahRefs);
   const tags = toStringArray(raw.tags);
   const sources = normalizeSourceLinks(raw.sources);
+  const examples = normalizeExamples(raw.examples);
   const caution = typeof raw.caution === 'string' && raw.caution.trim() ? raw.caution.trim() : undefined;
 
-  return {
+  return ensureExamples({
     id: idBase,
     category,
     title,
@@ -80,8 +143,9 @@ const normalizeMiracleItem = (value: unknown, index: number): MiracleItem | null
     ayahRefs,
     tags,
     sources,
+    examples,
     caution,
-  };
+  });
 };
 
 const parseCmsPayload = (payload: unknown): { items: MiracleItem[]; updatedAt?: string } | null => {
@@ -111,7 +175,7 @@ export const fetchQuranMiraclesContent = async (): Promise<MiraclesContentResult
 
   if (!cmsUrl) {
     return {
-      items: MIRACLES_FALLBACK,
+      items: MIRACLES_FALLBACK.map(ensureExamples),
       source: 'fallback',
       warning: 'CMS URL is not configured. Set EXPO_PUBLIC_MIRACLES_CMS_URL to load remote content.',
     };
@@ -148,7 +212,7 @@ export const fetchQuranMiraclesContent = async (): Promise<MiraclesContentResult
     const reason = error instanceof Error ? error.message : 'Unknown CMS error';
 
     return {
-      items: MIRACLES_FALLBACK,
+      items: MIRACLES_FALLBACK.map(ensureExamples),
       source: 'fallback',
       warning: `Showing fallback content because CMS could not be loaded (${reason}).`,
     };

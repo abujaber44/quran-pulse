@@ -68,6 +68,7 @@ Quran Pulse is a peaceful, modern companion app to help you connect deeply with 
   - concise claim summary
   - ayah references
   - source links
+  - examples (when available)
   - caution note (when needed)
 - Content loading strategy:
   - Uses CMS JSON endpoint if configured
@@ -95,6 +96,14 @@ Expected CMS JSON shape:
       "detail": "Detailed explanation",
       "ayahRefs": ["2:201", "87:16-17"],
       "tags": ["word-frequency", "reflection"],
+      "examples": [
+        {
+          "title": "Primary reference",
+          "description": "Begin with this verse in tafsir context.",
+          "ayahRef": "2:201",
+          "sourceUrl": "https://quran.com/2/201"
+        }
+      ],
       "sources": [
         { "label": "Quranic Arabic Corpus", "url": "https://corpus.quran.com" }
       ],
