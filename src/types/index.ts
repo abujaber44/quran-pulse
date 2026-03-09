@@ -12,3 +12,22 @@ export interface Ayah {
   verse_key: string;
   text_uthmani: string;
 }
+
+export type MiracleCategory = string;
+
+export interface MiracleSourceLink {
+  label: string;
+  url: string;
+}
+
+export interface MiracleItem {
+  id: string;
+  category: MiracleCategory;
+  title: string;
+  summary: string;
+  detail: string;
+  ayahRefs: string[];
+  tags: string[];
+  sources: MiracleSourceLink[];
+  caution?: string;
+}

@@ -1,0 +1,505 @@
+{
+  "updatedAt": "2026-03-09",
+  "items": [
+    {
+      "id": "lang-oath-openings",
+      "category": "Language & Eloquence",
+      "title": "Oath Openings and Thematic Framing",
+      "summary": "Many surahs open with oaths that frame the core message of the chapter.",
+      "detail": "These openings are studied in balaghah as attention-setting devices that prepare the reader for a central moral argument.",
+      "ayahRefs": ["91:1-10", "95:1-8", "103:1-3"],
+      "tags": ["balaghah", "structure", "rhetoric"],
+      "sources": [
+        { "label": "Quran.com", "url": "https://quran.com" }
+      ]
+    },
+    {
+      "id": "lang-repetition-variation",
+      "category": "Language & Eloquence",
+      "title": "Repetition with Variation",
+      "summary": "Narratives are repeated across surahs with deliberate variation in emphasis.",
+      "detail": "Comparative reading reveals pedagogical design: same message, adapted presentation according to context and audience.",
+      "ayahRefs": ["20:9-99", "26:10-191", "54:17"],
+      "tags": ["narrative", "comparison", "tadabbur"],
+      "sources": [
+        { "label": "Quran.com", "url": "https://quran.com" }
+      ]
+    },
+    {
+      "id": "lang-ring-composition",
+      "category": "Language & Eloquence",
+      "title": "Ring Composition Patterns",
+      "summary": "Several passages exhibit chiastic or ring-like structure.",
+      "detail": "Structural studies often show mirrored beginnings/endings with central thematic pivot points.",
+      "ayahRefs": ["2:1-286", "12:1-111"],
+      "tags": ["composition", "chiastic", "coherence"],
+      "sources": [
+        { "label": "Quran.com Surah Al-Baqarah", "url": "https://quran.com/2" }
+      ],
+      "caution": "Macro-structure proposals vary across researchers."
+    },
+    {
+      "id": "lang-root-coherence",
+      "category": "Language & Eloquence",
+      "title": "Root-Based Semantic Coherence",
+      "summary": "Arabic roots build thematic webs across related ayahs.",
+      "detail": "Root analysis can connect lexical choices to recurring moral motifs in Quranic discourse.",
+      "ayahRefs": ["1:1-7", "2:2", "39:23"],
+      "tags": ["arabic-roots", "semantics", "lexical-analysis"],
+      "sources": [
+        { "label": "Quranic Arabic Corpus", "url": "https://corpus.quran.com/searchhelp.jsp" }
+      ]
+    },
+    {
+      "id": "num-paired-concepts",
+      "category": "Numerical Patterns",
+      "title": "Paired Concept Frequency Studies",
+      "summary": "Some studies compare frequencies of concept pairs (for example dunya/akhirah).",
+      "detail": "Such studies depend heavily on normalization rules, root selection, and derivative handling.",
+      "ayahRefs": ["2:201", "28:77", "87:16-17"],
+      "tags": ["word-frequency", "methodology", "lexicon"],
+      "sources": [
+        { "label": "Quranic Arabic Corpus", "url": "https://corpus.quran.com" }
+      ],
+      "caution": "Counts vary based on methodology."
+    },
+    {
+      "id": "num-day-night-theme",
+      "category": "Numerical Patterns",
+      "title": "Day-Night Count Discussions",
+      "summary": "Day and night terms are often examined in numerical reflection studies.",
+      "detail": "These studies are most useful when accompanied by transparent counting criteria and reproducible methods.",
+      "ayahRefs": ["3:190", "10:6", "24:44"],
+      "tags": ["day-night", "counting", "transparency"],
+      "sources": [
+        { "label": "Quran.com Search", "url": "https://quran.com/search" }
+      ]
+    },
+    {
+      "id": "num-theme-19",
+      "category": "Numerical Patterns",
+      "title": "Nineteen Theme Analyses",
+      "summary": "Surah Al-Muddaththir includes a reference to nineteen that has inspired numerical analyses.",
+      "detail": "The app presents this as a study topic and encourages cross-checking with scholarly critique.",
+      "ayahRefs": ["74:30-31"],
+      "tags": ["historical-studies", "number-theme"],
+      "sources": [
+        { "label": "Quran.com 74:30", "url": "https://quran.com/74/30-31" }
+      ],
+      "caution": "Interpretive topic; avoid definitive claims without method disclosure."
+    },
+    {
+      "id": "num-surah-ayah-balance",
+      "category": "Numerical Patterns",
+      "title": "Surah-Ayah Pattern Exploration",
+      "summary": "Researchers explore structural arithmetic links between surah ordering and ayah sets.",
+      "detail": "This area combines textual indexing and thematic alignment and should be presented as exploratory.",
+      "ayahRefs": ["1:1-7", "36:1-83"],
+      "tags": ["structure", "indexing", "exploratory"],
+      "sources": [
+        { "label": "Quran.com", "url": "https://quran.com" }
+      ],
+      "caution": "Pattern-based studies can be sensitive to selection bias."
+    },
+    {
+      "id": "cosmo-night-day-signs",
+      "category": "Cosmology & Natural World",
+      "title": "Alternation of Night and Day as Signs",
+      "summary": "Night/day alternation is repeatedly used as a sign for people of understanding.",
+      "detail": "The Quran ties observable cosmic order to reflection, gratitude, and humility.",
+      "ayahRefs": ["3:190", "10:6", "45:5"],
+      "tags": ["signs", "cosmos", "reflection"],
+      "sources": [
+        { "label": "Quran.com 3:190", "url": "https://quran.com/3/190" }
+      ]
+    },
+    {
+      "id": "cosmo-heavens-vastness",
+      "category": "Cosmology & Natural World",
+      "title": "Heavens, Power, and Vast Creation",
+      "summary": "Verses describing the heavens are often discussed in relation to cosmic vastness.",
+      "detail": "Classical tafsir remains primary, while modern cosmological reflection may be used as secondary contemplation.",
+      "ayahRefs": ["51:47", "67:3-4", "79:27-30"],
+      "tags": ["heavens", "creation", "tafsir-first"],
+      "sources": [
+        { "label": "Quran.com 51:47", "url": "https://quran.com/51/47" }
+      ],
+      "caution": "Do not detach scientific reading from tafsir context."
+    },
+    {
+      "id": "cosmo-orbits-order",
+      "category": "Cosmology & Natural World",
+      "title": "Celestial Orbits and Order",
+      "summary": "Sun, moon, and celestial motion are described with language of order and course.",
+      "detail": "The Quranic focus is on signs of divine order; technical models should remain interpretive overlays.",
+      "ayahRefs": ["21:33", "36:38-40", "55:5"],
+      "tags": ["orbits", "sun-moon", "order"],
+      "sources": [
+        { "label": "Quran.com 21:33", "url": "https://quran.com/21/33" }
+      ]
+    },
+    {
+      "id": "cosmo-layered-heavens",
+      "category": "Cosmology & Natural World",
+      "title": "Layered Heavens Language",
+      "summary": "Several verses refer to seven heavens, widely discussed in theological and cosmological reading.",
+      "detail": "Interpretation is primarily theological; scientific mapping is speculative and should be labeled as such.",
+      "ayahRefs": ["67:3", "71:15", "41:12"],
+      "tags": ["seven-heavens", "theology", "cosmology"],
+      "sources": [
+        { "label": "Quran.com 67:3", "url": "https://quran.com/67/3" }
+      ],
+      "caution": "Maintain distinction between creed and scientific analogy."
+    },
+    {
+      "id": "water-life-origin",
+      "category": "Water & Seas",
+      "title": "Life and Water Connection",
+      "summary": "The Quran repeatedly connects life with water.",
+      "detail": "This recurring theme serves as both a natural observation and a spiritual sign for gratitude.",
+      "ayahRefs": ["21:30", "24:45", "25:54"],
+      "tags": ["water", "life", "creation"],
+      "sources": [
+        { "label": "Quran.com 21:30", "url": "https://quran.com/21/30" }
+      ]
+    },
+    {
+      "id": "water-two-seas-barrier",
+      "category": "Water & Seas",
+      "title": "Two Bodies of Water Passages",
+      "summary": "Verses mention two seas and a separating barrier, often discussed in marine studies.",
+      "detail": "Interpretations differ across linguistic, geographic, and scientific perspectives.",
+      "ayahRefs": ["55:19-20", "25:53"],
+      "tags": ["marine", "barrier", "interpretation"],
+      "sources": [
+        { "label": "Quran.com 55:19", "url": "https://quran.com/55/19-20" }
+      ],
+      "caution": "Use with methodological caution and multiple tafsir references."
+    },
+    {
+      "id": "water-rain-cycle",
+      "category": "Water & Seas",
+      "title": "Rain, Winds, and Revived Earth",
+      "summary": "Cloud movement, winds, and rainfall appear in repeated ecological cycles.",
+      "detail": "The Quran links these cycles to resurrection imagery and responsibility toward creation.",
+      "ayahRefs": ["30:48-50", "7:57", "35:9"],
+      "tags": ["rain", "winds", "ecology"],
+      "sources": [
+        { "label": "Quran.com 30:48", "url": "https://quran.com/30/48-50" }
+      ]
+    },
+    {
+      "id": "water-deep-sea-darkness",
+      "category": "Water & Seas",
+      "title": "Layers of Darkness in Deep Waters",
+      "summary": "A verse describes layered darkness in deep seas with waves above waves.",
+      "detail": "Commonly discussed in oceanic reflection contexts; interpretive claims should remain proportionate.",
+      "ayahRefs": ["24:40"],
+      "tags": ["deep-sea", "darkness", "waves"],
+      "sources": [
+        { "label": "Quran.com 24:40", "url": "https://quran.com/24/40" }
+      ],
+      "caution": "Avoid over-reading beyond textual scope."
+    },
+    {
+      "id": "earth-mountains-stability",
+      "category": "Earth & Geology",
+      "title": "Mountains as Stabilizing Imagery",
+      "summary": "Mountains are described as pegs/anchors in several passages.",
+      "detail": "Scholars discuss literal, analogical, and rhetorical dimensions of this imagery.",
+      "ayahRefs": ["16:15", "21:31", "78:6-7"],
+      "tags": ["mountains", "earth", "imagery"],
+      "sources": [
+        { "label": "Quran.com 16:15", "url": "https://quran.com/16/15" }
+      ]
+    },
+    {
+      "id": "earth-geological-diversity",
+      "category": "Earth & Geology",
+      "title": "Earthly Diversity and Terrain Contrast",
+      "summary": "Verses describe adjacent lands and varied outcomes despite shared rainfall.",
+      "detail": "This pattern is often used in reflection on divine wisdom in natural diversity.",
+      "ayahRefs": ["13:4", "35:27-28"],
+      "tags": ["terrain", "diversity", "agriculture"],
+      "sources": [
+        { "label": "Quran.com 13:4", "url": "https://quran.com/13/4" }
+      ]
+    },
+    {
+      "id": "earth-subsurface-metals",
+      "category": "Earth & Geology",
+      "title": "Iron and Material Benefit",
+      "summary": "Iron is described with both strength and benefit for people.",
+      "detail": "The verse is discussed in ethical and civilizational context, not only as material science commentary.",
+      "ayahRefs": ["57:25"],
+      "tags": ["iron", "civilization", "ethics"],
+      "sources": [
+        { "label": "Quran.com 57:25", "url": "https://quran.com/57/25" }
+      ]
+    },
+    {
+      "id": "earth-seismic-reminders",
+      "category": "Earth & Geology",
+      "title": "Earthquake and Uplift Imagery",
+      "summary": "Quranic passages use seismic imagery as reminders of accountability.",
+      "detail": "Natural events are framed morally and existentially, not only physically.",
+      "ayahRefs": ["99:1-8", "22:1-2"],
+      "tags": ["earthquake", "akhira", "warning"],
+      "sources": [
+        { "label": "Quran.com 99", "url": "https://quran.com/99" }
+      ]
+    },
+    {
+      "id": "human-embryology",
+      "category": "Human Development",
+      "title": "Embryonic Stage Terminology",
+      "summary": "Human creation stages are described in concise developmental terms.",
+      "detail": "Interpretation should include classical tafsir and modern linguistic care to avoid anachronism.",
+      "ayahRefs": ["23:12-14", "22:5", "75:37-39"],
+      "tags": ["embryology", "development", "tafsir"],
+      "sources": [
+        { "label": "Quran.com 23:12", "url": "https://quran.com/23/12-14" }
+      ]
+    },
+    {
+      "id": "human-hearing-sight-heart",
+      "category": "Human Development",
+      "title": "Hearing, Sight, and Heart Sequence",
+      "summary": "Multiple verses pair sensory faculties with inner cognition and gratitude.",
+      "detail": "The sequence is often discussed in spiritual psychology and moral responsibility discourse.",
+      "ayahRefs": ["16:78", "23:78", "67:23"],
+      "tags": ["cognition", "gratitude", "accountability"],
+      "sources": [
+        { "label": "Quran.com 16:78", "url": "https://quran.com/16/78" }
+      ]
+    },
+    {
+      "id": "human-fingerprint-identity",
+      "category": "Human Development",
+      "title": "Precision in Human Reconstruction",
+      "summary": "A verse references restoration even of fingertips, discussed in identity reflection contexts.",
+      "detail": "The primary message concerns resurrection power; modern parallels are secondary reflections.",
+      "ayahRefs": ["75:3-4"],
+      "tags": ["resurrection", "identity", "precision"],
+      "sources": [
+        { "label": "Quran.com 75:3", "url": "https://quran.com/75/3-4" }
+      ]
+    },
+    {
+      "id": "human-pain-receptors-skin",
+      "category": "Human Development",
+      "title": "Skin Renewal Imagery in Punishment Context",
+      "summary": "A verse describes skin replacement in punishment scenes, often noted in biomedical reflection.",
+      "detail": "The core Quranic context is moral warning; biomedical parallels should be treated as auxiliary.",
+      "ayahRefs": ["4:56"],
+      "tags": ["skin", "warning", "akhira"],
+      "sources": [
+        { "label": "Quran.com 4:56", "url": "https://quran.com/4/56" }
+      ]
+    },
+    {
+      "id": "zoology-bees-revelation",
+      "category": "Zoology & Ecology",
+      "title": "Bee Guidance Passage",
+      "summary": "The Quran describes directed behavior of bees and benefits emerging from it.",
+      "detail": "The passage invites observation of animal systems as signs of wisdom.",
+      "ayahRefs": ["16:68-69"],
+      "tags": ["bees", "honey", "guidance"],
+      "sources": [
+        { "label": "Quran.com 16:68", "url": "https://quran.com/16/68-69" }
+      ]
+    },
+    {
+      "id": "zoology-birds-flight",
+      "category": "Zoology & Ecology",
+      "title": "Bird Flight as Sign",
+      "summary": "Bird flight appears as a repeated sign of divine order and sustaining power.",
+      "detail": "These verses connect natural observation with remembrance and gratitude.",
+      "ayahRefs": ["16:79", "67:19"],
+      "tags": ["birds", "flight", "signs"],
+      "sources": [
+        { "label": "Quran.com 67:19", "url": "https://quran.com/67/19" }
+      ]
+    },
+    {
+      "id": "zoology-ants-communication",
+      "category": "Zoology & Ecology",
+      "title": "Ant Communication Narrative",
+      "summary": "A narrative in Surah An-Naml includes communication among ants.",
+      "detail": "The passage is theological and narrative first, and can also support ecological reflection.",
+      "ayahRefs": ["27:18-19"],
+      "tags": ["ants", "communication", "sulayman"],
+      "sources": [
+        { "label": "Quran.com 27:18", "url": "https://quran.com/27/18-19" }
+      ]
+    },
+    {
+      "id": "zoology-livestock-benefits",
+      "category": "Zoology & Ecology",
+      "title": "Livestock Utility and Mercy",
+      "summary": "Livestock are described as sources of food, clothing, transport, and beauty.",
+      "detail": "The theme grounds ecological dependence in gratitude and ethical use.",
+      "ayahRefs": ["16:5-8", "23:21"],
+      "tags": ["livestock", "benefit", "ethics"],
+      "sources": [
+        { "label": "Quran.com 16:5", "url": "https://quran.com/16/5-8" }
+      ]
+    },
+    {
+      "id": "history-rome-reversal",
+      "category": "History & Prophecy",
+      "title": "Roman-Persian Conflict Reference",
+      "summary": "Surah Ar-Rum contains a near-term reversal statement in a known geopolitical conflict.",
+      "detail": "The passage is frequently discussed in historical-prophetic reading traditions.",
+      "ayahRefs": ["30:2-4"],
+      "tags": ["ar-rum", "history", "prophecy"],
+      "sources": [
+        { "label": "Quran.com 30:2", "url": "https://quran.com/30/2-4" }
+      ]
+    },
+    {
+      "id": "history-pharaoh-preservation",
+      "category": "History & Prophecy",
+      "title": "Pharaoh as Sign for Later People",
+      "summary": "A verse states Pharaoh would be preserved as a sign for those after him.",
+      "detail": "Commonly discussed in historical awareness themes with moral emphasis.",
+      "ayahRefs": ["10:92"],
+      "tags": ["pharaoh", "sign", "history"],
+      "sources": [
+        { "label": "Quran.com 10:92", "url": "https://quran.com/10/92" }
+      ]
+    },
+    {
+      "id": "history-makkah-entry",
+      "category": "History & Prophecy",
+      "title": "Promise of Safe Entry to the Sacred Mosque",
+      "summary": "A verse references safe entry into the Sacred Mosque, tied to later historical fulfillment.",
+      "detail": "This is read within seerah context and treaty-era developments.",
+      "ayahRefs": ["48:27"],
+      "tags": ["hudaybiyyah", "seerah", "fulfillment"],
+      "sources": [
+        { "label": "Quran.com 48:27", "url": "https://quran.com/48/27" }
+      ]
+    },
+    {
+      "id": "history-abu-lahab",
+      "category": "History & Prophecy",
+      "title": "Surah Al-Masad Historical Significance",
+      "summary": "The surah addressing Abu Lahab is frequently examined in historical-prophetic discourse.",
+      "detail": "Its discussion centers on public opposition and eventual historical outcome.",
+      "ayahRefs": ["111:1-5"],
+      "tags": ["al-masad", "makkan-period", "history"],
+      "sources": [
+        { "label": "Quran.com 111", "url": "https://quran.com/111" }
+      ]
+    },
+    {
+      "id": "law-gradual-prohibition",
+      "category": "Law, Society & Civilization",
+      "title": "Gradual Prohibition Methodology",
+      "summary": "Legal reform on intoxicants appears in stages across revelation.",
+      "detail": "This is often cited as a model for ethical reform with social readiness.",
+      "ayahRefs": ["2:219", "4:43", "5:90-91"],
+      "tags": ["law", "gradualism", "social-change"],
+      "sources": [
+        { "label": "Quran.com 5:90", "url": "https://quran.com/5/90-91" }
+      ]
+    },
+    {
+      "id": "law-financial-ethics",
+      "category": "Law, Society & Civilization",
+      "title": "Financial Justice Framework",
+      "summary": "Verses on riba, charity, and wealth circulation form a social-ethical system.",
+      "detail": "The Quranic model emphasizes fairness, social protection, and reduced exploitation.",
+      "ayahRefs": ["2:275-279", "59:7", "9:60"],
+      "tags": ["economics", "justice", "zakat"],
+      "sources": [
+        { "label": "Quran.com 2:275", "url": "https://quran.com/2/275-279" }
+      ]
+    },
+    {
+      "id": "law-family-rights",
+      "category": "Law, Society & Civilization",
+      "title": "Family Law and Rights Balance",
+      "summary": "Family legislation passages are often studied for balance of rights and duties.",
+      "detail": "The framework addresses care, justice, inheritance, and protection in social life.",
+      "ayahRefs": ["4:1-12", "2:228-233"],
+      "tags": ["family-law", "rights", "inheritance"],
+      "sources": [
+        { "label": "Quran.com 4", "url": "https://quran.com/4" }
+      ]
+    },
+    {
+      "id": "spirit-calm-hearts-dhikr",
+      "category": "Spiritual Psychology",
+      "title": "Hearts and Remembrance",
+      "summary": "A core spiritual principle links remembrance of Allah with inner tranquility.",
+      "detail": "This verse is central in discussions of emotional regulation and spiritual grounding.",
+      "ayahRefs": ["13:28"],
+      "tags": ["dhikr", "tranquility", "heart"],
+      "sources": [
+        { "label": "Quran.com 13:28", "url": "https://quran.com/13/28" }
+      ]
+    },
+    {
+      "id": "spirit-hope-fear-balance",
+      "category": "Spiritual Psychology",
+      "title": "Hope and Fear Balance",
+      "summary": "The Quran repeatedly balances hope in mercy with fear of accountability.",
+      "detail": "This balance is treated as a core psychological and spiritual discipline.",
+      "ayahRefs": ["15:49-50", "39:53", "32:16"],
+      "tags": ["hope", "fear", "balance"],
+      "sources": [
+        { "label": "Quran.com 39:53", "url": "https://quran.com/39/53" }
+      ]
+    },
+    {
+      "id": "spirit-self-purification",
+      "category": "Spiritual Psychology",
+      "title": "Self-Purification (Tazkiyah)",
+      "summary": "Purification of the self is presented as a central success criterion.",
+      "detail": "This theme is linked to disciplined habits, moral sincerity, and conscious accountability.",
+      "ayahRefs": ["91:9-10", "87:14-15"],
+      "tags": ["tazkiyah", "discipline", "soul"],
+      "sources": [
+        { "label": "Quran.com 91:9", "url": "https://quran.com/91/9-10" }
+      ]
+    },
+    {
+      "id": "spirit-cognitive-signs",
+      "category": "Spiritual Psychology",
+      "title": "Reflection on Signs and Reasoning",
+      "summary": "Many verses call for thinking, reasoning, and deep reflection over signs.",
+      "detail": "The Quran repeatedly activates cognitive engagement rather than passive reading.",
+      "ayahRefs": ["2:164", "30:21-25", "45:13"],
+      "tags": ["reason", "reflection", "ayat"],
+      "sources": [
+        { "label": "Quran.com 2:164", "url": "https://quran.com/2/164" }
+      ]
+    },
+    {
+      "id": "revelation-preservation-promise",
+      "category": "Preservation & Revelation",
+      "title": "Promise of Preservation",
+      "summary": "The Quran states a direct promise of preserving the Reminder.",
+      "detail": "This verse is foundational in discussions of transmission, memorization, and manuscript tradition.",
+      "ayahRefs": ["15:9"],
+      "tags": ["preservation", "revelation", "hifz"],
+      "sources": [
+        { "label": "Quran.com 15:9", "url": "https://quran.com/15/9" }
+      ]
+    },
+    {
+      "id": "revelation-tadabbur-challenge",
+      "category": "Preservation & Revelation",
+      "title": "Internal Coherence Challenge",
+      "summary": "A verse invites reflection on consistency as evidence of divine origin.",
+      "detail": "The challenge highlights textual coherence and invites sustained study rather than superficial reading.",
+      "ayahRefs": ["4:82"],
+      "tags": ["coherence", "challenge", "origin"],
+      "sources": [
+        { "label": "Quran.com 4:82", "url": "https://quran.com/4/82" }
+      ]
+    }
+  ]
+}

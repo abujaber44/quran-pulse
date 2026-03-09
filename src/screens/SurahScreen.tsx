@@ -16,7 +16,7 @@ import { useSettings } from '../context/SettingsContext';
 import { getGlobalAyahNumber } from '../utils/quranUtils';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
-import { getBookmarks, addBookmark, removeBookmark } from '../services/bookmarkService';
+import { getBookmarks, addBookmark, removeBookmark, BookmarkTag } from '../services/bookmarkService';
 import { UI_COLORS, UI_RADII, UI_SHADOWS } from '../theme/ui';
 
 const reciters = [
@@ -31,10 +31,13 @@ const reciters = [
 
 const LIST_FOOTER_HEIGHT = 130;
 const LIST_SCROLL_RETRY_DELAY_MS = 300;
+const INITIAL_AYAH_SCROLL_RETRY_MS = 180;
+const INITIAL_AYAH_SCROLL_MAX_ATTEMPTS = 6;
 
 type AyahItemProps = {
   ayah: any;
   isDark: boolean;
+  arabicFontSize: number;
   isActiveAyah: boolean;
   isBookmarked: boolean;
   expandedTranslation: number | null;
@@ -50,6 +53,7 @@ type AyahItemProps = {
 const AyahItem = memo(({
   ayah,
   isDark,
+  arabicFontSize,
   isActiveAyah,
   isBookmarked,
   expandedTranslation,
@@ -82,7 +86,16 @@ const AyahItem = memo(({
         </Text>
       </TouchableOpacity>
 
-      <Text style={[styles.ayahText, { fontSize: 24 }, isDark && styles.darkText]}>
+      <Text
+        style={[
+          styles.ayahText,
+          {
+            fontSize: arabicFontSize,
+            lineHeight: Math.round(arabicFontSize * 2.2),
+          },
+          isDark && styles.darkText,
+        ]}
+      >
         {ayah.text_uthmani}
       </Text>
 
@@ -262,6 +275,7 @@ export default function SurahScreen({ route }: any) {
   const [bookmarkedAyahs, setBookmarkedAyahs] = useState<Set<string>>(new Set());
 
   const flatListRef = useRef<FlatList<any>>(null);
+  const initialAyahScrollInProgressRef = useRef(false);
 
   const navigation = useNavigation();
 
@@ -374,8 +388,41 @@ export default function SurahScreen({ route }: any) {
     }
   }, [ayahs]);
 
+  const scrollToAyahWithRetry = useCallback((ayahNum: number, attempt = 0) => {
+    if (!flatListRef.current || ayahs.length === 0) {
+      initialAyahScrollInProgressRef.current = false;
+      return;
+    }
+
+    const targetAyahNum = Number(ayahNum);
+    if (!Number.isFinite(targetAyahNum) || targetAyahNum <= 0) {
+      initialAyahScrollInProgressRef.current = false;
+      return;
+    }
+
+    const index = ayahs.findIndex((item) => Number(item.verse_number) === targetAyahNum);
+    if (index < 0 || index >= ayahs.length) {
+      initialAyahScrollInProgressRef.current = false;
+      return;
+    }
+
+    try {
+      flatListRef.current.scrollToIndex({ index, animated: true, viewPosition: 0.45 });
+      initialAyahScrollInProgressRef.current = false;
+    } catch {
+      if (attempt >= INITIAL_AYAH_SCROLL_MAX_ATTEMPTS) {
+        initialAyahScrollInProgressRef.current = false;
+        return;
+      }
+      setTimeout(() => {
+        scrollToAyahWithRetry(targetAyahNum, attempt + 1);
+      }, INITIAL_AYAH_SCROLL_RETRY_MS);
+    }
+  }, [ayahs]);
+
   // Auto-scroll current ayah into view.
   useEffect(() => {
+    if (initialAyahScrollInProgressRef.current) return;
     if (!currentAyah || currentAyah.surah !== surah.id) return;
     scrollToAyah(currentAyah.ayah, true);
   }, [currentAyah, scrollToAyah, surah.id]);
@@ -385,12 +432,16 @@ export default function SurahScreen({ route }: any) {
     const initialAyah = Number(route.params?.initialAyah);
     if (!Number.isFinite(initialAyah) || initialAyah <= 0 || ayahs.length === 0) return;
 
+    initialAyahScrollInProgressRef.current = true;
     const timer = setTimeout(() => {
-      scrollToAyah(initialAyah, true);
+      scrollToAyahWithRetry(initialAyah);
     }, 350);
 
-    return () => clearTimeout(timer);
-  }, [ayahs.length, route.params?.initialAyah, route.params?.scrollNonce, scrollToAyah]);
+    return () => {
+      clearTimeout(timer);
+      initialAyahScrollInProgressRef.current = false;
+    };
+  }, [ayahs.length, route.params?.initialAyah, route.params?.scrollNonce, scrollToAyahWithRetry]);
 
   const handlePlayAyah = useCallback((ayahNum: number) => {
     const global = getGlobalAyahNumber(surah.id, ayahNum, surahs);
@@ -459,6 +510,24 @@ export default function SurahScreen({ route }: any) {
     }
   }, [expandedTranslation]);
 
+  const saveBookmarkWithTag = useCallback(async (ayahNum: number, tag: BookmarkTag) => {
+    const key = `${surah.id}-${ayahNum}`;
+    const ayah = ayahs.find(a => a.verse_number === ayahNum);
+    if (!ayah) return;
+
+    await addBookmark({
+      surahId: surah.id,
+      surahName: surah.name_simple,
+      ayahNum: ayah.verse_number,
+      ayahText: ayah.text_uthmani,
+      translation: ayah.translation,
+      timestamp: Date.now(),
+      tag,
+    });
+    setBookmarkedAyahs(prev => new Set(prev).add(key));
+    Alert.alert('Saved', `Ayah added to bookmarks (${tag === 'memorize' ? 'Memorize' : 'Read/Recite'})`);
+  }, [ayahs, surah.id, surah.name_simple]);
+
   // Toggle bookmark
   const toggleBookmark = useCallback(async (ayahNum: number) => {
     const key = `${surah.id}-${ayahNum}`;
@@ -473,23 +542,30 @@ export default function SurahScreen({ route }: any) {
       });
       Alert.alert('Removed', 'Ayah removed from bookmarks');
     } else {
-      const ayah = ayahs.find(a => a.verse_number === ayahNum);
-      if (ayah) {
-        await addBookmark({
-          surahId: surah.id,
-          surahName: surah.name_simple,
-          ayahNum: ayah.verse_number,
-          ayahText: ayah.text_uthmani,
-          translation: ayah.translation,
-          timestamp: Date.now(),
-        });
-        setBookmarkedAyahs(prev => new Set(prev).add(key));
-        Alert.alert('Saved', 'Ayah added to bookmarks');
-      }
+      Alert.alert(
+        'Save Bookmark',
+        'Choose a bookmark folder tag:',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          {
+            text: 'Memorize',
+            onPress: () => {
+              void saveBookmarkWithTag(ayahNum, 'memorize');
+            },
+          },
+          {
+            text: 'Read/Recite',
+            onPress: () => {
+              void saveBookmarkWithTag(ayahNum, 'read_recite');
+            },
+          },
+        ]
+      );
     }
-  }, [ayahs, bookmarkedAyahs, surah.id]);
+  }, [bookmarkedAyahs, saveBookmarkWithTag, surah.id]);
 
   const isDark = settings.isDarkMode;
+  const ayahArabicFontSize = Math.max(24, settings.arabicFontSize);
   const currentAyahNumForThisSurah = currentAyah?.surah === surah.id ? currentAyah?.ayah : null;
 
   const listExtraData = useMemo(() => ({
@@ -510,10 +586,27 @@ export default function SurahScreen({ route }: any) {
     isDark,
   ]);
 
-  const onScrollToIndexFailed = useCallback(({ index }: { index: number }) => {
+  const onScrollToIndexFailed = useCallback(({
+    index,
+    averageItemLength,
+    highestMeasuredFrameIndex,
+  }: {
+    index: number;
+    averageItemLength: number;
+    highestMeasuredFrameIndex: number;
+  }) => {
     setTimeout(() => {
       if (!flatListRef.current || ayahs.length === 0) return;
       const safeIndex = Math.max(0, Math.min(index, ayahs.length - 1));
+
+       if (averageItemLength > 0) {
+        const measuredIndex = Math.max(0, Math.min(safeIndex, highestMeasuredFrameIndex + 1));
+        flatListRef.current.scrollToOffset({
+          offset: measuredIndex * averageItemLength,
+          animated: false,
+        });
+      }
+
       flatListRef.current.scrollToIndex({ index: safeIndex, animated: true, viewPosition: 0.45 });
     }, LIST_SCROLL_RETRY_DELAY_MS);
   }, [ayahs.length]);
@@ -526,6 +619,7 @@ export default function SurahScreen({ route }: any) {
       <AyahItem
         ayah={item}
         isDark={isDark}
+        arabicFontSize={ayahArabicFontSize}
         isActiveAyah={isActiveAyah}
         isBookmarked={isBookmarked}
         expandedTranslation={expandedTranslation}
@@ -543,6 +637,7 @@ export default function SurahScreen({ route }: any) {
     surah.id,
     currentAyahNumForThisSurah,
     isDark,
+    ayahArabicFontSize,
     expandedTranslation,
     expandedTafseer,
     loadingTafseer,
@@ -839,10 +934,10 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 12,
     right: 12,
-    zIndex: 10,
-    padding: 8,
+    zIndex: 7,
+    padding: 3,
     backgroundColor: 'rgba(0,0,0,0.1)',
-    borderRadius: 20,
+    borderRadius: 5,
   },
   exitIcon: {
     fontSize: 24,
