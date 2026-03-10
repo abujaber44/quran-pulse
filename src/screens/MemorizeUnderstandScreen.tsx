@@ -17,6 +17,11 @@ import { Surah } from '../types';
 import { useSettings } from '../context/SettingsContext';
 import { UI_COLORS, UI_RADII, UI_SHADOWS } from '../theme/ui';
 import ScreenIntroTile from '../components/ScreenIntroTile';
+import {
+  findSearchMatchRange,
+  normalizeArabicForSearch,
+  stripArabicDiacritics,
+} from '../utils/arabicSearch';
 
 type QuranSearchEntry = {
   surahId: number;
@@ -39,19 +44,6 @@ type SearchResultItem =
       ayahText: string;
     };
 
-const stripArabicDiacritics = (value: string): string =>
-  value
-    .replace(/[\u0610-\u061A\u064B-\u065F\u0670\u06D6-\u06ED]/g, '')
-    .replace(/\u0640/g, '');
-
-const normalizeForSearch = (value: string): string =>
-  stripArabicDiacritics(value)
-    .replace(/[إأآٱ]/g, 'ا')
-    .replace(/ى/g, 'ي')
-    .replace(/ة/g, 'ه')
-    .toLowerCase()
-    .trim();
-
 const renderHighlightedText = (
   text: string,
   query: string,
@@ -61,13 +53,12 @@ const renderHighlightedText = (
   const cleanQuery = query.trim();
   if (!cleanQuery) return <Text style={baseStyle}>{text}</Text>;
 
-  const lowerText = text.toLowerCase();
-  const lowerQuery = cleanQuery.toLowerCase();
-  const start = lowerText.indexOf(lowerQuery);
+  const matchRange = findSearchMatchRange(text, cleanQuery);
+  const start = matchRange?.start ?? -1;
 
   if (start === -1) return <Text style={baseStyle}>{text}</Text>;
 
-  const end = start + cleanQuery.length;
+  const end = matchRange?.end ?? start + cleanQuery.length;
   const before = text.slice(0, start);
   const match = text.slice(start, end);
   const after = text.slice(end);
@@ -133,7 +124,7 @@ export default function MemorizeUnderstandScreen({ navigation }: any) {
         for (const ayah of ayahs) {
           const ayahNumber = Number(ayah.numberInSurah);
           const ayahText = typeof ayah.text === 'string' ? ayah.text : '';
-          const ayahTextNormalized = normalizeForSearch(ayahText);
+          const ayahTextNormalized = normalizeArabicForSearch(ayahText);
 
           if (!ayahText || !ayahTextNormalized || !Number.isFinite(ayahNumber)) continue;
 
@@ -160,7 +151,7 @@ export default function MemorizeUnderstandScreen({ navigation }: any) {
   }, [quranIndex, surahs.length, surahLookupById]);
 
   const trimmedSearch = searchQuery.trim();
-  const normalizedQuery = useMemo(() => normalizeForSearch(trimmedSearch), [trimmedSearch]);
+  const normalizedQuery = useMemo(() => normalizeArabicForSearch(trimmedSearch), [trimmedSearch]);
 
   useEffect(() => {
     if (trimmedSearch.length < 2) return;
@@ -173,8 +164,8 @@ export default function MemorizeUnderstandScreen({ navigation }: any) {
     if (!trimmedSearch) return surahs;
     return surahs.filter((surah) => {
       return (
-        normalizeForSearch(surah.name_simple).includes(normalizedQuery) ||
-        normalizeForSearch(surah.name_arabic).includes(normalizedQuery)
+        normalizeArabicForSearch(surah.name_simple).includes(normalizedQuery) ||
+        normalizeArabicForSearch(surah.name_arabic).includes(normalizedQuery)
       );
     });
   }, [surahs, trimmedSearch, normalizedQuery]);

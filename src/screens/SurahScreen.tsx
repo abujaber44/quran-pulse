@@ -225,8 +225,8 @@ const SurahPlayerBar = memo(({ surahId, surahVersesCount, isDark, onPlayAyahByNu
   return (
     <View style={[styles.playerContainer, isDark && styles.darkPlayerContainer]}>
       <View style={[styles.playerCard, isDark && styles.darkPlayerCard]}>
-        <TouchableOpacity style={styles.exitButton} onPress={stopListening}>
-          <Text style={styles.exitIcon}>×</Text>
+        <TouchableOpacity style={[styles.exitButton, isDark && styles.darkExitButton]} onPress={stopListening}>
+          <Text style={[styles.exitIcon, isDark && styles.darkExitIcon]}>×</Text>
         </TouchableOpacity>
 
         <View style={styles.playerHeader}>
@@ -1021,13 +1021,23 @@ const styles = StyleSheet.create({
     top: 12,
     right: 12,
     zIndex: 7,
-    padding: 3,
-    backgroundColor: 'rgba(0,0,0,0.1)',
-    borderRadius: 5,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    backgroundColor: '#ecf6ff',
+    borderColor: '#bfd9ec',
+    borderWidth: 1,
+    borderRadius: UI_RADII.sm,
+  },
+  darkExitButton: {
+    backgroundColor: '#213241',
+    borderColor: '#4d6376',
   },
   exitIcon: {
-    fontSize: 24,
-    color: UI_COLORS.danger,
+    fontSize: 20,
+    color: UI_COLORS.accent,
     fontWeight: 'bold',
+  },
+  darkExitIcon: {
+    color: '#94c4e7',
   },
 });

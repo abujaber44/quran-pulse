@@ -18,6 +18,7 @@ import { fetchSurahs } from '../services/quranApi';
 import { getSurahAudioUrl } from '../services/quranApi';
 import { UI_COLORS, UI_RADII, UI_SHADOWS } from '../theme/ui';
 import ScreenIntroTile from '../components/ScreenIntroTile';
+import { normalizeArabicForSearch } from '../utils/arabicSearch';
 
 interface Surah {
   id: number;
@@ -108,10 +109,10 @@ export default function QuranPlayerScreen() {
       return;
     }
 
-    const query = searchQuery.toLowerCase().trim();
+    const query = normalizeArabicForSearch(searchQuery);
     const filtered = allSurahs.filter((surah) =>
-      surah.name_simple.toLowerCase().includes(query) ||
-      surah.name_arabic.includes(searchQuery)
+      normalizeArabicForSearch(surah.name_simple).includes(query) ||
+      normalizeArabicForSearch(surah.name_arabic).includes(query)
     );
     setSurahs(filtered);
   }, [searchQuery, allSurahs]);
