@@ -20,10 +20,14 @@ import { useSettings } from '../context/SettingsContext';
 import debounce from 'lodash.debounce';
 import { UI_COLORS, UI_RADII, UI_SHADOWS } from '../theme/ui';
 import ScreenIntroTile from '../components/ScreenIntroTile';
+import { canScheduleExactAlarms, openExactAlarmSettings } from '../services/exactAlarmService';
 import {
   ATHAN_CHANNEL_ID,
+  ATHAN_REMINDER_CHANNEL_ID,
   ATHAN_NOTIFICATION_ID_PREFIX,
   ATHAN_NOTIFICATION_TITLE_PREFIX,
+  ATHAN_REFRESH_REMINDER_ID,
+  ATHAN_SCHEDULE_WINDOW_DAYS,
   buildAthanNotificationId,
 } from '../utils/athanNotifications';
 import { calculateDistanceToKaabaKm, calculateQiblaBearing, Coordinates } from '../utils/qiblaUtils';
@@ -33,6 +37,14 @@ interface Prayer {
   time: string;
   enabled: boolean;
 }
+
+const PRAYER_NAMES = ['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'] as const;
+type PrayerName = (typeof PRAYER_NAMES)[number];
+type PrayerTimings = Record<PrayerName, string>;
+type PrayerScheduleDay = {
+  date: Date;
+  timings: PrayerTimings;
+};
 
 type NextPrayerInfo = {
   name: string;
@@ -61,6 +73,70 @@ type OpenMeteoResult = {
 const CITY_STORAGE_KEY = 'prayer_city';
 const PRAYER_PREFS_KEY = 'prayer_athan_prefs';
 const DEFAULT_CITY = 'Makkah';
+const toLocalDateKey = (date: Date): string => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
+const extractPrayerTimings = (rawTimings: any): PrayerTimings | null => {
+  if (!rawTimings || typeof rawTimings !== 'object') return null;
+
+  const extracted: Partial<PrayerTimings> = {};
+  for (const prayerName of PRAYER_NAMES) {
+    const rawValue = rawTimings[prayerName];
+    if (typeof rawValue !== 'string' || !parsePrayerTime(rawValue)) {
+      return null;
+    }
+    extracted[prayerName] = rawValue;
+  }
+
+  return extracted as PrayerTimings;
+};
+
+const fetchPrayerScheduleWindow = async (
+  cityName: string,
+  startDate: Date,
+  days: number
+): Promise<PrayerScheduleDay[]> => {
+  const requests: Array<Promise<PrayerScheduleDay | null>> = [];
+
+  for (let dayOffset = 0; dayOffset < days; dayOffset += 1) {
+    const targetDate = new Date(startDate);
+    targetDate.setDate(startDate.getDate() + dayOffset);
+
+    requests.push(
+      (async () => {
+        const day = String(targetDate.getDate()).padStart(2, '0');
+        const month = String(targetDate.getMonth() + 1).padStart(2, '0');
+        const year = targetDate.getFullYear();
+        const url = `https://api.aladhan.com/v1/timingsByCity/${day}-${month}-${year}?city=${encodeURIComponent(cityName)}&country=&method=2`;
+
+        const response = await fetch(url);
+        const data = await response.json();
+        if (data?.code !== 200) return null;
+
+        const timings = extractPrayerTimings(data?.data?.timings);
+        if (!timings) return null;
+
+        const scheduleDate = new Date(targetDate);
+        scheduleDate.setHours(0, 0, 0, 0);
+
+        return {
+          date: scheduleDate,
+          timings,
+        };
+      })()
+    );
+  }
+
+  const settled = await Promise.all(requests);
+  return settled
+    .filter((item): item is PrayerScheduleDay => item !== null)
+    .sort((a, b) => a.date.getTime() - b.date.getTime());
+};
+
 const parsePrayerTime = (raw: string): { hour: number; minute: number } | null => {
   const match = raw.match(/(\d{1,2}):(\d{2})/);
   if (!match) return null;
@@ -182,6 +258,7 @@ const fetchOpenMeteoSuggestions = async (query: string): Promise<string[]> => {
 
 export default function PrayerTimesScreen({ navigation }: any) {
   const [prayers, setPrayers] = useState<Prayer[]>([]);
+  const [prayerScheduleWindow, setPrayerScheduleWindow] = useState<PrayerScheduleDay[]>([]);
   const [countdownNow, setCountdownNow] = useState(() => Date.now());
   const [city, setCity] = useState<string>(DEFAULT_CITY);
   const [loading, setLoading] = useState(true);
@@ -190,7 +267,9 @@ export default function PrayerTimesScreen({ navigation }: any) {
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [suggestionsLoading, setSuggestionsLoading] = useState(false);
   const [currentCoordinates, setCurrentCoordinates] = useState<Coordinates | null>(null);
+  const [exactAlarmEnabled, setExactAlarmEnabled] = useState<boolean>(Platform.OS !== 'android');
   const scheduleRunIdRef = useRef(0);
+  const exactAlarmPromptShownRef = useRef(false);
 
   const { settings } = useSettings();
   const isDark = settings.isDarkMode;
@@ -261,7 +340,7 @@ export default function PrayerTimesScreen({ navigation }: any) {
     }
   };
 
-  const setupAndroidNotificationChannel = async () => {
+  const setupAndroidNotificationChannels = async () => {
     if (Platform.OS !== 'android') return;
 
     await Notifications.setNotificationChannelAsync(ATHAN_CHANNEL_ID, {
@@ -275,7 +354,52 @@ export default function PrayerTimesScreen({ navigation }: any) {
       lockscreenVisibility: Notifications.AndroidNotificationVisibility.PUBLIC,
       sound: 'athan.mp3',
     });
+
+    await Notifications.setNotificationChannelAsync(ATHAN_REMINDER_CHANNEL_ID, {
+      name: 'Athan Schedule Reminders',
+      description: 'Reminder to open Prayer Times and refresh next 7 days of athan schedules',
+      importance: Notifications.AndroidImportance.HIGH,
+      vibrationPattern: [0, 180, 120, 180],
+      lightColor: '#27ae60',
+      enableLights: true,
+      enableVibrate: true,
+      lockscreenVisibility: Notifications.AndroidNotificationVisibility.PUBLIC,
+    });
   };
+
+  const checkExactAlarmAccess = useCallback(async (): Promise<boolean> => {
+    if (Platform.OS !== 'android') return true;
+    const granted = await canScheduleExactAlarms();
+    setExactAlarmEnabled(granted);
+    if (granted) {
+      exactAlarmPromptShownRef.current = false;
+    }
+    return granted;
+  }, []);
+
+  const promptExactAlarmAccess = useCallback(() => {
+    if (Platform.OS !== 'android') return;
+    if (exactAlarmPromptShownRef.current) return;
+    exactAlarmPromptShownRef.current = true;
+
+    Alert.alert(
+      'Enable Exact Athan Timing',
+      'To keep Athan alerts exactly on time, allow "Alarms & reminders" for Quran Pulse in Android settings.',
+      [
+        { text: 'Not now', style: 'cancel' },
+        {
+          text: 'Open Settings',
+          onPress: () => {
+            void openExactAlarmSettings().finally(() => {
+              setTimeout(() => {
+                void checkExactAlarmAccess();
+              }, 1200);
+            });
+          },
+        },
+      ]
+    );
+  }, [checkExactAlarmAccess]);
 
   const loadSavedData = async () => {
     try {
@@ -314,7 +438,7 @@ export default function PrayerTimesScreen({ navigation }: any) {
   };
 
   const requestPermissions = async () => {
-    await setupAndroidNotificationChannel();
+    await setupAndroidNotificationChannels();
     const { status } = await Notifications.requestPermissionsAsync({
       ios: {
         allowAlert: true,
@@ -324,6 +448,11 @@ export default function PrayerTimesScreen({ navigation }: any) {
     });
     if (status !== 'granted') {
       Alert.alert('Permission required', 'Please enable notifications for Athan alerts');
+    }
+
+    const exactAlarmAllowed = await checkExactAlarmAccess();
+    if (!exactAlarmAllowed) {
+      promptExactAlarmAccess();
     }
   };
 
@@ -371,28 +500,28 @@ export default function PrayerTimesScreen({ navigation }: any) {
   ) => {
     setLoading(true);
     try {
-      const date = new Date();
-      const day = date.getDate().toString().padStart(2, '0');
-      const month = (date.getMonth() + 1).toString().padStart(2, '0');
-      const year = date.getFullYear();
+      const today = new Date();
+      const scheduleWindow = await fetchPrayerScheduleWindow(
+        cityName,
+        today,
+        ATHAN_SCHEDULE_WINDOW_DAYS
+      );
 
-      const url = `https://api.aladhan.com/v1/timingsByCity/${day}-${month}-${year}?city=${encodeURIComponent(cityName)}&country=&method=2`;
+      if (scheduleWindow.length > 0) {
+        const todayKey = toLocalDateKey(today);
+        const todaySchedule =
+          scheduleWindow.find((entry) => toLocalDateKey(entry.date) === todayKey) ||
+          scheduleWindow[0];
+        const timings = todaySchedule.timings;
+        const prayerList: Prayer[] = PRAYER_NAMES.map((name) => ({
+          name,
+          time: timings[name],
+          enabled: initialPrefs?.[name] ?? true,
+        }));
 
-      const response = await fetch(url);
-      const data = await response.json();
-
-      if (data.code === 200 && data.data?.timings) {
-        const timings = data.data.timings;
-        const prayerList: Prayer[] = [
-          { name: 'Fajr', time: timings.Fajr, enabled: initialPrefs?.Fajr ?? true },
-          { name: 'Dhuhr', time: timings.Dhuhr, enabled: initialPrefs?.Dhuhr ?? true },
-          { name: 'Asr', time: timings.Asr, enabled: initialPrefs?.Asr ?? true },
-          { name: 'Maghrib', time: timings.Maghrib, enabled: initialPrefs?.Maghrib ?? true },
-          { name: 'Isha', time: timings.Isha, enabled: initialPrefs?.Isha ?? true },
-        ];
-
+        setPrayerScheduleWindow(scheduleWindow);
         setPrayers(prayerList);
-        await scheduleAthanNotifications(prayerList);
+        await scheduleAthanNotifications(prayerList, scheduleWindow);
         setCity(cityName);
         saveCity(cityName);
 
@@ -403,6 +532,7 @@ export default function PrayerTimesScreen({ navigation }: any) {
           setCurrentCoordinates(resolvedCoordinates);
         }
       } else {
+        setPrayerScheduleWindow([]);
         Alert.alert(
           'Invalid City',
           `No prayer times found for "${cityName}". Please select a valid city from suggestions or try a major city near you.`
@@ -410,13 +540,17 @@ export default function PrayerTimesScreen({ navigation }: any) {
         setSearchInput(''); 
       }
     } catch (err) {
+      setPrayerScheduleWindow([]);
       Alert.alert('Network Error', 'Unable to fetch prayer times. Please check your internet connection.');
     } finally {
       setLoading(false);
     }
   };
 
-  const scheduleAthanNotifications = async (prayerList: Prayer[]) => {
+  const scheduleAthanNotifications = async (
+    prayerList: Prayer[],
+    scheduleWindow: PrayerScheduleDay[]
+  ) => {
     const runId = ++scheduleRunIdRef.current;
 
     const isStaleRun = () => runId !== scheduleRunIdRef.current;
@@ -437,67 +571,132 @@ export default function PrayerTimesScreen({ navigation }: any) {
         })
         .map((notification) => notification.identifier);
 
-      for (const id of existingAthanIds) {
+      const existingReminderIds = existingScheduled
+        .filter((notification) => {
+          const source = notification.content.data?.source;
+          return (
+            notification.identifier === ATHAN_REFRESH_REMINDER_ID ||
+            source === 'athan-refresh-reminder'
+          );
+        })
+        .map((notification) => notification.identifier);
+
+      const idsToCancel = [...new Set([...existingAthanIds, ...existingReminderIds])];
+
+      for (const id of idsToCancel) {
         try {
           await Notifications.cancelScheduledNotificationAsync(id);
         } catch (cancelError) {
-          console.warn(`Failed to cancel scheduled athan notification ${id}:`, cancelError);
+          console.warn(`Failed to cancel scheduled notification ${id}:`, cancelError);
         }
       }
       if (isStaleRun()) return;
 
-      const today = new Date();
+      const exactAlarmAllowed = await checkExactAlarmAccess();
+      if (!exactAlarmAllowed) {
+        promptExactAlarmAccess();
+      }
+      if (isStaleRun()) return;
+
+      if (scheduleWindow.length === 0) {
+        console.warn('Skipping athan scheduling because no 7-day prayer schedule is available.');
+        return;
+      }
+
+      const now = new Date();
       for (const prayer of prayerList) {
         if (isStaleRun()) return;
         if (!prayer.enabled) continue;
 
-        const parsed = parsePrayerTime(prayer.time);
-        if (!parsed) {
-          console.warn(`Skipping invalid prayer time for ${prayer.name}: ${prayer.time}`);
-          continue;
-        }
-
-        const triggerDate = new Date(today);
-        triggerDate.setHours(parsed.hour, parsed.minute, 0, 0);
-
-        if (triggerDate <= today) {
-          triggerDate.setDate(triggerDate.getDate() + 1);
-        }
-
-        try {
-          const content: Notifications.NotificationContentInput = {
-            title: `${ATHAN_NOTIFICATION_TITLE_PREFIX} ${prayer.name}`,
-            body: '🕌 اللَّهُمَّ رَبَّ هَذِهِ الدَّعْوَةِ التَّامَّةِ، وَالصَّلَاةِ الْقَائِمَةِ، آتِ مُحَمَّداً الْوَسِيلَةَ وَالْفَضِيلَةَ، وَابْعَثْهُ مَقَاماً مَحْمُوداً الَّذِي وَعَدْتَهُ، إَنَّكَ لَا تُخْلِفُ الْمِيعَادَ',
-            sound: 'athan.mp3',
-            priority: Notifications.AndroidNotificationPriority.HIGH,
-            vibrate: [0, 250, 250, 250],
-            data: { source: 'athan', prayerName: prayer.name },
-          };
-
-          if (Platform.OS === 'ios') {
-            content.interruptionLevel = 'timeSensitive';
+        for (const daySchedule of scheduleWindow) {
+          const prayerName = prayer.name as PrayerName;
+          const rawTime = daySchedule.timings[prayerName];
+          const parsed = parsePrayerTime(rawTime);
+          if (!parsed) {
+            console.warn(
+              `Skipping invalid prayer time for ${prayer.name} on ${toLocalDateKey(daySchedule.date)}: ${rawTime}`
+            );
+            continue;
           }
 
-          const trigger: Notifications.NotificationTriggerInput =
-            Platform.OS === 'android'
-              ? {
-                  type: Notifications.SchedulableTriggerInputTypes.DATE,
-                  date: triggerDate,
-                  channelId: ATHAN_CHANNEL_ID,
-                }
-              : {
-                  type: Notifications.SchedulableTriggerInputTypes.DATE,
-                  date: triggerDate,
-                };
+          const triggerDate = new Date(daySchedule.date);
+          triggerDate.setHours(parsed.hour, parsed.minute, 0, 0);
 
-          await Notifications.scheduleNotificationAsync({
-            identifier: buildAthanNotificationId(prayer.name),
-            content,
-            trigger,
-          });
-        } catch (error) {
-          console.error(`Failed to schedule ${prayer.name}:`, error);
+          if (triggerDate <= now) continue;
+
+          try {
+            const content: Notifications.NotificationContentInput = {
+              title: `${ATHAN_NOTIFICATION_TITLE_PREFIX} ${prayer.name}`,
+              body: '🕌 اللَّهُمَّ رَبَّ هَذِهِ الدَّعْوَةِ التَّامَّةِ، وَالصَّلَاةِ الْقَائِمَةِ، آتِ مُحَمَّداً الْوَسِيلَةَ وَالْفَضِيلَةَ، وَابْعَثْهُ مَقَاماً مَحْمُوداً الَّذِي وَعَدْتَهُ، إَنَّكَ لَا تُخْلِفُ الْمِيعَادَ',
+              sound: 'athan.mp3',
+              priority: Notifications.AndroidNotificationPriority.HIGH,
+              vibrate: [0, 250, 250, 250],
+              data: { source: 'athan', prayerName: prayer.name },
+            };
+
+            if (Platform.OS === 'ios') {
+              content.interruptionLevel = 'timeSensitive';
+            }
+
+            const trigger: Notifications.NotificationTriggerInput =
+              Platform.OS === 'android'
+                ? {
+                    type: Notifications.SchedulableTriggerInputTypes.DATE,
+                    date: triggerDate,
+                    channelId: ATHAN_CHANNEL_ID,
+                  }
+                : {
+                    type: Notifications.SchedulableTriggerInputTypes.DATE,
+                    date: triggerDate,
+                  };
+
+            await Notifications.scheduleNotificationAsync({
+              identifier: buildAthanNotificationId(prayer.name, triggerDate),
+              content,
+              trigger,
+            });
+          } catch (error) {
+            console.error(`Failed to schedule ${prayer.name} on ${triggerDate.toISOString()}:`, error);
+          }
         }
+      }
+
+      if (isStaleRun()) return;
+
+      const reminderDate = new Date(now);
+      reminderDate.setDate(reminderDate.getDate() + Math.max(scheduleWindow.length - 1, 0));
+      reminderDate.setHours(9, 0, 0, 0);
+      if (reminderDate <= now) {
+        reminderDate.setDate(reminderDate.getDate() + 1);
+      }
+
+      try {
+        const reminderContent: Notifications.NotificationContentInput = {
+          title: 'Refresh Athan Schedule',
+          body: 'Open Prayer Times to schedule the next 7 days of athan notifications.',
+          priority: Notifications.AndroidNotificationPriority.DEFAULT,
+          data: { source: 'athan-refresh-reminder', targetScreen: 'PrayerTimes' },
+        };
+
+        const reminderTrigger: Notifications.NotificationTriggerInput =
+          Platform.OS === 'android'
+            ? {
+                type: Notifications.SchedulableTriggerInputTypes.DATE,
+                date: reminderDate,
+                channelId: ATHAN_REMINDER_CHANNEL_ID,
+              }
+            : {
+                type: Notifications.SchedulableTriggerInputTypes.DATE,
+                date: reminderDate,
+              };
+
+        await Notifications.scheduleNotificationAsync({
+          identifier: ATHAN_REFRESH_REMINDER_ID,
+          content: reminderContent,
+          trigger: reminderTrigger,
+        });
+      } catch (reminderError) {
+        console.error('Failed to schedule athan refresh reminder:', reminderError);
       }
     } catch (error) {
       console.error('Failed to refresh athan schedules:', error);
@@ -515,7 +714,7 @@ export default function PrayerTimesScreen({ navigation }: any) {
     }, {} as Record<string, boolean>);
     savePrayerPrefs(prefs);
 
-    void scheduleAthanNotifications(updated);
+    void scheduleAthanNotifications(updated, prayerScheduleWindow);
   };
 
   const handleSelectSuggestion = (suggestedCity: string) => {
@@ -713,8 +912,16 @@ export default function PrayerTimesScreen({ navigation }: any) {
 
         {/* Note */}
         <Text style={[styles.note, isDark && styles.darkText]}>
-          Athan will play at prayer time even if app is closed
+          Athan is scheduled for the next 7 days, with a reminder to reopen Prayer Times before expiry.
         </Text>
+        {Platform.OS === 'android' && !exactAlarmEnabled ? (
+          <TouchableOpacity style={styles.exactAlarmWarningCard} onPress={promptExactAlarmAccess}>
+            <Text style={styles.exactAlarmWarningTitle}>Exact timing is not enabled</Text>
+            <Text style={styles.exactAlarmWarningText}>
+              Tap to allow Android "Alarms & reminders" so Athan alerts trigger exactly on time.
+            </Text>
+          </TouchableOpacity>
+        ) : null}
 
         {/* Extra space at bottom */}
         <View style={{ height: 40 }} />
@@ -794,6 +1001,28 @@ const styles = StyleSheet.create({
   prayerName: { fontSize: 15, fontWeight: 'bold', color: UI_COLORS.text },
   prayerTime: { fontSize: 15, color: UI_COLORS.primary, fontWeight: '600', marginTop: 3 },
   note: { fontSize: 14, color: UI_COLORS.textMuted, textAlign: 'center', marginTop: 24, fontStyle: 'italic' },
+  exactAlarmWarningCard: {
+    marginTop: 12,
+    backgroundColor: '#fff7de',
+    borderColor: '#e3c760',
+    borderWidth: 1,
+    borderRadius: UI_RADII.md,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+  },
+  exactAlarmWarningTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#8a6a00',
+    marginBottom: 2,
+    textAlign: 'center',
+  },
+  exactAlarmWarningText: {
+    fontSize: 12,
+    color: '#8a6a00',
+    textAlign: 'center',
+    lineHeight: 18,
+  },
   darkText: { color: UI_COLORS.white },
   darkMutedText: { color: '#a8b3bd' },
   // Autocomplete styles
