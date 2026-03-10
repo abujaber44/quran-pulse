@@ -1241,6 +1241,1247 @@
           "sourceUrl": "https://quran.com/4/82"
         }
       ]
+    },
+    {
+      "id": "lang-oath-openings-ar",
+      "category": "اللغة والبلاغة",
+      "title": "افتتاحيات القسم والتأطير الموضوعي",
+      "summary": "تفتتح عدة سور بأقسام تمهّد للرسالة المحورية في السورة.",
+      "detail": "تُدرَس هذه الافتتاحيات في البلاغة بوصفها أسلوبًا يجذب الانتباه ويهيئ القارئ للحجة الأخلاقية الأساسية.",
+      "ayahRefs": [
+        "91:1-10",
+        "95:1-8",
+        "103:1-3"
+      ],
+      "tags": [
+        "balaghah",
+        "structure",
+        "rhetoric"
+      ],
+      "sources": [
+        {
+          "label": "Quran.com",
+          "url": "https://quran.com"
+        }
+      ],
+      "examples": [
+        {
+          "title": "مرجع أساسي",
+          "description": "اقرأ 91:1-10 ضمن سياق التفسير الموثوق قبل الوصول إلى الاستنتاجات.",
+          "ayahRef": "91:1-10",
+          "sourceUrl": "https://quran.com"
+        }
+      ]
+    },
+    {
+      "id": "lang-repetition-variation-ar",
+      "category": "اللغة والبلاغة",
+      "title": "التكرار مع التنويع",
+      "summary": "تتكرر القصص عبر السور مع تنويع مقصود في الصياغة والتركيز.",
+      "detail": "تكشف القراءة المقارنة عن بناء تربوي: رسالة واحدة بصيغ مختلفة بحسب السياق والمخاطَبين.",
+      "ayahRefs": [
+        "20:9-99",
+        "26:10-191",
+        "54:17"
+      ],
+      "tags": [
+        "narrative",
+        "comparison",
+        "tadabbur"
+      ],
+      "sources": [
+        {
+          "label": "Quran.com",
+          "url": "https://quran.com"
+        }
+      ],
+      "examples": [
+        {
+          "title": "مرجع أساسي",
+          "description": "اقرأ 20:9-99 ضمن سياق التفسير الموثوق قبل الوصول إلى الاستنتاجات.",
+          "ayahRef": "20:9-99",
+          "sourceUrl": "https://quran.com"
+        }
+      ]
+    },
+    {
+      "id": "lang-ring-composition-ar",
+      "category": "اللغة والبلاغة",
+      "title": "أنماط البناء الحلقي",
+      "summary": "تُظهر بعض المقاطع بنية حلقية أو تماثلية في ترتيب الأفكار.",
+      "detail": "تشير الدراسات البنائية إلى بدايات ونهايات متقابلة مع محور دلالي في المركز.",
+      "ayahRefs": [
+        "2:1-286",
+        "12:1-111"
+      ],
+      "tags": [
+        "composition",
+        "chiastic",
+        "coherence"
+      ],
+      "sources": [
+        {
+          "label": "Quran.com Surah Al-Baqarah",
+          "url": "https://quran.com/2"
+        }
+      ],
+      "caution": "تختلف تصورات البنية الكلية بين الباحثين.",
+      "examples": [
+        {
+          "title": "مرجع أساسي",
+          "description": "اقرأ 2:1-286 ضمن سياق التفسير الموثوق قبل الوصول إلى الاستنتاجات.",
+          "ayahRef": "2:1-286",
+          "sourceUrl": "https://quran.com/2"
+        }
+      ]
+    },
+    {
+      "id": "lang-root-coherence-ar",
+      "category": "اللغة والبلاغة",
+      "title": "الاتساق الدلالي المبني على الجذور",
+      "summary": "تسهم الجذور العربية في تكوين شبكات موضوعية عبر آيات مترابطة.",
+      "detail": "يساعد تحليل الجذور على وصل الألفاظ المتكررة بالمقاصد الأخلاقية في الخطاب القرآني.",
+      "ayahRefs": [
+        "1:1-7",
+        "2:2",
+        "39:23"
+      ],
+      "tags": [
+        "arabic-roots",
+        "semantics",
+        "lexical-analysis"
+      ],
+      "sources": [
+        {
+          "label": "Quranic Arabic Corpus",
+          "url": "https://corpus.quran.com/searchhelp.jsp"
+        }
+      ],
+      "examples": [
+        {
+          "title": "مرجع أساسي",
+          "description": "اقرأ 1:1-7 ضمن سياق التفسير الموثوق قبل الوصول إلى الاستنتاجات.",
+          "ayahRef": "1:1-7",
+          "sourceUrl": "https://corpus.quran.com/searchhelp.jsp"
+        }
+      ]
+    },
+    {
+      "id": "num-paired-concepts-ar",
+      "category": "الأنماط العددية",
+      "title": "دراسات تكرار المفاهيم المتقابلة",
+      "summary": "تُعنى بعض الدراسات بمقارنة تكرار مفاهيم متقابلة مثل الدنيا والآخرة.",
+      "detail": "تعتمد النتائج بشكل كبير على منهجية التطبيع الكتابي واختيار الجذور والمشتقات.",
+      "ayahRefs": [
+        "2:201",
+        "28:77",
+        "87:16-17"
+      ],
+      "tags": [
+        "word-frequency",
+        "methodology",
+        "lexicon"
+      ],
+      "sources": [
+        {
+          "label": "Quranic Arabic Corpus",
+          "url": "https://corpus.quran.com"
+        }
+      ],
+      "caution": "تختلف الإحصاءات باختلاف المنهجية المعتمدة.",
+      "examples": [
+        {
+          "title": "مرجع أساسي",
+          "description": "اقرأ 2:201 ضمن سياق التفسير الموثوق قبل الوصول إلى الاستنتاجات.",
+          "ayahRef": "2:201",
+          "sourceUrl": "https://corpus.quran.com"
+        }
+      ]
+    },
+    {
+      "id": "num-day-night-theme-ar",
+      "category": "الأنماط العددية",
+      "title": "مناقشات عدّ ألفاظ الليل والنهار",
+      "summary": "تُدرَس ألفاظ الليل والنهار كثيرًا في التأملات العددية.",
+      "detail": "تكون هذه الدراسات أنفع عند إعلان معايير العد بشكل واضح وقابل لإعادة التحقق.",
+      "ayahRefs": [
+        "3:190",
+        "10:6",
+        "24:44"
+      ],
+      "tags": [
+        "day-night",
+        "counting",
+        "transparency"
+      ],
+      "sources": [
+        {
+          "label": "Quran.com Search",
+          "url": "https://quran.com/search"
+        }
+      ],
+      "examples": [
+        {
+          "title": "مرجع أساسي",
+          "description": "اقرأ 3:190 ضمن سياق التفسير الموثوق قبل الوصول إلى الاستنتاجات.",
+          "ayahRef": "3:190",
+          "sourceUrl": "https://quran.com/search"
+        }
+      ]
+    },
+    {
+      "id": "num-theme-19-ar",
+      "category": "الأنماط العددية",
+      "title": "تحليلات موضوع العدد تسعة عشر",
+      "summary": "يرد في سورة المدثر ذكر العدد تسعة عشر وقد ألهم دراسات عددية متعددة.",
+      "detail": "يعرض التطبيق هذا الموضوع كمسار بحثي مع التشجيع على مراجعته بنقد علمي.",
+      "ayahRefs": [
+        "74:30-31"
+      ],
+      "tags": [
+        "historical-studies",
+        "number-theme"
+      ],
+      "sources": [
+        {
+          "label": "Quran.com 74:30",
+          "url": "https://quran.com/74/30-31"
+        }
+      ],
+      "caution": "هذا موضوع تفسيري؛ تجنب الجزم دون بيان منهج واضح.",
+      "examples": [
+        {
+          "title": "مرجع أساسي",
+          "description": "اقرأ 74:30-31 ضمن سياق التفسير الموثوق قبل الوصول إلى الاستنتاجات.",
+          "ayahRef": "74:30-31",
+          "sourceUrl": "https://quran.com/74/30-31"
+        }
+      ]
+    },
+    {
+      "id": "num-surah-ayah-balance-ar",
+      "category": "الأنماط العددية",
+      "title": "استكشاف أنماط السور والآيات",
+      "summary": "يستكشف باحثون علاقات حسابية بنيوية بين ترتيب السور ومجموعات الآيات.",
+      "detail": "يجمع هذا المسار بين الفهرسة النصية والملاءمة الموضوعية ويُقدَّم بوصفه استكشافيًا.",
+      "ayahRefs": [
+        "1:1-7",
+        "36:1-83"
+      ],
+      "tags": [
+        "structure",
+        "indexing",
+        "exploratory"
+      ],
+      "sources": [
+        {
+          "label": "Quran.com",
+          "url": "https://quran.com"
+        }
+      ],
+      "caution": "الدراسات النمطية قد تتأثر بتحيز الاختيار.",
+      "examples": [
+        {
+          "title": "مرجع أساسي",
+          "description": "اقرأ 1:1-7 ضمن سياق التفسير الموثوق قبل الوصول إلى الاستنتاجات.",
+          "ayahRef": "1:1-7",
+          "sourceUrl": "https://quran.com"
+        }
+      ]
+    },
+    {
+      "id": "cosmo-night-day-signs-ar",
+      "category": "الكون والعالم الطبيعي",
+      "title": "تعاقب الليل والنهار كآيات",
+      "summary": "يتكرر ذكر تعاقب الليل والنهار كآية لأولي الألباب.",
+      "detail": "يربط القرآن انتظام الكون بالتفكر والشكر والتواضع.",
+      "ayahRefs": [
+        "3:190",
+        "10:6",
+        "45:5"
+      ],
+      "tags": [
+        "signs",
+        "cosmos",
+        "reflection"
+      ],
+      "sources": [
+        {
+          "label": "Quran.com 3:190",
+          "url": "https://quran.com/3/190"
+        }
+      ],
+      "examples": [
+        {
+          "title": "مرجع أساسي",
+          "description": "اقرأ 3:190 ضمن سياق التفسير الموثوق قبل الوصول إلى الاستنتاجات.",
+          "ayahRef": "3:190",
+          "sourceUrl": "https://quran.com/3/190"
+        }
+      ]
+    },
+    {
+      "id": "cosmo-heavens-vastness-ar",
+      "category": "الكون والعالم الطبيعي",
+      "title": "السماوات والقدرة وسعة الخلق",
+      "summary": "تُناقَش آيات السماوات كثيرًا في سياق سعة الكون.",
+      "detail": "يبقى التفسير المأثور أصلًا، ويمكن الاستفادة من المقارنات الكونية الحديثة كتأمل ثانوي.",
+      "ayahRefs": [
+        "51:47",
+        "67:3-4",
+        "79:27-30"
+      ],
+      "tags": [
+        "heavens",
+        "creation",
+        "tafsir-first"
+      ],
+      "sources": [
+        {
+          "label": "Quran.com 51:47",
+          "url": "https://quran.com/51/47"
+        }
+      ],
+      "caution": "لا تفصل القراءة العلمية عن سياق التفسير.",
+      "examples": [
+        {
+          "title": "مرجع أساسي",
+          "description": "اقرأ 51:47 ضمن سياق التفسير الموثوق قبل الوصول إلى الاستنتاجات.",
+          "ayahRef": "51:47",
+          "sourceUrl": "https://quran.com/51/47"
+        }
+      ]
+    },
+    {
+      "id": "cosmo-orbits-order-ar",
+      "category": "الكون والعالم الطبيعي",
+      "title": "المدارات والنظام الكوني",
+      "summary": "تصف الآيات حركة الشمس والقمر والأجرام ضمن نظام محكم.",
+      "detail": "يركّز القرآن على دلالات الانتظام، أما النماذج العلمية التفصيلية فتبقى قراءات تفسيرية.",
+      "ayahRefs": [
+        "21:33",
+        "36:38-40",
+        "55:5"
+      ],
+      "tags": [
+        "orbits",
+        "sun-moon",
+        "order"
+      ],
+      "sources": [
+        {
+          "label": "Quran.com 21:33",
+          "url": "https://quran.com/21/33"
+        }
+      ],
+      "examples": [
+        {
+          "title": "مرجع أساسي",
+          "description": "اقرأ 21:33 ضمن سياق التفسير الموثوق قبل الوصول إلى الاستنتاجات.",
+          "ayahRef": "21:33",
+          "sourceUrl": "https://quran.com/21/33"
+        }
+      ]
+    },
+    {
+      "id": "cosmo-layered-heavens-ar",
+      "category": "الكون والعالم الطبيعي",
+      "title": "لغة السماوات الطباق",
+      "summary": "تشير عدة آيات إلى سبع سماوات، وهو موضوع حاضر في القراءات العقدية والكونية.",
+      "detail": "التفسير العقدي هو الأصل، أما الإسقاطات العلمية فتبقى احتمالية.",
+      "ayahRefs": [
+        "67:3",
+        "71:15",
+        "41:12"
+      ],
+      "tags": [
+        "seven-heavens",
+        "theology",
+        "cosmology"
+      ],
+      "sources": [
+        {
+          "label": "Quran.com 67:3",
+          "url": "https://quran.com/67/3"
+        }
+      ],
+      "caution": "حافظ على التمييز بين العقيدة والقياس العلمي.",
+      "examples": [
+        {
+          "title": "مرجع أساسي",
+          "description": "اقرأ 67:3 ضمن سياق التفسير الموثوق قبل الوصول إلى الاستنتاجات.",
+          "ayahRef": "67:3",
+          "sourceUrl": "https://quran.com/67/3"
+        }
+      ]
+    },
+    {
+      "id": "water-life-origin-ar",
+      "category": "الماء والبحار",
+      "title": "ارتباط الحياة بالماء",
+      "summary": "يربط القرآن الحياة بالماء في مواضع متكررة.",
+      "detail": "يشكل هذا المعنى جسرًا بين التأمل الإيماني والملاحظة الكونية.",
+      "ayahRefs": [
+        "21:30",
+        "24:45",
+        "25:54"
+      ],
+      "tags": [
+        "water",
+        "life",
+        "creation"
+      ],
+      "sources": [
+        {
+          "label": "Quran.com 21:30",
+          "url": "https://quran.com/21/30"
+        }
+      ],
+      "examples": [
+        {
+          "title": "مرجع أساسي",
+          "description": "اقرأ 21:30 ضمن سياق التفسير الموثوق قبل الوصول إلى الاستنتاجات.",
+          "ayahRef": "21:30",
+          "sourceUrl": "https://quran.com/21/30"
+        }
+      ]
+    },
+    {
+      "id": "water-two-seas-barrier-ar",
+      "category": "الماء والبحار",
+      "title": "آيات البحرين والحاجز",
+      "summary": "تذكر الآيات بحرين وبينهما برزخ، وهو موضوع متداول في الدراسات البحرية.",
+      "detail": "تتنوع الفهوم بين القراءة اللغوية والجغرافية والعلمية.",
+      "ayahRefs": [
+        "55:19-20",
+        "25:53"
+      ],
+      "tags": [
+        "marine",
+        "barrier",
+        "interpretation"
+      ],
+      "sources": [
+        {
+          "label": "Quran.com 55:19",
+          "url": "https://quran.com/55/19-20"
+        }
+      ],
+      "caution": "يُتناول هذا الباب بحذر منهجي مع الرجوع إلى أكثر من تفسير.",
+      "examples": [
+        {
+          "title": "مرجع أساسي",
+          "description": "اقرأ 55:19-20 ضمن سياق التفسير الموثوق قبل الوصول إلى الاستنتاجات.",
+          "ayahRef": "55:19-20",
+          "sourceUrl": "https://quran.com/55/19-20"
+        }
+      ]
+    },
+    {
+      "id": "water-rain-cycle-ar",
+      "category": "الماء والبحار",
+      "title": "المطر والرياح وإحياء الأرض",
+      "summary": "تتكرر صور السحاب والرياح والمطر ضمن دورة بيئية متكاملة.",
+      "detail": "تربط الآيات هذه الدورة بمعاني البعث ومسؤولية الإنسان تجاه النعمة.",
+      "ayahRefs": [
+        "30:48-50",
+        "7:57",
+        "35:9"
+      ],
+      "tags": [
+        "rain",
+        "winds",
+        "ecology"
+      ],
+      "sources": [
+        {
+          "label": "Quran.com 30:48",
+          "url": "https://quran.com/30/48-50"
+        }
+      ],
+      "examples": [
+        {
+          "title": "مرجع أساسي",
+          "description": "اقرأ 30:48-50 ضمن سياق التفسير الموثوق قبل الوصول إلى الاستنتاجات.",
+          "ayahRef": "30:48-50",
+          "sourceUrl": "https://quran.com/30/48-50"
+        }
+      ]
+    },
+    {
+      "id": "water-deep-sea-darkness-ar",
+      "category": "الماء والبحار",
+      "title": "ظلمات البحر العميق",
+      "summary": "تصف آية ظلماتٍ في بحرٍ لجيّ وموجًا فوق موج.",
+      "detail": "يكثر تداولها في التأملات البحرية، مع ضرورة ضبط الاستدلال.",
+      "ayahRefs": [
+        "24:40"
+      ],
+      "tags": [
+        "deep-sea",
+        "darkness",
+        "waves"
+      ],
+      "sources": [
+        {
+          "label": "Quran.com 24:40",
+          "url": "https://quran.com/24/40"
+        }
+      ],
+      "caution": "تجنب التوسع في الاستنتاج خارج دلالة النص.",
+      "examples": [
+        {
+          "title": "مرجع أساسي",
+          "description": "اقرأ 24:40 ضمن سياق التفسير الموثوق قبل الوصول إلى الاستنتاجات.",
+          "ayahRef": "24:40",
+          "sourceUrl": "https://quran.com/24/40"
+        }
+      ]
+    },
+    {
+      "id": "earth-mountains-stability-ar",
+      "category": "الأرض والجيولوجيا",
+      "title": "الجبال وصور التثبيت",
+      "summary": "تصف آيات الجبال بالأوتاد أو الرواسي في سياقات متعددة.",
+      "detail": "يناقش العلماء أبعادًا حرفية ومجازية وبلاغية لهذا التصوير.",
+      "ayahRefs": [
+        "16:15",
+        "21:31",
+        "78:6-7"
+      ],
+      "tags": [
+        "mountains",
+        "earth",
+        "imagery"
+      ],
+      "sources": [
+        {
+          "label": "Quran.com 16:15",
+          "url": "https://quran.com/16/15"
+        }
+      ],
+      "examples": [
+        {
+          "title": "مرجع أساسي",
+          "description": "اقرأ 16:15 ضمن سياق التفسير الموثوق قبل الوصول إلى الاستنتاجات.",
+          "ayahRef": "16:15",
+          "sourceUrl": "https://quran.com/16/15"
+        }
+      ]
+    },
+    {
+      "id": "earth-geological-diversity-ar",
+      "category": "الأرض والجيولوجيا",
+      "title": "تنوع الأرض وتباين التضاريس",
+      "summary": "تصف الآيات أراضٍ متجاورة تتباين ثمارها رغم ماء واحد.",
+      "detail": "يبرز ذلك معنى الحكمة الإلهية في التنوع الطبيعي.",
+      "ayahRefs": [
+        "13:4",
+        "35:27-28"
+      ],
+      "tags": [
+        "terrain",
+        "diversity",
+        "agriculture"
+      ],
+      "sources": [
+        {
+          "label": "Quran.com 13:4",
+          "url": "https://quran.com/13/4"
+        }
+      ],
+      "examples": [
+        {
+          "title": "مرجع أساسي",
+          "description": "اقرأ 13:4 ضمن سياق التفسير الموثوق قبل الوصول إلى الاستنتاجات.",
+          "ayahRef": "13:4",
+          "sourceUrl": "https://quran.com/13/4"
+        }
+      ]
+    },
+    {
+      "id": "earth-subsurface-metals-ar",
+      "category": "الأرض والجيولوجيا",
+      "title": "الحديد ومنافع الناس",
+      "summary": "يصف القرآن الحديد بأنه ذو بأس شديد ومنافع للناس.",
+      "detail": "يُقرأ هذا المعنى ضمن سياق أخلاقي وحضاري لا مادي صرف.",
+      "ayahRefs": [
+        "57:25"
+      ],
+      "tags": [
+        "iron",
+        "civilization",
+        "ethics"
+      ],
+      "sources": [
+        {
+          "label": "Quran.com 57:25",
+          "url": "https://quran.com/57/25"
+        }
+      ],
+      "examples": [
+        {
+          "title": "مرجع أساسي",
+          "description": "اقرأ 57:25 ضمن سياق التفسير الموثوق قبل الوصول إلى الاستنتاجات.",
+          "ayahRef": "57:25",
+          "sourceUrl": "https://quran.com/57/25"
+        }
+      ]
+    },
+    {
+      "id": "earth-seismic-reminders-ar",
+      "category": "الأرض والجيولوجيا",
+      "title": "تصوير الزلازل والارتجاج",
+      "summary": "تستخدم الآيات مشاهد الزلزلة كتذكير بالمسؤولية والمآل.",
+      "detail": "تعرض النصوص الظواهر الكونية في إطار وعظي ووجودي.",
+      "ayahRefs": [
+        "99:1-8",
+        "22:1-2"
+      ],
+      "tags": [
+        "earthquake",
+        "akhira",
+        "warning"
+      ],
+      "sources": [
+        {
+          "label": "Quran.com 99",
+          "url": "https://quran.com/99"
+        }
+      ],
+      "examples": [
+        {
+          "title": "مرجع أساسي",
+          "description": "اقرأ 99:1-8 ضمن سياق التفسير الموثوق قبل الوصول إلى الاستنتاجات.",
+          "ayahRef": "99:1-8",
+          "sourceUrl": "https://quran.com/99"
+        }
+      ]
+    },
+    {
+      "id": "human-embryology-ar",
+      "category": "تطور الإنسان",
+      "title": "مصطلحات مراحل الجنين",
+      "summary": "تصف الآيات مراحل الخلق الإنساني بألفاظ موجزة ودقيقة.",
+      "detail": "ينبغي الجمع بين التفسير المعتبر والدقة اللغوية الحديثة لتجنب الإسقاط.",
+      "ayahRefs": [
+        "23:12-14",
+        "22:5",
+        "75:37-39"
+      ],
+      "tags": [
+        "embryology",
+        "development",
+        "tafsir"
+      ],
+      "sources": [
+        {
+          "label": "Quran.com 23:12",
+          "url": "https://quran.com/23/12-14"
+        }
+      ],
+      "examples": [
+        {
+          "title": "مرجع أساسي",
+          "description": "اقرأ 23:12-14 ضمن سياق التفسير الموثوق قبل الوصول إلى الاستنتاجات.",
+          "ayahRef": "23:12-14",
+          "sourceUrl": "https://quran.com/23/12-14"
+        }
+      ]
+    },
+    {
+      "id": "human-hearing-sight-heart-ar",
+      "category": "تطور الإنسان",
+      "title": "تتابع السمع والبصر والقلب",
+      "summary": "تجمع آيات عدة بين أدوات الإدراك والشكر والمسؤولية.",
+      "detail": "يُتناول هذا النسق في سياق علم النفس الإيماني وبناء الوعي.",
+      "ayahRefs": [
+        "16:78",
+        "23:78",
+        "67:23"
+      ],
+      "tags": [
+        "cognition",
+        "gratitude",
+        "accountability"
+      ],
+      "sources": [
+        {
+          "label": "Quran.com 16:78",
+          "url": "https://quran.com/16/78"
+        }
+      ],
+      "examples": [
+        {
+          "title": "مرجع أساسي",
+          "description": "اقرأ 16:78 ضمن سياق التفسير الموثوق قبل الوصول إلى الاستنتاجات.",
+          "ayahRef": "16:78",
+          "sourceUrl": "https://quran.com/16/78"
+        }
+      ]
+    },
+    {
+      "id": "human-fingerprint-identity-ar",
+      "category": "تطور الإنسان",
+      "title": "الدقة في إعادة خلق الإنسان",
+      "summary": "تشير آية إلى القدرة على تسوية البنان، ويُستأنس بها في سياق الهوية.",
+      "detail": "المقصد الأول إثبات البعث، والمقارنات العلمية تأتي على سبيل التأمل.",
+      "ayahRefs": [
+        "75:3-4"
+      ],
+      "tags": [
+        "resurrection",
+        "identity",
+        "precision"
+      ],
+      "sources": [
+        {
+          "label": "Quran.com 75:3",
+          "url": "https://quran.com/75/3-4"
+        }
+      ],
+      "examples": [
+        {
+          "title": "مرجع أساسي",
+          "description": "اقرأ 75:3-4 ضمن سياق التفسير الموثوق قبل الوصول إلى الاستنتاجات.",
+          "ayahRef": "75:3-4",
+          "sourceUrl": "https://quran.com/75/3-4"
+        }
+      ]
+    },
+    {
+      "id": "human-pain-receptors-skin-ar",
+      "category": "تطور الإنسان",
+      "title": "تجدد الجلد في سياق الوعيد",
+      "summary": "تصف آية تبديل الجلود في مشهد العقوبة، ويُشار إليها في نقاشات طبية.",
+      "detail": "يبقى السياق الأخلاقي والوعظي هو الأصل، وما سواه تأمل مساعد.",
+      "ayahRefs": [
+        "4:56"
+      ],
+      "tags": [
+        "skin",
+        "warning",
+        "akhira"
+      ],
+      "sources": [
+        {
+          "label": "Quran.com 4:56",
+          "url": "https://quran.com/4/56"
+        }
+      ],
+      "examples": [
+        {
+          "title": "مرجع أساسي",
+          "description": "اقرأ 4:56 ضمن سياق التفسير الموثوق قبل الوصول إلى الاستنتاجات.",
+          "ayahRef": "4:56",
+          "sourceUrl": "https://quran.com/4/56"
+        }
+      ]
+    },
+    {
+      "id": "zoology-bees-revelation-ar",
+      "category": "علم الحيوان والبيئة",
+      "title": "آية النحل والهداية",
+      "summary": "تصف الآيات سلوك النحل الموجَّه وما يترتب عليه من منافع.",
+      "detail": "تدعو هذه الآيات إلى تأمل أنظمة المخلوقات كدلائل على الحكمة.",
+      "ayahRefs": [
+        "16:68-69"
+      ],
+      "tags": [
+        "bees",
+        "honey",
+        "guidance"
+      ],
+      "sources": [
+        {
+          "label": "Quran.com 16:68",
+          "url": "https://quran.com/16/68-69"
+        }
+      ],
+      "examples": [
+        {
+          "title": "مرجع أساسي",
+          "description": "اقرأ 16:68-69 ضمن سياق التفسير الموثوق قبل الوصول إلى الاستنتاجات.",
+          "ayahRef": "16:68-69",
+          "sourceUrl": "https://quran.com/16/68-69"
+        }
+      ]
+    },
+    {
+      "id": "zoology-birds-flight-ar",
+      "category": "علم الحيوان والبيئة",
+      "title": "الطير في الجو كآية",
+      "summary": "يذكر القرآن طيران الطير كآية على القدرة والتدبير.",
+      "detail": "تربط هذه المشاهد بين الملاحظة الكونية والذكر والشكر.",
+      "ayahRefs": [
+        "16:79",
+        "67:19"
+      ],
+      "tags": [
+        "birds",
+        "flight",
+        "signs"
+      ],
+      "sources": [
+        {
+          "label": "Quran.com 67:19",
+          "url": "https://quran.com/67/19"
+        }
+      ],
+      "examples": [
+        {
+          "title": "مرجع أساسي",
+          "description": "اقرأ 16:79 ضمن سياق التفسير الموثوق قبل الوصول إلى الاستنتاجات.",
+          "ayahRef": "16:79",
+          "sourceUrl": "https://quran.com/67/19"
+        }
+      ]
+    },
+    {
+      "id": "zoology-ants-communication-ar",
+      "category": "علم الحيوان والبيئة",
+      "title": "قصة تواصل النمل",
+      "summary": "تتضمن سورة النمل مشهدًا لتخاطب النمل في سياق قصة سليمان.",
+      "detail": "السياق عقدي وقصصي أولًا، ويمكن أن يُستفاد منه في التأمل البيئي.",
+      "ayahRefs": [
+        "27:18-19"
+      ],
+      "tags": [
+        "ants",
+        "communication",
+        "sulayman"
+      ],
+      "sources": [
+        {
+          "label": "Quran.com 27:18",
+          "url": "https://quran.com/27/18-19"
+        }
+      ],
+      "examples": [
+        {
+          "title": "مرجع أساسي",
+          "description": "اقرأ 27:18-19 ضمن سياق التفسير الموثوق قبل الوصول إلى الاستنتاجات.",
+          "ayahRef": "27:18-19",
+          "sourceUrl": "https://quran.com/27/18-19"
+        }
+      ]
+    },
+    {
+      "id": "zoology-livestock-benefits-ar",
+      "category": "علم الحيوان والبيئة",
+      "title": "الأنعام بين المنفعة والرحمة",
+      "summary": "تصف الآيات الأنعام كمصدر غذاء وكساء وحمل وجمال.",
+      "detail": "يؤسس ذلك لمعنى الانتفاع الأخلاقي المصحوب بالشكر.",
+      "ayahRefs": [
+        "16:5-8",
+        "23:21"
+      ],
+      "tags": [
+        "livestock",
+        "benefit",
+        "ethics"
+      ],
+      "sources": [
+        {
+          "label": "Quran.com 16:5",
+          "url": "https://quran.com/16/5-8"
+        }
+      ],
+      "examples": [
+        {
+          "title": "مرجع أساسي",
+          "description": "اقرأ 16:5-8 ضمن سياق التفسير الموثوق قبل الوصول إلى الاستنتاجات.",
+          "ayahRef": "16:5-8",
+          "sourceUrl": "https://quran.com/16/5-8"
+        }
+      ]
+    },
+    {
+      "id": "history-rome-reversal-ar",
+      "category": "التاريخ والإخبار بالغيب",
+      "title": "إشارة صراع الروم وفارس",
+      "summary": "تتضمن سورة الروم خبرًا عن تحول قريب في صراع تاريخي معروف.",
+      "detail": "يُتداول هذا الموضع ضمن قراءات الإخبار بالغيب في التاريخ.",
+      "ayahRefs": [
+        "30:2-4"
+      ],
+      "tags": [
+        "ar-rum",
+        "history",
+        "prophecy"
+      ],
+      "sources": [
+        {
+          "label": "Quran.com 30:2",
+          "url": "https://quran.com/30/2-4"
+        }
+      ],
+      "examples": [
+        {
+          "title": "مرجع أساسي",
+          "description": "اقرأ 30:2-4 ضمن سياق التفسير الموثوق قبل الوصول إلى الاستنتاجات.",
+          "ayahRef": "30:2-4",
+          "sourceUrl": "https://quran.com/30/2-4"
+        }
+      ]
+    },
+    {
+      "id": "history-pharaoh-preservation-ar",
+      "category": "التاريخ والإخبار بالغيب",
+      "title": "فرعون آية لمن بعده",
+      "summary": "تذكر الآية نجاة بدن فرعون ليكون آيةً لللاحقين.",
+      "detail": "يشيع تناولها في سياق العبرة التاريخية والمغزى الأخلاقي.",
+      "ayahRefs": [
+        "10:92"
+      ],
+      "tags": [
+        "pharaoh",
+        "sign",
+        "history"
+      ],
+      "sources": [
+        {
+          "label": "Quran.com 10:92",
+          "url": "https://quran.com/10/92"
+        }
+      ],
+      "examples": [
+        {
+          "title": "مرجع أساسي",
+          "description": "اقرأ 10:92 ضمن سياق التفسير الموثوق قبل الوصول إلى الاستنتاجات.",
+          "ayahRef": "10:92",
+          "sourceUrl": "https://quran.com/10/92"
+        }
+      ]
+    },
+    {
+      "id": "history-makkah-entry-ar",
+      "category": "التاريخ والإخبار بالغيب",
+      "title": "الوعد بدخول المسجد الحرام آمنين",
+      "summary": "تشير آية إلى دخول المسجد الحرام آمنين وقد ربطها أهل السيرة بوقائع لاحقة.",
+      "detail": "يُقرأ هذا الموضع في سياق السيرة وأحداث ما بعد الحديبية.",
+      "ayahRefs": [
+        "48:27"
+      ],
+      "tags": [
+        "hudaybiyyah",
+        "seerah",
+        "fulfillment"
+      ],
+      "sources": [
+        {
+          "label": "Quran.com 48:27",
+          "url": "https://quran.com/48/27"
+        }
+      ],
+      "examples": [
+        {
+          "title": "مرجع أساسي",
+          "description": "اقرأ 48:27 ضمن سياق التفسير الموثوق قبل الوصول إلى الاستنتاجات.",
+          "ayahRef": "48:27",
+          "sourceUrl": "https://quran.com/48/27"
+        }
+      ]
+    },
+    {
+      "id": "history-abu-lahab-ar",
+      "category": "التاريخ والإخبار بالغيب",
+      "title": "الدلالة التاريخية لسورة المسد",
+      "summary": "تُدرَس سورة المسد في سياق الموقف المكي من الدعوة ومآلاته.",
+      "detail": "يتركز النقاش على المعارضة العلنية للنبي وما انتهت إليه تاريخيًا.",
+      "ayahRefs": [
+        "111:1-5"
+      ],
+      "tags": [
+        "al-masad",
+        "makkan-period",
+        "history"
+      ],
+      "sources": [
+        {
+          "label": "Quran.com 111",
+          "url": "https://quran.com/111"
+        }
+      ],
+      "examples": [
+        {
+          "title": "مرجع أساسي",
+          "description": "اقرأ 111:1-5 ضمن سياق التفسير الموثوق قبل الوصول إلى الاستنتاجات.",
+          "ayahRef": "111:1-5",
+          "sourceUrl": "https://quran.com/111"
+        }
+      ]
+    },
+    {
+      "id": "law-gradual-prohibition-ar",
+      "category": "الشريعة والمجتمع والحضارة",
+      "title": "منهج التدرج في التحريم",
+      "summary": "يظهر إصلاح سلوك الخمر عبر مراحل تشريعية متتالية.",
+      "detail": "يُستفاد منه كنموذج للتغيير الأخلاقي مع مراعاة جاهزية المجتمع.",
+      "ayahRefs": [
+        "2:219",
+        "4:43",
+        "5:90-91"
+      ],
+      "tags": [
+        "law",
+        "gradualism",
+        "social-change"
+      ],
+      "sources": [
+        {
+          "label": "Quran.com 5:90",
+          "url": "https://quran.com/5/90-91"
+        }
+      ],
+      "examples": [
+        {
+          "title": "مرجع أساسي",
+          "description": "اقرأ 2:219 ضمن سياق التفسير الموثوق قبل الوصول إلى الاستنتاجات.",
+          "ayahRef": "2:219",
+          "sourceUrl": "https://quran.com/5/90-91"
+        }
+      ]
+    },
+    {
+      "id": "law-financial-ethics-ar",
+      "category": "الشريعة والمجتمع والحضارة",
+      "title": "إطار العدالة المالية",
+      "summary": "تجمع آيات الربا والإنفاق والزكاة معالم نظام اجتماعي أخلاقي.",
+      "detail": "يركز النموذج القرآني على العدل وحماية الضعفاء وتقليل الاستغلال.",
+      "ayahRefs": [
+        "2:275-279",
+        "59:7",
+        "9:60"
+      ],
+      "tags": [
+        "economics",
+        "justice",
+        "zakat"
+      ],
+      "sources": [
+        {
+          "label": "Quran.com 2:275",
+          "url": "https://quran.com/2/275-279"
+        }
+      ],
+      "examples": [
+        {
+          "title": "مرجع أساسي",
+          "description": "اقرأ 2:275-279 ضمن سياق التفسير الموثوق قبل الوصول إلى الاستنتاجات.",
+          "ayahRef": "2:275-279",
+          "sourceUrl": "https://quran.com/2/275-279"
+        }
+      ]
+    },
+    {
+      "id": "law-family-rights-ar",
+      "category": "الشريعة والمجتمع والحضارة",
+      "title": "توازن الحقوق في تشريعات الأسرة",
+      "summary": "تُدرَس آيات الأسرة باعتبارها منظومة حقوق وواجبات متوازنة.",
+      "detail": "تعالج الأحكام الرعاية والعدل والميراث وصيانة الروابط.",
+      "ayahRefs": [
+        "4:1-12",
+        "2:228-233"
+      ],
+      "tags": [
+        "family-law",
+        "rights",
+        "inheritance"
+      ],
+      "sources": [
+        {
+          "label": "Quran.com 4",
+          "url": "https://quran.com/4"
+        }
+      ],
+      "examples": [
+        {
+          "title": "مرجع أساسي",
+          "description": "اقرأ 4:1-12 ضمن سياق التفسير الموثوق قبل الوصول إلى الاستنتاجات.",
+          "ayahRef": "4:1-12",
+          "sourceUrl": "https://quran.com/4"
+        }
+      ]
+    },
+    {
+      "id": "spirit-calm-hearts-dhikr-ar",
+      "category": "النفس والسلوك الإيماني",
+      "title": "القلوب وذكر الله",
+      "summary": "يقرر القرآن أن ذكر الله سبب لطمأنينة القلوب.",
+      "detail": "تعد هذه الآية أصلًا في التزكية وتنظيم الانفعال الإيماني.",
+      "ayahRefs": [
+        "13:28"
+      ],
+      "tags": [
+        "dhikr",
+        "tranquility",
+        "heart"
+      ],
+      "sources": [
+        {
+          "label": "Quran.com 13:28",
+          "url": "https://quran.com/13/28"
+        }
+      ],
+      "examples": [
+        {
+          "title": "مرجع أساسي",
+          "description": "اقرأ 13:28 ضمن سياق التفسير الموثوق قبل الوصول إلى الاستنتاجات.",
+          "ayahRef": "13:28",
+          "sourceUrl": "https://quran.com/13/28"
+        }
+      ]
+    },
+    {
+      "id": "spirit-hope-fear-balance-ar",
+      "category": "النفس والسلوك الإيماني",
+      "title": "التوازن بين الرجاء والخوف",
+      "summary": "يوازن القرآن بين سعة الرحمة ومقام المسؤولية.",
+      "detail": "يُعد هذا التوازن أساسًا تربويًا في بناء السلوك القلبي.",
+      "ayahRefs": [
+        "15:49-50",
+        "39:53",
+        "32:16"
+      ],
+      "tags": [
+        "hope",
+        "fear",
+        "balance"
+      ],
+      "sources": [
+        {
+          "label": "Quran.com 39:53",
+          "url": "https://quran.com/39/53"
+        }
+      ],
+      "examples": [
+        {
+          "title": "مرجع أساسي",
+          "description": "اقرأ 15:49-50 ضمن سياق التفسير الموثوق قبل الوصول إلى الاستنتاجات.",
+          "ayahRef": "15:49-50",
+          "sourceUrl": "https://quran.com/39/53"
+        }
+      ]
+    },
+    {
+      "id": "spirit-self-purification-ar",
+      "category": "النفس والسلوك الإيماني",
+      "title": "تزكية النفس",
+      "summary": "يجعل القرآن فلاح الإنسان مرتبطًا بتزكية النفس.",
+      "detail": "يرتبط هذا المعنى بالمجاهدة والاستقامة ومحاسبة النفس.",
+      "ayahRefs": [
+        "91:9-10",
+        "87:14-15"
+      ],
+      "tags": [
+        "tazkiyah",
+        "discipline",
+        "soul"
+      ],
+      "sources": [
+        {
+          "label": "Quran.com 91:9",
+          "url": "https://quran.com/91/9-10"
+        }
+      ],
+      "examples": [
+        {
+          "title": "مرجع أساسي",
+          "description": "اقرأ 91:9-10 ضمن سياق التفسير الموثوق قبل الوصول إلى الاستنتاجات.",
+          "ayahRef": "91:9-10",
+          "sourceUrl": "https://quran.com/91/9-10"
+        }
+      ]
+    },
+    {
+      "id": "spirit-cognitive-signs-ar",
+      "category": "النفس والسلوك الإيماني",
+      "title": "التفكر في الآيات والاستدلال",
+      "summary": "تدعو آيات كثيرة إلى إعمال العقل والنظر في الآيات.",
+      "detail": "يؤكد القرآن على القراءة الواعية التي تجمع بين الإيمان والتفكير.",
+      "ayahRefs": [
+        "2:164",
+        "30:21-25",
+        "45:13"
+      ],
+      "tags": [
+        "reason",
+        "reflection",
+        "ayat"
+      ],
+      "sources": [
+        {
+          "label": "Quran.com 2:164",
+          "url": "https://quran.com/2/164"
+        }
+      ],
+      "examples": [
+        {
+          "title": "مرجع أساسي",
+          "description": "اقرأ 2:164 ضمن سياق التفسير الموثوق قبل الوصول إلى الاستنتاجات.",
+          "ayahRef": "2:164",
+          "sourceUrl": "https://quran.com/2/164"
+        }
+      ]
+    },
+    {
+      "id": "revelation-preservation-promise-ar",
+      "category": "حفظ الوحي والتنزيل",
+      "title": "وعد حفظ الذكر",
+      "summary": "يقرر القرآن وعدًا إلهيًا بحفظ الذكر.",
+      "detail": "تُعد الآية أساسًا في نقاشات الحفظ والتلقي والتدوين عبر التاريخ.",
+      "ayahRefs": [
+        "15:9"
+      ],
+      "tags": [
+        "preservation",
+        "revelation",
+        "hifz"
+      ],
+      "sources": [
+        {
+          "label": "Quran.com 15:9",
+          "url": "https://quran.com/15/9"
+        }
+      ],
+      "examples": [
+        {
+          "title": "مرجع أساسي",
+          "description": "اقرأ 15:9 ضمن سياق التفسير الموثوق قبل الوصول إلى الاستنتاجات.",
+          "ayahRef": "15:9",
+          "sourceUrl": "https://quran.com/15/9"
+        }
+      ]
+    },
+    {
+      "id": "revelation-tadabbur-challenge-ar",
+      "category": "حفظ الوحي والتنزيل",
+      "title": "تحدي الاتساق الداخلي",
+      "summary": "تدعو آية إلى النظر في اتساق القرآن بوصفه دليلًا على مصدره.",
+      "detail": "يبرز هذا التحدي قيمة التدبر الطويل والاختبار الداخلي للنص.",
+      "ayahRefs": [
+        "4:82"
+      ],
+      "tags": [
+        "coherence",
+        "challenge",
+        "origin"
+      ],
+      "sources": [
+        {
+          "label": "Quran.com 4:82",
+          "url": "https://quran.com/4/82"
+        }
+      ],
+      "examples": [
+        {
+          "title": "مرجع أساسي",
+          "description": "اقرأ 4:82 ضمن سياق التفسير الموثوق قبل الوصول إلى الاستنتاجات.",
+          "ayahRef": "4:82",
+          "sourceUrl": "https://quran.com/4/82"
+        }
+      ]
     }
   ]
 }

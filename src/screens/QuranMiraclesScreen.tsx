@@ -11,13 +11,16 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useNavigation } from '@react-navigation/native';
 import ScreenIntroTile from '../components/ScreenIntroTile';
 import { useSettings } from '../context/SettingsContext';
+import { fetchSurahs } from '../services/quranApi';
 import { fetchQuranMiraclesContent, MiraclesContentResult } from '../services/miraclesService';
 import { UI_COLORS, UI_RADII, UI_SHADOWS } from '../theme/ui';
-import { MiracleCategory, MiracleItem } from '../types';
+import { MiracleCategory, MiracleItem, Surah } from '../types';
 
 type CategoryFilter = 'all' | MiracleCategory;
+type LanguageFilter = 'en' | 'ar';
 
 const CATEGORY_BADGE_PALETTE: Array<{ bg: string; text: string }> = [
   { bg: '#d8ebfb', text: '#1b5d8b' },
@@ -49,11 +52,42 @@ const getCategoryBadge = (category: string): { bg: string; text: string } => {
   return CATEGORY_BADGE_PALETTE[sum % CATEGORY_BADGE_PALETTE.length];
 };
 
+const getItemLanguage = (item: MiracleItem): LanguageFilter =>
+  item.id.endsWith('-ar') ? 'ar' : 'en';
+
+const parseAyahRef = (ref: string): { surahId: number; ayahNum: number } | null => {
+  const cleaned = ref.trim();
+  if (!cleaned) return null;
+
+  const surahAyahMatch = cleaned.match(/^(\d+)\s*:\s*(\d+)(?:\s*[-–]\s*(\d+))?$/);
+  if (surahAyahMatch) {
+    const surahId = Number(surahAyahMatch[1]);
+    const ayahNum = Number(surahAyahMatch[2]);
+    if (Number.isFinite(surahId) && Number.isFinite(ayahNum) && surahId > 0 && ayahNum > 0) {
+      return { surahId, ayahNum };
+    }
+    return null;
+  }
+
+  const surahOnlyMatch = cleaned.match(/^(\d+)$/);
+  if (surahOnlyMatch) {
+    const surahId = Number(surahOnlyMatch[1]);
+    if (Number.isFinite(surahId) && surahId > 0) {
+      return { surahId, ayahNum: 1 };
+    }
+  }
+
+  return null;
+};
+
 export default function QuranMiraclesScreen() {
   const { settings } = useSettings();
   const isDark = settings.isDarkMode;
+  const navigation = useNavigation<any>();
 
   const [items, setItems] = useState<MiracleItem[]>([]);
+  const [surahs, setSurahs] = useState<Surah[]>([]);
+  const [selectedLanguage, setSelectedLanguage] = useState<LanguageFilter>('en');
   const [selectedCategory, setSelectedCategory] = useState<CategoryFilter>('all');
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -84,10 +118,37 @@ export default function QuranMiraclesScreen() {
     void loadMiracles(false);
   }, [loadMiracles]);
 
+  useEffect(() => {
+    let active = true;
+
+    const loadSurahs = async () => {
+      try {
+        const data = await fetchSurahs();
+        if (!active) return;
+        setSurahs(Array.isArray(data) ? data : []);
+      } catch {
+        if (!active) return;
+        setSurahs([]);
+      }
+    };
+
+    void loadSurahs();
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const languageItems = useMemo(() => {
+    const filtered = items.filter((item) => getItemLanguage(item) === selectedLanguage);
+    return filtered.length > 0 ? filtered : items;
+  }, [items, selectedLanguage]);
+
   const availableCategories = useMemo(() => {
-    const unique = [...new Set(items.map((item) => item.category.trim()).filter((category) => category.length > 0))];
+    const unique = [
+      ...new Set(languageItems.map((item) => item.category.trim()).filter((category) => category.length > 0)),
+    ];
     return unique.sort((a, b) => a.localeCompare(b));
-  }, [items]);
+  }, [languageItems]);
 
   const categoryFilters = useMemo<Array<{ key: CategoryFilter; label: string }>>(
     () => [{ key: 'all', label: 'All' }, ...availableCategories.map((category) => ({
@@ -105,9 +166,9 @@ export default function QuranMiraclesScreen() {
   }, [availableCategories, selectedCategory]);
 
   const filteredItems = useMemo(() => {
-    if (selectedCategory === 'all') return items;
-    return items.filter((item) => item.category === selectedCategory);
-  }, [items, selectedCategory]);
+    if (selectedCategory === 'all') return languageItems;
+    return languageItems.filter((item) => item.category === selectedCategory);
+  }, [languageItems, selectedCategory]);
 
   const openSourceUrl = useCallback(async (url: string) => {
     try {
@@ -121,6 +182,30 @@ export default function QuranMiraclesScreen() {
       Alert.alert('Error', 'Could not open source link. Please try again.');
     }
   }, []);
+
+  const navigateToAyahRef = useCallback(
+    (ref: string) => {
+      const parsed = parseAyahRef(ref);
+      if (!parsed) {
+        Alert.alert('Unsupported Reference', `Could not parse ayah reference: ${ref}`);
+        return;
+      }
+
+      const targetSurah = surahs.find((surah) => Number(surah.id) === parsed.surahId);
+      if (!targetSurah) {
+        Alert.alert('Surah Not Ready', 'Surah metadata is still loading. Please try again in a moment.');
+        return;
+      }
+
+      navigation.navigate('Surah', {
+        surah: targetSurah,
+        surahs,
+        initialAyah: parsed.ayahNum,
+        scrollNonce: Date.now(),
+      });
+    },
+    [navigation, surahs]
+  );
 
   const renderMiracleCard = ({ item }: { item: MiracleItem }) => {
     const badge = getCategoryBadge(item.category);
@@ -138,7 +223,20 @@ export default function QuranMiraclesScreen() {
         <Text style={[styles.cardDetail, isDark && styles.darkText]}>{item.detail}</Text>
 
         {item.ayahRefs.length > 0 ? (
-          <Text style={[styles.ayahRefs, isDark && styles.darkMutedText]}>Ayah refs: {item.ayahRefs.join(' • ')}</Text>
+          <View style={styles.ayahRefsWrap}>
+            <Text style={[styles.ayahRefsTitle, isDark && styles.darkMutedText]}>Ayah refs</Text>
+            <View style={styles.ayahRefsRow}>
+              {item.ayahRefs.map((ref) => (
+                <TouchableOpacity
+                  key={`${item.id}-${ref}`}
+                  style={[styles.ayahRefChip, isDark && styles.darkAyahRefChip]}
+                  onPress={() => navigateToAyahRef(ref)}
+                >
+                  <Text style={styles.ayahRefChipText}>{ref}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
         ) : null}
 
         {item.tags.length > 0 ? (
@@ -231,6 +329,47 @@ export default function QuranMiraclesScreen() {
         />
 
         <View style={styles.filterRow}>
+          <View style={styles.languageFilterGroup}>
+            <TouchableOpacity
+              style={[
+                styles.filterChip,
+                selectedLanguage === 'en' && styles.filterChipActive,
+                isDark && styles.darkFilterChip,
+                selectedLanguage === 'en' && isDark && styles.darkFilterChipActive,
+              ]}
+              onPress={() => setSelectedLanguage('en')}
+            >
+              <Text
+                style={[
+                  styles.filterChipText,
+                  selectedLanguage === 'en' && styles.filterChipTextActive,
+                  isDark && styles.darkMutedText,
+                ]}
+              >
+                English
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[
+                styles.filterChip,
+                selectedLanguage === 'ar' && styles.filterChipActive,
+                isDark && styles.darkFilterChip,
+                selectedLanguage === 'ar' && isDark && styles.darkFilterChipActive,
+              ]}
+              onPress={() => setSelectedLanguage('ar')}
+            >
+              <Text
+                style={[
+                  styles.filterChipText,
+                  selectedLanguage === 'ar' && styles.filterChipTextActive,
+                  isDark && styles.darkMutedText,
+                ]}
+              >
+                العربية
+              </Text>
+            </TouchableOpacity>
+          </View>
+
           {categoryFilters.map((filter) => {
             const selected = selectedCategory === filter.key;
             return (
@@ -309,6 +448,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 8,
+  },
+  languageFilterGroup: {
+    width: '100%',
+    flexDirection: 'row',
+    gap: 8,
+    marginBottom: 2,
   },
   filterChip: {
     paddingHorizontal: 12,
@@ -409,11 +554,36 @@ const styles = StyleSheet.create({
     color: UI_COLORS.text,
     lineHeight: 21,
   },
-  ayahRefs: {
+  ayahRefsWrap: {
     marginTop: 8,
+  },
+  ayahRefsTitle: {
     color: UI_COLORS.textMuted,
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '600',
+  },
+  ayahRefsRow: {
+    marginTop: 6,
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  ayahRefChip: {
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: '#b6d2e8',
+    backgroundColor: '#ecf6ff',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+  },
+  darkAyahRefChip: {
+    borderColor: '#4d6376',
+    backgroundColor: '#213241',
+  },
+  ayahRefChipText: {
+    color: UI_COLORS.accent,
+    fontSize: 12,
+    fontWeight: '700',
   },
   tagsRow: {
     marginTop: 8,
