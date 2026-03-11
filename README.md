@@ -20,7 +20,7 @@ Quran Pulse is a peaceful, modern companion app to help you connect deeply with 
 - **Repeat mode** (single ayah or custom range) for memorization
 - **Memorization mode** support
 - **Deep Quran search** in Memorize & Understand — search by surah name or any Arabic/English Quran word across all ayahs, then jump directly to the matching surah/ayah
-- **99 Names of Allah (Asma Al-Husna)** – elegant display with meaning and transliteration
+- **Athkar Screen** – morning/evening athkar, Tasbeeh 33x, and 99 Names of Allah (Asma Al-Husna)
 - **Prayer Times, Athan & Qibla Compass** – accurate timings, full Athan audio alerts, and live Qibla direction guidance
 - **Quran Miracles** – curated reflection cards across real miracle categories with ayah references and source links
 - **Islamic Calendar** – full Hijri month view with corresponding Gregorian dates
@@ -39,7 +39,7 @@ Quran Pulse is a peaceful, modern companion app to help you connect deeply with 
 
 <div align="center" style="margin-top: 16px;">
   <img src="https://github.com/abujaber44/quran-pulse/blob/main/screenshots/PrayerTimes.png" width="30%" alt="Prayer Times & Athan" />
-  <img src="https://github.com/abujaber44/quran-pulse/blob/main/screenshots/Asma'aAlhusna.png" width="30%" alt="Asma Al-Husna" style="margin: 0 10px;" />
+  <img src="https://github.com/abujaber44/quran-pulse/blob/main/screenshots/Asma'aAlhusna.png" width="30%" alt="Athkar Screen" style="margin: 0 10px;" />
 </div>
 
 <p align="center">
@@ -113,10 +113,10 @@ Expected CMS JSON shape:
 }
 ```
 
-### 📿 Asma Al-Husna
-- All 99 Beautiful Names of Allah
-- Arabic calligraphy, transliteration, and English meaning
-- Serene card design matching the app theme
+### 📿 Athkar Screen
+- Morning and evening athkar in one dedicated flow
+- Tasbeeh 33x tracker with daily local progress persistence
+- Full 99 Beautiful Names of Allah tab with Arabic, transliteration, and English meaning
 
 ### 🎨 Design Philosophy
 - Inspired by tranquility, light, and closeness to Allah

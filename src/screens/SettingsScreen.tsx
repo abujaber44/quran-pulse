@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { useSettings } from '../context/SettingsContext';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { ARABIC_FONT_OPTIONS, resolveArabicFontFamily } from '../theme/fonts';
 import { UI_COLORS, UI_RADII, UI_SHADOWS } from '../theme/ui';
 import ScreenIntroTile from '../components/ScreenIntroTile';
 
@@ -23,10 +24,15 @@ const PAUSE_STEP = 1;
 
 export default function SettingsScreen() {
   const { settings, updateSetting } = useSettings();
-  const { arabicFontSize, memorizationPause } = settings;
+  const { arabicFontSize, memorizationPause, arabicFontFamily } = settings;
+  const resolvedArabicFontFamily = resolveArabicFontFamily(arabicFontFamily);
 
   const resetFontSize = () => {
     void updateSetting('arabicFontSize', FONT_MIN);
+  };
+
+  const resetArabicFontFamily = () => {
+    void updateSetting('arabicFontFamily', ARABIC_FONT_OPTIONS[0].id);
   };
 
   const openAppSettings = () => {
@@ -45,14 +51,60 @@ export default function SettingsScreen() {
     void updateSetting('memorizationPause', next);
   };
 
+  const adjustArabicFontFamily = (delta: number) => {
+    const currentIndex = Math.max(
+      0,
+      ARABIC_FONT_OPTIONS.findIndex((option) => option.id === arabicFontFamily)
+    );
+    const nextIndex =
+      (currentIndex + delta + ARABIC_FONT_OPTIONS.length) % ARABIC_FONT_OPTIONS.length;
+    void updateSetting('arabicFontFamily', ARABIC_FONT_OPTIONS[nextIndex].id);
+  };
+
   return (
     <SafeAreaView style={styles.container} edges={['left', 'right', 'bottom']}>
       <ScrollView contentContainerStyle={styles.scroll}>
         <ScreenIntroTile
           title="Settings"
-          description="Adjust Arabic text size across Quran screens and set the memorization pause between repeated ayahs."
+          description="Adjust Arabic font style and size across Quran screens, and set the memorization pause between repeated ayahs."
           style={styles.introTile}
         />
+
+        {/* Arabic Font Family */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Arabic Font Style</Text>
+          <Text style={styles.helperText}>
+            Switch between bundled and system Arabic rendering. You can add more font files later.
+          </Text>
+          <View style={styles.stepperRow}>
+            <TouchableOpacity style={styles.stepButton} onPress={() => adjustArabicFontFamily(-1)}>
+              <Text style={styles.stepButtonText}>‹</Text>
+            </TouchableOpacity>
+
+            <View style={styles.valuePill}>
+              <Text style={styles.valueTextSmall}>
+                {ARABIC_FONT_OPTIONS.find((option) => option.id === arabicFontFamily)?.label || 'Arabic Font'}
+              </Text>
+            </View>
+
+            <TouchableOpacity style={styles.stepButton} onPress={() => adjustArabicFontFamily(1)}>
+              <Text style={styles.stepButtonText}>›</Text>
+            </TouchableOpacity>
+          </View>
+          <View style={styles.previewBox}>
+            <Text
+              style={[
+                styles.previewArabic,
+                resolvedArabicFontFamily ? { fontFamily: resolvedArabicFontFamily } : null,
+              ]}
+              numberOfLines={2}
+              adjustsFontSizeToFit
+              minimumFontScale={0.7}
+            >
+              بِسْمِ اللَّهِ الرَّحْمٰنِ الرَّحِيمِ
+            </Text>
+          </View>
+        </View>
 
         {/* Arabic Font Size */}
         <View style={styles.section}>
@@ -87,6 +139,7 @@ export default function SettingsScreen() {
             <Text
               style={[
                 styles.previewArabic,
+                resolvedArabicFontFamily ? { fontFamily: resolvedArabicFontFamily } : null,
                 {
                   fontSize: Math.max(18, arabicFontSize - 6),
                   lineHeight: Math.round(Math.max(18, arabicFontSize - 6) * 1.35),
@@ -138,6 +191,9 @@ export default function SettingsScreen() {
           <TouchableOpacity style={styles.actionButton} onPress={resetFontSize}>
             <Text style={styles.actionButtonText}>Reset Font Size to Default</Text>
           </TouchableOpacity>
+          <TouchableOpacity style={styles.actionButton} onPress={resetArabicFontFamily}>
+            <Text style={styles.actionButtonText}>Reset Arabic Font Style</Text>
+          </TouchableOpacity>
           <TouchableOpacity style={styles.actionButton} onPress={openAppSettings}>
             <Text style={styles.actionButtonText}>Open App System Settings</Text>
           </TouchableOpacity>
@@ -170,6 +226,7 @@ const styles = StyleSheet.create({
   },
   sectionTitle: { fontSize: 17, fontWeight: '600', color: UI_COLORS.text, marginBottom: 8 },
   valueText: { fontSize: 24, fontWeight: 'bold', textAlign: 'center', color: UI_COLORS.primary },
+  valueTextSmall: { fontSize: 17, fontWeight: '700', textAlign: 'center', color: UI_COLORS.primary },
   helperText: { fontSize: 13, color: UI_COLORS.textMuted, lineHeight: 20, textAlign: 'center', marginTop: 8 },
   stepperRow: {
     marginTop: 8,
@@ -222,7 +279,6 @@ const styles = StyleSheet.create({
     color: UI_COLORS.text,
     textAlign: 'center',
     writingDirection: 'rtl',
-    fontFamily: 'AmiriQuran',
   },
   actionButton: {
     marginTop: 10,

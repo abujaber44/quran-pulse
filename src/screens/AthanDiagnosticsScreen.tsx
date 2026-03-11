@@ -11,9 +11,11 @@ import {
 import * as Notifications from 'expo-notifications';
 import { UI_COLORS, UI_RADII, UI_SHADOWS } from '../theme/ui';
 import ScreenIntroTile from '../components/ScreenIntroTile';
+import { canScheduleExactAlarms } from '../services/exactAlarmService';
 import {
   ATHAN_CHANNEL_ID,
   ATHAN_NOTIFICATION_ID_PREFIX,
+  ATHAN_SCHEDULE_WINDOW_DAYS,
   ATHAN_NOTIFICATION_TITLE_PREFIX,
   buildAthanNotificationId,
 } from '../utils/athanNotifications';
@@ -203,6 +205,7 @@ export default function AthanDiagnosticsScreen({ route }: any) {
   const [error, setError] = useState<string | null>(null);
   const [scheduledAthans, setScheduledAthans] = useState<ScheduledAthan[]>([]);
   const [channelInfo, setChannelInfo] = useState<Notifications.NotificationChannel | null>(null);
+  const [exactAlarmEnabled, setExactAlarmEnabled] = useState<boolean | null>(null);
   const [lastRefreshAt, setLastRefreshAt] = useState<Date | null>(null);
 
   const expectedUpcoming = useMemo<UpcomingPrayer[]>(() => {
@@ -212,7 +215,7 @@ export default function AthanDiagnosticsScreen({ route }: any) {
     const candidates: UpcomingPrayer[] = [];
     let dayOffset = 0;
 
-    while (candidates.length < 12 && dayOffset < 4) {
+    while (candidates.length < ATHAN_SCHEDULE_WINDOW_DAYS * 5 && dayOffset < ATHAN_SCHEDULE_WINDOW_DAYS) {
       for (const prayer of prayers) {
         if (!prayer.enabled) continue;
         const parsed = parsePrayerTime(prayer.time);
@@ -228,7 +231,7 @@ export default function AthanDiagnosticsScreen({ route }: any) {
           name: prayer.name,
           time: prayer.time,
           expectedAt,
-          identifier: buildAthanNotificationId(prayer.name),
+          identifier: buildAthanNotificationId(prayer.name, expectedAt),
         });
       }
       dayOffset += 1;
@@ -296,8 +299,10 @@ export default function AthanDiagnosticsScreen({ route }: any) {
       if (Platform.OS === 'android') {
         const channel = await Notifications.getNotificationChannelAsync(ATHAN_CHANNEL_ID);
         setChannelInfo(channel);
+        setExactAlarmEnabled(await canScheduleExactAlarms());
       } else {
         setChannelInfo(null);
+        setExactAlarmEnabled(null);
       }
 
       setLastRefreshAt(new Date());
@@ -420,6 +425,9 @@ export default function AthanDiagnosticsScreen({ route }: any) {
                     Vibration: {channelInfo.enableVibrate ? 'Enabled' : 'Disabled'}
                   </Text>
                   <Text style={styles.rowText}>Bypass DND: {channelInfo.bypassDnd ? 'Yes' : 'No'}</Text>
+                  <Text style={styles.rowText}>
+                    Exact alarms: {exactAlarmEnabled === null ? 'Unknown' : exactAlarmEnabled ? 'Enabled' : 'Disabled'}
+                  </Text>
                 </>
               )}
             </View>

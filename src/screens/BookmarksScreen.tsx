@@ -14,6 +14,7 @@ import { getBookmarks, removeBookmark, Bookmark, BookmarkTag } from '../services
 import { useNavigation } from '@react-navigation/native';
 import type { StackNavigationProp } from '@react-navigation/stack';
 import { useSettings } from '../context/SettingsContext';
+import { resolveArabicFontFamily } from '../theme/fonts';
 import { UI_COLORS, UI_RADII, UI_SHADOWS } from '../theme/ui';
 import ScreenIntroTile from '../components/ScreenIntroTile';
 
@@ -36,6 +37,7 @@ export default function BookmarksScreen() {
   const { settings } = useSettings();
   const isDark = settings.isDarkMode;
   const ayahFontSize = Math.max(24, settings.arabicFontSize - 6);
+  const arabicFontFamily = resolveArabicFontFamily(settings.arabicFontFamily);
 
   const getTagLabel = (tag: BookmarkTag) => (tag === 'memorize' ? 'Memorize' : 'Read/Recite');
   const visibleBookmarks =
@@ -106,7 +108,14 @@ export default function BookmarksScreen() {
         </View>
       </View>
 
-      <Text style={[styles.ayahText, { fontSize: ayahFontSize, lineHeight: Math.round(ayahFontSize * 1.6) }, isDark && styles.darkText]}>
+      <Text
+        style={[
+          styles.ayahText,
+          { fontSize: ayahFontSize, lineHeight: Math.round(ayahFontSize * 1.6) },
+          arabicFontFamily ? { fontFamily: arabicFontFamily } : null,
+          isDark && styles.darkText,
+        ]}
+      >
         {item.ayahText}
       </Text>
       <Text style={[styles.translation, isDark && styles.darkText]}>{item.translation}</Text>
@@ -277,7 +286,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
   },
   ayahText: {
-    fontFamily: 'AmiriQuran',
     fontSize: 26,
     textAlign: 'right',
     color: UI_COLORS.text,

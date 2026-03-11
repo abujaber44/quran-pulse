@@ -7,13 +7,14 @@ import * as Notifications from 'expo-notifications';
 
 import { AudioProvider } from './src/context/AudioContext';
 import { SettingsProvider } from './src/context/SettingsContext';
+import { CUSTOM_FONT_ASSETS } from './src/theme/fonts';
 import { UI_COLORS, UI_RADII } from './src/theme/ui';
 
 import LandingScreen from './src/screens/LandingScreen';
 import MemorizeUnderstandScreen from './src/screens/MemorizeUnderstandScreen';
 import SurahScreen from './src/screens/SurahScreen';
 import SettingsScreen from './src/screens/SettingsScreen';
-import AsmaAlHusnaScreen from './src/screens/AsmaAlHusnaScreen';
+import AthkarScreen from './src/screens/AsmaAlHusnaScreen';
 import PrayerTimesScreen from './src/screens/PrayerTimesScreen';
 import BookmarksScreen from './src/screens/BookmarksScreen';
 import QuranPlayerScreen from './src/screens/QuranPlayerScreen';
@@ -94,9 +95,7 @@ export default function App() {
 
   useEffect(() => {
     async function loadFonts() {
-      await Font.loadAsync({
-        AmiriQuran: require('./assets/fonts/Amiri-Regular.ttf'),
-      });
+      await Font.loadAsync(CUSTOM_FONT_ASSETS);
       setFontsLoaded(true);
     }
     loadFonts();
@@ -132,8 +131,8 @@ export default function App() {
               options={({ navigation }) => getSharedHeaderOptions(navigation)}
             />
             <Stack.Screen 
-              name="AsmaAlHusna" 
-              component={AsmaAlHusnaScreen} 
+              name="Athkar" 
+              component={AthkarScreen} 
               options={({ navigation }) => getSharedHeaderOptions(navigation)}
             />
             <Stack.Screen

@@ -1,8 +1,14 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import {
+  ArabicFontOptionId,
+  DEFAULT_ARABIC_FONT_OPTION,
+  isArabicFontOptionId,
+} from '../theme/fonts';
 
 export interface Settings {
   arabicFontSize: number;
+  arabicFontFamily: ArabicFontOptionId;
   memorizationPause: number;
   isDarkMode: boolean;
   autoPlayOnStart: boolean;
@@ -10,6 +16,7 @@ export interface Settings {
 
 const defaultSettings: Settings = {
   arabicFontSize: 24,
+  arabicFontFamily: DEFAULT_ARABIC_FONT_OPTION,
   memorizationPause: 4,
   isDarkMode: false,
   autoPlayOnStart: false,
@@ -48,6 +55,9 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
             ...defaultSettings,
             ...parsed,
             arabicFontSize: clampArabicFontSize(Number(parsed?.arabicFontSize)),
+            arabicFontFamily: isArabicFontOptionId(parsed?.arabicFontFamily)
+              ? parsed.arabicFontFamily
+              : defaultSettings.arabicFontFamily,
             memorizationPause: clampMemorizationPause(Number(parsed?.memorizationPause)),
             isDarkMode: false,
             autoPlayOnStart: false,
@@ -66,6 +76,10 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
 
       if (key === 'arabicFontSize') {
         next.arabicFontSize = clampArabicFontSize(Number(value));
+      } else if (key === 'arabicFontFamily') {
+        next.arabicFontFamily = isArabicFontOptionId(value)
+          ? value
+          : defaultSettings.arabicFontFamily;
       } else if (key === 'memorizationPause') {
         next.memorizationPause = clampMemorizationPause(Number(value));
       } else if (key === 'isDarkMode' || key === 'autoPlayOnStart') {

@@ -8,7 +8,6 @@ import {
   FlatList,
   Alert,
 } from 'react-native';
-import Slider from '@react-native-community/slider';
 import { fetchAyahs, fetchTranslations, fetchTafseer } from '../services/quranApi';
 import { useAudio, useAudioProgress } from '../context/AudioContext';
 import { useSettings } from '../context/SettingsContext';
@@ -16,8 +15,10 @@ import { getGlobalAyahNumber } from '../utils/quranUtils';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { getBookmarks, addBookmark, removeBookmark, BookmarkTag } from '../services/bookmarkService';
+import { resolveArabicFontFamily } from '../theme/fonts';
 import { UI_COLORS, UI_RADII, UI_SHADOWS } from '../theme/ui';
 import ScreenIntroTile from '../components/ScreenIntroTile';
+import CompactPlayerCard from '../components/CompactPlayerCard';
 
 const reciters = [
   { id: 'ar.alafasy', name: 'Mishary Rashid Alafasy' },
@@ -29,16 +30,18 @@ const reciters = [
   { id: 'ar.ahmedajamy', name: 'Ahmed ibn Ali al-Ajamy' },
 ];
 
-const LIST_FOOTER_HEIGHT = 130;
 const LIST_SCROLL_RETRY_DELAY_MS = 300;
 const INITIAL_AYAH_SCROLL_RETRY_MS = 180;
 const INITIAL_AYAH_SCROLL_MAX_ATTEMPTS = 6;
+const TOUCH_HIT_SLOP = { top: 8, bottom: 8, left: 8, right: 8 };
 
 type AyahItemProps = {
   ayah: any;
   isDark: boolean;
   arabicFontSize: number;
+  arabicFontFamily?: string;
   isActiveAyah: boolean;
+  isAnyAyahPlaying: boolean;
   isBookmarked: boolean;
   expandedTranslation: number | null;
   expandedTafseer: number | null;
@@ -54,7 +57,9 @@ const AyahItem = memo(({
   ayah,
   isDark,
   arabicFontSize,
+  arabicFontFamily,
   isActiveAyah,
+  isAnyAyahPlaying,
   isBookmarked,
   expandedTranslation,
   expandedTafseer,
@@ -77,6 +82,8 @@ const AyahItem = memo(({
         <TouchableOpacity
           style={styles.inlineBookmarkBtn}
           onPress={() => onToggleBookmark(ayah.verse_number)}
+          hitSlop={TOUCH_HIT_SLOP}
+          activeOpacity={0.75}
         >
           <Text style={[
             styles.bookmarkIcon,
@@ -86,13 +93,24 @@ const AyahItem = memo(({
           </Text>
         </TouchableOpacity>
 
-        <TouchableOpacity
-          style={[styles.playAyahButton, isDark && styles.darkPlayAyahButton]}
-          onPress={() => onPlayAyah(ayah.verse_number)}
-        >
-          <Text style={styles.playAyahIcon}>▶</Text>
-          <Text style={styles.playAyahText}>Play</Text>
-        </TouchableOpacity>
+        <View style={styles.topRowRightSlot}>
+          {isActiveAyah ? (
+            <View style={[styles.playingIndicator, isDark && styles.darkPlayingIndicator]}>
+              <Text style={styles.playingIndicatorDot}>●</Text>
+              <Text style={styles.playingIndicatorText}>Playing now</Text>
+            </View>
+          ) : !isAnyAyahPlaying ? (
+            <TouchableOpacity
+              style={[styles.playAyahButton, isDark && styles.darkPlayAyahButton]}
+              onPress={() => onPlayAyah(ayah.verse_number)}
+              hitSlop={TOUCH_HIT_SLOP}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.playAyahIcon}>▶</Text>
+              <Text style={styles.playAyahText}>Play Ayah</Text>
+            </TouchableOpacity>
+          ) : null}
+        </View>
       </View>
 
       <TouchableOpacity
@@ -107,6 +125,7 @@ const AyahItem = memo(({
               fontSize: arabicFontSize,
               lineHeight: Math.max(arabicFontSize + 14, Math.round(arabicFontSize * 1.75)),
             },
+            arabicFontFamily ? { fontFamily: arabicFontFamily } : null,
             isDark && styles.darkText,
           ]}
         >
@@ -115,17 +134,43 @@ const AyahItem = memo(({
       </TouchableOpacity>
 
       <View style={styles.bottomToggles}>
-        <TouchableOpacity onPress={() => onToggleTranslation(ayah.verse_number)} style={styles.tafseerToggleBtn}>
-          <Text style={[styles.tafseerToggle, isDark && styles.darkText]}>
-            {expandedTranslation === ayah.verse_number ? '↑ Hide Translation' : '↓ Show Translation'}
+        <TouchableOpacity
+          onPress={() => onToggleTranslation(ayah.verse_number)}
+          style={[
+            styles.actionChip,
+            isDark && styles.darkActionChip,
+            expandedTranslation === ayah.verse_number && styles.activeActionChip,
+          ]}
+          hitSlop={TOUCH_HIT_SLOP}
+          activeOpacity={0.85}
+        >
+          <Text style={[
+            styles.actionChipText,
+            isDark && styles.darkText,
+            expandedTranslation === ayah.verse_number && styles.activeActionChipText,
+          ]}>
+            {expandedTranslation === ayah.verse_number ? 'Hide Translation' : 'Show Translation'}
           </Text>
         </TouchableOpacity>
 
-        <TouchableOpacity onPress={() => onToggleTafseer(ayah.verse_number)} style={styles.tafseerToggleBtn}>
-          <Text style={[styles.tafseerToggle, isDark && styles.darkText]}>
+        <TouchableOpacity
+          onPress={() => onToggleTafseer(ayah.verse_number)}
+          style={[
+            styles.actionChip,
+            isDark && styles.darkActionChip,
+            expandedTafseer === ayah.verse_number && styles.activeActionChip,
+          ]}
+          hitSlop={TOUCH_HIT_SLOP}
+          activeOpacity={0.85}
+        >
+          <Text style={[
+            styles.actionChipText,
+            isDark && styles.darkText,
+            expandedTafseer === ayah.verse_number && styles.activeActionChipText,
+          ]}>
             {expandedTafseer === ayah.verse_number
-              ? (loadingTafseer ? 'Loading...' : '↑ Hide Tafseer')
-              : '↓ Show Tafseer'}
+              ? (loadingTafseer ? 'Loading...' : 'Hide Tafseer')
+              : 'Show Tafseer'}
           </Text>
         </TouchableOpacity>
       </View>
@@ -215,58 +260,30 @@ const SurahPlayerBar = memo(({ surahId, surahVersesCount, isDark, onPlayAyahByNu
     }
   };
 
-  const formatTime = (ms: number) => {
-    if (!ms) return '0:00';
-    const mins = Math.floor(ms / 60000);
-    const secs = Math.floor((ms % 60000) / 1000);
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
-  };
-
   return (
-    <View style={[styles.playerContainer, isDark && styles.darkPlayerContainer]}>
-      <View style={[styles.playerCard, isDark && styles.darkPlayerCard]}>
-        <TouchableOpacity style={styles.exitButton} onPress={stopListening}>
-          <Text style={styles.exitIcon}>×</Text>
-        </TouchableOpacity>
-
-        <View style={styles.playerHeader}>
-          <Text style={styles.playerAyahNumber}>{currentAyah.ayah}</Text>
-          <Text style={[styles.playerTitle, isDark && styles.darkText]}>Currently Playing</Text>
-        </View>
-
-        <Slider
-          style={styles.slider}
-          minimumValue={0}
-          maximumValue={durationMillis || 1}
-          value={positionMillis}
-          onSlidingComplete={seekTo}
-          minimumTrackTintColor="#27ae60"
-          thumbTintColor="#27ae60"
-        />
-
-        <Text style={[styles.timeText, isDark && styles.darkText]}>
-          {formatTime(positionMillis)} / {formatTime(durationMillis)}
-        </Text>
-
-        <View style={styles.playerControls}>
-          <TouchableOpacity onPress={handlePreviousAyah} disabled={currentAyah.ayah === 1}>
-            <Text style={[styles.controlBtn, currentAyah.ayah === 1 && styles.disabledBtn, isDark && styles.darkText]}>
-              ← Prev
-            </Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity onPress={togglePlayPause}>
-            <Text style={styles.playPauseBtn}>{isPlaying ? '⏸' : '▶'}</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity onPress={handleNextAyah} disabled={currentAyah.ayah === surahVersesCount}>
-            <Text style={[styles.controlBtn, currentAyah.ayah === surahVersesCount && styles.disabledBtn, isDark && styles.darkText]}>
-              Next →
-            </Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-    </View>
+    <CompactPlayerCard
+      isDark={isDark}
+      badgeLabel={String(currentAyah.ayah)}
+      title="Now Playing"
+      subtitle={`Surah ${surahId}`}
+      currentMs={positionMillis}
+      durationMs={durationMillis}
+      isPlaying={isPlaying}
+      disablePrev={currentAyah.ayah === 1}
+      disableNext={currentAyah.ayah === surahVersesCount}
+      onPrev={handlePreviousAyah}
+      onNext={handleNextAyah}
+      onTogglePlay={() => {
+        void togglePlayPause();
+      }}
+      onSeek={(value) => {
+        void seekTo(value);
+      }}
+      onClose={() => {
+        void stopListening();
+      }}
+      layout="inline"
+    />
   );
 });
 
@@ -588,6 +605,7 @@ export default function SurahScreen({ route }: any) {
 
   const isDark = settings.isDarkMode;
   const ayahArabicFontSize = Math.max(24, settings.arabicFontSize);
+  const arabicFontFamily = resolveArabicFontFamily(settings.arabicFontFamily);
   const currentAyahNumForThisSurah = currentAyah?.surah === surah.id ? currentAyah?.ayah : null;
 
   const listExtraData = useMemo(() => ({
@@ -636,13 +654,16 @@ export default function SurahScreen({ route }: any) {
   const renderAyahItem = useCallback(({ item }: { item: any }) => {
     const isBookmarked = bookmarkedAyahs.has(`${surah.id}-${item.verse_number}`);
     const isActiveAyah = currentAyahNumForThisSurah === item.verse_number;
+    const isAnyAyahPlaying = currentAyahNumForThisSurah !== null;
 
     return (
       <AyahItem
         ayah={item}
         isDark={isDark}
         arabicFontSize={ayahArabicFontSize}
+        arabicFontFamily={arabicFontFamily}
         isActiveAyah={isActiveAyah}
+        isAnyAyahPlaying={isAnyAyahPlaying}
         isBookmarked={isBookmarked}
         expandedTranslation={expandedTranslation}
         expandedTafseer={expandedTafseer}
@@ -686,13 +707,23 @@ export default function SurahScreen({ route }: any) {
           <View style={styles.headerRightSpacer} />
         </View>
 
-        <ScreenIntroTile
-          title={surah.name_arabic}
-          subtitle={`${surah.name_simple} (${surah.translated_name.name})`}
-          description="Memorize mode helps focused repetition using your memorization pause setting, and Repeat lets you loop a single ayah or custom range. For reading, audio starts only when you tap Play on an ayah card."
-          isDark={isDark}
-          style={styles.introTile}
-        />
+        {currentAyah?.surah === surah.id ? (
+          <SurahPlayerBar
+            surahId={surah.id}
+            surahVersesCount={surah.verses_count}
+            isDark={isDark}
+            onPlayAyahByNumber={handlePlayAyah}
+          />
+        ) : (
+          <ScreenIntroTile
+            title={surah.name_arabic}
+            subtitle={`${surah.name_simple} (${surah.translated_name.name})`}
+            description="Memorize mode helps focused repetition using your memorization pause setting, and Repeat lets you loop a single ayah or custom range. For reading, audio starts only when you tap Play on an ayah card."
+            titleFontFamily={arabicFontFamily}
+            isDark={isDark}
+            style={styles.introTile}
+          />
+        )}
 
         {/* Controls Bar */}
         <View style={[styles.controlsBar, isDark && styles.darkControlsBar]}>
@@ -732,14 +763,7 @@ export default function SurahScreen({ route }: any) {
           initialNumToRender={8}
           maxToRenderPerBatch={8}
           windowSize={11}
-          ListFooterComponent={<View style={{ height: LIST_FOOTER_HEIGHT }} />}
-        />
-
-        <SurahPlayerBar
-          surahId={surah.id}
-          surahVersesCount={surah.verses_count}
-          isDark={isDark}
-          onPlayAyahByNumber={handlePlayAyah}
+          ListFooterComponent={<View style={styles.listFooter} />}
         />
 
         {/* Reciter Modal */}
@@ -867,7 +891,8 @@ const styles = StyleSheet.create({
   controlValue: { fontSize: 11, fontWeight: '600', color: UI_COLORS.text, marginTop: 2, textAlign: 'center' },
   activeText: { color: UI_COLORS.primary, fontWeight: 'bold' },
   darkMutedText: { color: '#a8b3bd' },
-  scrollContent: { paddingHorizontal: 16, paddingTop: 2, paddingBottom: 180 },
+  scrollContent: { paddingHorizontal: 16, paddingTop: 2, paddingBottom: 8 },
+  listFooter: { height: 10 },
   ayahCard: {
     backgroundColor: UI_COLORS.surface,
     paddingHorizontal: 14,
@@ -884,21 +909,27 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 6,
+    marginBottom: 10,
   },
   inlineBookmarkBtn: {
-    paddingHorizontal: 4,
-    paddingVertical: 2,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'transparent',
   },
   playAyahButton: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 32,
     borderWidth: 1,
     borderColor: '#b6d2e8',
     backgroundColor: '#ecf6ff',
-    borderRadius: UI_RADII.sm,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
+    borderRadius: UI_RADII.md,
+    paddingHorizontal: 10,
+    paddingVertical: 3,
   },
   darkPlayAyahButton: {
     backgroundColor: '#213241',
@@ -906,20 +937,49 @@ const styles = StyleSheet.create({
   },
   playAyahIcon: {
     color: UI_COLORS.accent,
-    fontSize: 11,
+    fontSize: 12,
     marginRight: 5,
     fontWeight: '700',
   },
   playAyahText: {
     color: UI_COLORS.accent,
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '700',
+  },
+  topRowRightSlot: {
+    minHeight: 32,
+    justifyContent: 'center',
+  },
+  playingIndicator: {
+    minHeight: 32,
+    borderRadius: UI_RADII.md,
+    paddingHorizontal: 10,
+    paddingVertical: 3,
+    backgroundColor: UI_COLORS.primarySoft,
+    borderWidth: 1,
+    borderColor: '#84c2a0',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  darkPlayingIndicator: {
+    backgroundColor: '#1f3d2f',
+    borderColor: '#4c8761',
+  },
+  playingIndicatorDot: {
+    fontSize: 10,
+    color: UI_COLORS.primary,
+    marginRight: 5,
+  },
+  playingIndicatorText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#1f6b45',
   },
   ayahBodyButton: {
     width: '100%',
   },
   ayahText: {
-    fontFamily: 'AmiriQuran',
     lineHeight: 56,
     textAlign: 'right',
     writingDirection: 'rtl',
@@ -942,26 +1002,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#213241',
     color: '#94c4e7',
   },
-  playerContainer: { position: 'absolute', bottom: 0, left: 0, right: 0, paddingHorizontal: 16, paddingBottom: 20 },
-  darkPlayerContainer: { backgroundColor: 'transparent' },
-  playerCard: {
-    backgroundColor: UI_COLORS.surface,
-    borderRadius: UI_RADII.lg,
-    padding: 12,
-    borderWidth: 1,
-    borderColor: UI_COLORS.border,
-    ...UI_SHADOWS.floating,
-  },
-  darkPlayerCard: { backgroundColor: UI_COLORS.darkSurface, borderColor: '#30353b' },
-  playerHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 6 },
-  playerAyahNumber: { fontSize: 20, fontWeight: 'bold', color: UI_COLORS.accent, marginRight: 12 },
-  playerTitle: { fontSize: 13, fontWeight: '600', color: UI_COLORS.text },
-  slider: { width: '100%', height: 40 },
-  timeText: { textAlign: 'center', color: UI_COLORS.textMuted, marginVertical: 8 },
-  playerControls: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  controlBtn: { fontSize: 18, color: UI_COLORS.primary, fontWeight: '600' },
-  disabledBtn: { color: UI_COLORS.textLight },
-  playPauseBtn: { fontSize: 40, color: UI_COLORS.primary },
   darkText: { color: UI_COLORS.white },
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'center', alignItems: 'center' },
   modal: { backgroundColor: UI_COLORS.surface, padding: 20, borderRadius: UI_RADII.md, width: '90%', maxHeight: '80%' },
@@ -981,16 +1021,34 @@ const styles = StyleSheet.create({
     color: '#2c3e50',
     marginTop: 8,
   },
-  tafseerToggleBtn: {
-    marginTop: 4,
-    alignSelf: 'flex-start',
-    paddingHorizontal: 6,
-    paddingVertical: 4,
+  actionChip: {
+    flex: 1,
+    minHeight: 32,
+    borderRadius: UI_RADII.md,
+    borderWidth: 1,
+    borderColor: '#b6d2e8',
+    backgroundColor: '#ecf6ff',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  tafseerToggle: {
-    fontSize: 15,
+  darkActionChip: {
+    backgroundColor: '#213241',
+    borderColor: '#4d6376',
+  },
+  activeActionChip: {
+    backgroundColor: UI_COLORS.primarySoft,
+    borderColor: '#84c2a0',
+  },
+  actionChipText: {
+    fontSize: 12,
     color: UI_COLORS.primary,
-    fontWeight: '600',
+    fontWeight: '700',
+    textAlign: 'center',
+  },
+  activeActionChipText: {
+    color: '#1f6b45',
   },
   tafseerText: {
     fontSize: 14,
@@ -1003,7 +1061,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
   },
   bookmarkIcon: {
-    fontSize: 22,
+    fontSize: 21,
     color: UI_COLORS.textLight, 
   },
   bookmarkedIcon: {
@@ -1013,21 +1071,8 @@ const styles = StyleSheet.create({
   bottomToggles: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginTop: 6,
-  },
-  // New: Exit button on player card
-  exitButton: {
-    position: 'absolute',
-    top: 12,
-    right: 12,
-    zIndex: 7,
-    padding: 3,
-    backgroundColor: 'rgba(0,0,0,0.1)',
-    borderRadius: 5,
-  },
-  exitIcon: {
-    fontSize: 24,
-    color: UI_COLORS.danger,
-    fontWeight: 'bold',
+    alignItems: 'center',
+    marginTop: 8,
+    gap: 8,
   },
 });

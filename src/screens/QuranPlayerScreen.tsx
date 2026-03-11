@@ -10,14 +10,16 @@ import {
   TextInput,
   TouchableWithoutFeedback,
 } from 'react-native';
-import Slider from '@react-native-community/slider';
 import { useAudioPlayer, useAudioPlayerStatus, setAudioModeAsync } from 'expo-audio';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useSettings } from '../context/SettingsContext';
+import { resolveArabicFontFamily } from '../theme/fonts';
 import { fetchSurahs } from '../services/quranApi';
 import { getSurahAudioUrl } from '../services/quranApi';
 import { UI_COLORS, UI_RADII, UI_SHADOWS } from '../theme/ui';
 import ScreenIntroTile from '../components/ScreenIntroTile';
+import { normalizeArabicForSearch } from '../utils/arabicSearch';
+import CompactPlayerCard from '../components/CompactPlayerCard';
 
 interface Surah {
   id: number;
@@ -62,6 +64,7 @@ export default function QuranPlayerScreen() {
   const { settings } = useSettings();
   const isDark = settings.isDarkMode;
   const arabicNameFontSize = Math.max(18, settings.arabicFontSize - 10);
+  const arabicFontFamily = resolveArabicFontFamily(settings.arabicFontFamily);
 
   // Load surahs
   useEffect(() => {
@@ -108,10 +111,10 @@ export default function QuranPlayerScreen() {
       return;
     }
 
-    const query = searchQuery.toLowerCase().trim();
+    const query = normalizeArabicForSearch(searchQuery);
     const filtered = allSurahs.filter((surah) =>
-      surah.name_simple.toLowerCase().includes(query) ||
-      surah.name_arabic.includes(searchQuery)
+      normalizeArabicForSearch(surah.name_simple).includes(query) ||
+      normalizeArabicForSearch(surah.name_arabic).includes(query)
     );
     setSurahs(filtered);
   }, [searchQuery, allSurahs]);
@@ -258,11 +261,13 @@ export default function QuranPlayerScreen() {
     }
   };
 
-  const formatTime = (ms: number) => {
-    if (!ms) return '0:00';
-    const mins = Math.floor(ms / 60000);
-    const secs = Math.floor((ms % 60000) / 1000);
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  const closePlayer = () => {
+    try {
+      player.pause();
+    } catch {
+      // Ignore stale player state.
+    }
+    setSelectedSurah(null);
   };
 
   const clearSearch = () => {
@@ -293,7 +298,16 @@ export default function QuranPlayerScreen() {
       <Text style={styles.surahNumber}>{item.id}</Text>
       <View>
         <Text style={[styles.surahEnglish, isDark && styles.darkText]}>{item.name_simple}</Text>
-        <Text style={[styles.surahArabic, { fontSize: arabicNameFontSize }, isDark && styles.darkText]}>{item.name_arabic}</Text>
+        <Text
+          style={[
+            styles.surahArabic,
+            { fontSize: arabicNameFontSize },
+            arabicFontFamily ? { fontFamily: arabicFontFamily } : null,
+            isDark && styles.darkText,
+          ]}
+        >
+          {item.name_arabic}
+        </Text>
       </View>
     </TouchableOpacity>
   );
@@ -339,6 +353,32 @@ export default function QuranPlayerScreen() {
         </View>
       </View>
 
+      {/* In-content Player */}
+      {selectedSurah && (
+        <CompactPlayerCard
+          isDark={isDark}
+          badgeLabel={String(selectedSurah.id)}
+          title="Now Playing"
+          subtitle={selectedSurah.name_simple}
+          currentMs={(playerStatus.currentTime || 0) * 1000}
+          durationMs={(playerStatus.duration || 0) * 1000}
+          isPlaying={!!playerStatus.playing}
+          isBusy={isLoading}
+          disablePrev={selectedSurah.id === 1}
+          disableNext={selectedSurah.id === 114}
+          onPrev={handlePrevious}
+          onNext={handleNext}
+          onTogglePlay={() => {
+            void togglePlayPause();
+          }}
+          onSeek={(value) => {
+            void seekTo(value);
+          }}
+          onClose={closePlayer}
+          layout="inline"
+        />
+      )}
+
       {/* Surah List with auto-scroll */}
       <FlatList
         ref={flatListRef}
@@ -349,62 +389,6 @@ export default function QuranPlayerScreen() {
         showsVerticalScrollIndicator={false}
         onScrollToIndexFailed={() => {}}
       />
-
-      {/* Fixed Player at Bottom */}
-      {selectedSurah && (
-        <View style={[styles.playerContainer, isDark && styles.darkPlayerContainer]}>
-          <View style={[styles.playerCard, isDark && styles.darkPlayerCard]}>
-            <View style={styles.playerHeader}>
-              <Text style={styles.playerAyahNumber}>{selectedSurah.id}</Text>
-              <Text style={[styles.playerTitle, isDark && styles.darkText]}>
-                Currently Playing
-              </Text>
-            </View>
-
-            <Slider
-              style={styles.slider}
-              minimumValue={0}
-              maximumValue={(playerStatus.duration || 0) * 1000 || 1}
-              value={(playerStatus.currentTime || 0) * 1000}
-              onSlidingComplete={seekTo}
-              minimumTrackTintColor="#27ae60"
-              thumbTintColor="#27ae60"
-            />
-
-            <Text style={[styles.timeText, isDark && styles.darkText]}>
-              {formatTime((playerStatus.currentTime || 0) * 1000)} / {formatTime((playerStatus.duration || 0) * 1000)}
-            </Text>
-
-            <View style={styles.playerControls}>
-              <TouchableOpacity onPress={handlePrevious} disabled={selectedSurah.id === 1}>
-                <Text style={[
-                  styles.controlBtn,
-                  selectedSurah.id === 1 && styles.disabledBtn,
-                  isDark && styles.darkText
-                ]}>
-                  ← Prev
-                </Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity onPress={togglePlayPause}>
-                <Text style={styles.playPauseBtn}>
-                  {isLoading ? '⏳' : playerStatus.playing ? '⏸' : '▶'}
-                </Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity onPress={handleNext} disabled={selectedSurah.id === 114}>
-                <Text style={[
-                  styles.controlBtn,
-                  selectedSurah.id === 114 && styles.disabledBtn,
-                  isDark && styles.darkText
-                ]}>
-                  Next →
-                </Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      )}
 
       {/* Reciter Modal */}
       <Modal visible={reciterModalVisible} animationType="slide" transparent>
@@ -467,7 +451,7 @@ const styles = StyleSheet.create({
   },
   clearButton: { paddingHorizontal: 16 },
   clearIcon: { fontSize: 20, color: UI_COLORS.textMuted },
-  surahList: { paddingHorizontal: 16, paddingBottom: 200 },
+  surahList: { paddingHorizontal: 16, paddingBottom: 12 },
   surahItem: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -488,34 +472,7 @@ const styles = StyleSheet.create({
   selectedSurahItem: { backgroundColor: UI_COLORS.primarySoft, borderColor: '#bde2c8' },
   surahNumber: { fontSize: 20, fontWeight: 'bold', color: UI_COLORS.accent, width: 50, textAlign: 'center' },
   surahEnglish: { fontSize: 18, color: UI_COLORS.text, fontWeight: '600' },
-  surahArabic: { fontFamily: 'AmiriQuran', fontSize: 22, color: UI_COLORS.text, marginTop: 4 },
-  playerContainer: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    paddingHorizontal: 16,
-    paddingBottom: 20,
-  },
-  darkPlayerContainer: { backgroundColor: 'transparent' },
-  playerCard: { 
-    backgroundColor: UI_COLORS.surface, 
-    borderRadius: UI_RADII.lg, 
-    padding: 12, 
-    borderWidth: 1,
-    borderColor: UI_COLORS.border,
-    ...UI_SHADOWS.floating,
-  },
-  darkPlayerCard: { backgroundColor: UI_COLORS.darkSurface, borderColor: '#30353b' },
-  playerHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 6 },
-  playerAyahNumber: { fontSize: 20, fontWeight: 'bold', color: UI_COLORS.accent, marginRight: 12 },
-  playerTitle: { fontSize: 13, fontWeight: '600', color: UI_COLORS.text },
-  slider: { width: '100%', height: 40 },
-  timeText: { textAlign: 'center', color: UI_COLORS.textMuted, marginVertical: 8 },
-  playerControls: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  controlBtn: { fontSize: 18, color: UI_COLORS.primary, fontWeight: '600' },
-  disabledBtn: { color: UI_COLORS.textLight },
-  playPauseBtn: { fontSize: 40, color: UI_COLORS.primary },
+  surahArabic: { fontSize: 22, color: UI_COLORS.text, marginTop: 4 },
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'center', alignItems: 'center' },
   modal: { backgroundColor: UI_COLORS.surface, padding: 20, borderRadius: UI_RADII.md, width: '90%', maxHeight: '80%' },
   reciterModal: { backgroundColor: UI_COLORS.surface, padding: 20, borderRadius: UI_RADII.md, width: '90%', maxHeight: '80%' },
