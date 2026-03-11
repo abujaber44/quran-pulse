@@ -14,7 +14,7 @@ import LandingScreen from './src/screens/LandingScreen';
 import MemorizeUnderstandScreen from './src/screens/MemorizeUnderstandScreen';
 import SurahScreen from './src/screens/SurahScreen';
 import SettingsScreen from './src/screens/SettingsScreen';
-import AsmaAlHusnaScreen from './src/screens/AsmaAlHusnaScreen';
+import AthkarScreen from './src/screens/AsmaAlHusnaScreen';
 import PrayerTimesScreen from './src/screens/PrayerTimesScreen';
 import BookmarksScreen from './src/screens/BookmarksScreen';
 import QuranPlayerScreen from './src/screens/QuranPlayerScreen';
@@ -131,8 +131,8 @@ export default function App() {
               options={({ navigation }) => getSharedHeaderOptions(navigation)}
             />
             <Stack.Screen 
-              name="AsmaAlHusna" 
-              component={AsmaAlHusnaScreen} 
+              name="Athkar" 
+              component={AthkarScreen} 
               options={({ navigation }) => getSharedHeaderOptions(navigation)}
             />
             <Stack.Screen

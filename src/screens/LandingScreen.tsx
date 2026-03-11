@@ -6,7 +6,7 @@ import { UI_COLORS, UI_RADII, UI_SHADOWS } from '../theme/ui';
 
 type RootStackParamList = {
   MemorizeUnderstand: undefined;
-  AsmaAlHusna: undefined;
+  Athkar: undefined;
   PrayerTimes: undefined;
   QuranMiracles: undefined;
   Bookmarks: undefined;
@@ -46,7 +46,7 @@ export default function LandingScreen() {
         <Animated.View style={[styles.introCard, { opacity: fadeAnim }]}>
           <Text style={styles.description}>
             Quran Pulse is your peaceful companion to connect deeply with the Word of Allah. Read, listen, reflect,
-            keep prayer rhythm, and return to your saved ayahs from one focused home screen.
+            keep prayer rhythm, practice morning/evening athkar, use Tasbeeh, and return to your saved ayahs from one focused home screen.
           </Text>
         </Animated.View>
 
@@ -84,9 +84,9 @@ export default function LandingScreen() {
             <Text style={styles.secondaryCardSubtitle}>Hijri month view + daily hadith</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.secondaryCard} onPress={() => navigation.navigate('AsmaAlHusna')}>
-            <Text style={styles.secondaryCardTitle}>Asma Al-Husna</Text>
-            <Text style={styles.secondaryCardSubtitle}>99 names with meaning</Text>
+          <TouchableOpacity style={styles.secondaryCard} onPress={() => navigation.navigate('Athkar')}>
+            <Text style={styles.secondaryCardTitle}>Athkar</Text>
+            <Text style={styles.secondaryCardSubtitle}>Morning/Evening + Tasbeeh + Asma Al-Husna</Text>
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.secondaryCard} onPress={() => navigation.navigate('QuranMiracles')}>
