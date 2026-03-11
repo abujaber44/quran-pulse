@@ -9,7 +9,6 @@ import {
   TouchableOpacity,
   TouchableWithoutFeedback,
   ScrollView,
-  Alert,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useSettings } from '../context/SettingsContext';
@@ -163,6 +162,7 @@ export default function AthkarScreen() {
   const [athkarSource, setAthkarSource] = useState<'fallback' | 'online'>('fallback');
   const [athkarLoading, setAthkarLoading] = useState(true);
   const [athkarSourceLabel, setAthkarSourceLabel] = useState<string>('');
+  const [expandedFadlId, setExpandedFadlId] = useState<string | null>(null);
 
   const [names, setNames] = useState<AllahName[]>([]);
   const [filteredNames, setFilteredNames] = useState<AllahName[]>([]);
@@ -334,8 +334,10 @@ export default function AthkarScreen() {
     setTasbeehCycles(0);
   };
 
-  const showAudioPlaceholder = () => {
-    Alert.alert('Audio Coming Soon', 'Athkar audio playback support will be added in a future update.');
+  const getSmartFadlFallback = (item: AthkarItem) => {
+    const periodLabel = athkarPeriod === 'morning' ? 'morning' : 'evening';
+    const repeatPart = item.repetitions > 1 ? ` Repeat it ${item.repetitions} times.` : ' Repeat it once.';
+    return `This ${periodLabel} dhikr is part of your daily protection and remembrance routine.${repeatPart} Keep consistency for spiritual benefit, calm, and connection with Allah.`;
   };
 
   const renderAsmaItem = ({ item }: { item: AllahName }) => (
@@ -372,8 +374,11 @@ export default function AthkarScreen() {
           <View style={styles.repeatBadge}>
             <Text style={styles.repeatBadgeText}>x{item.repetitions}</Text>
           </View>
-          <TouchableOpacity style={styles.audioSoonButton} onPress={showAudioPlaceholder}>
-            <Text style={styles.audioSoonButtonText}>Audio</Text>
+          <TouchableOpacity
+            style={styles.fadlButton}
+            onPress={() => setExpandedFadlId((prev) => (prev === item.id ? null : item.id))}
+          >
+            <Text style={styles.fadlButtonText}>{expandedFadlId === item.id ? 'Hide Fadl' : 'Show Fadl'}</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -387,6 +392,21 @@ export default function AthkarScreen() {
       >
         {item.text}
       </Text>
+      {expandedFadlId === item.id ? (
+        <View style={styles.fadlBox}>
+          <Text style={styles.fadlTitle}>Fadl</Text>
+          <Text style={[styles.fadlText, isDark && styles.darkText]}>
+            {item.fadl && item.fadl.trim().length > 0
+              ? item.fadl
+              : item.hadithText && item.hadithText.trim().length > 0
+                ? item.hadithText
+                : getSmartFadlFallback(item)}
+          </Text>
+          {item.source && item.source.trim().length > 0 ? (
+            <Text style={styles.fadlSourceText}>Source: {item.source}</Text>
+          ) : null}
+        </View>
+      ) : null}
     </View>
   );
 
@@ -720,7 +740,7 @@ const styles = StyleSheet.create({
     color: UI_COLORS.primaryDeep,
     fontWeight: '700',
   },
-  audioSoonButton: {
+  fadlButton: {
     borderWidth: 1,
     borderColor: '#cde9d5',
     backgroundColor: '#f7fbf9',
@@ -728,10 +748,37 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 4,
   },
-  audioSoonButtonText: {
+  fadlButtonText: {
     fontSize: 11,
     color: UI_COLORS.textMuted,
     fontWeight: '600',
+  },
+  fadlBox: {
+    marginTop: 10,
+    backgroundColor: '#eef7f1',
+    borderWidth: 1,
+    borderColor: '#cde9d5',
+    borderRadius: UI_RADII.md,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+  },
+  fadlTitle: {
+    fontSize: 12,
+    color: UI_COLORS.primaryDeep,
+    fontWeight: '700',
+    marginBottom: 6,
+  },
+  fadlText: {
+    fontSize: 13,
+    lineHeight: 20,
+    color: UI_COLORS.text,
+  },
+  fadlSourceText: {
+    marginTop: 6,
+    fontSize: 11,
+    lineHeight: 16,
+    color: UI_COLORS.textMuted,
+    fontStyle: 'italic',
   },
   athkarText: {
     color: UI_COLORS.text,
