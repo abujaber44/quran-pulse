@@ -7,6 +7,7 @@ import * as Notifications from 'expo-notifications';
 
 import { AudioProvider } from './src/context/AudioContext';
 import { SettingsProvider } from './src/context/SettingsContext';
+import { CUSTOM_FONT_ASSETS } from './src/theme/fonts';
 import { UI_COLORS, UI_RADII } from './src/theme/ui';
 
 import LandingScreen from './src/screens/LandingScreen';
@@ -94,9 +95,7 @@ export default function App() {
 
   useEffect(() => {
     async function loadFonts() {
-      await Font.loadAsync({
-        AmiriQuran: require('./assets/fonts/Amiri-Regular.ttf'),
-      });
+      await Font.loadAsync(CUSTOM_FONT_ASSETS);
       setFontsLoaded(true);
     }
     loadFonts();

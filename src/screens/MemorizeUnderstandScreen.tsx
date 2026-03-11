@@ -15,6 +15,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { fetchSurahs } from '../services/quranApi';
 import { Surah } from '../types';
 import { useSettings } from '../context/SettingsContext';
+import { resolveArabicFontFamily } from '../theme/fonts';
 import { UI_COLORS, UI_RADII, UI_SHADOWS } from '../theme/ui';
 import ScreenIntroTile from '../components/ScreenIntroTile';
 import {
@@ -83,6 +84,7 @@ export default function MemorizeUnderstandScreen({ navigation }: any) {
   const { settings } = useSettings();
   const isDark = settings.isDarkMode;
   const arabicNameFontSize = Math.max(20, settings.arabicFontSize - 10);
+  const arabicFontFamily = resolveArabicFontFamily(settings.arabicFontFamily);
 
   useEffect(() => {
     fetchSurahs().then((data) => {
@@ -237,7 +239,14 @@ export default function MemorizeUnderstandScreen({ navigation }: any) {
         <Text style={styles.surahNumber}>{item.id}</Text>
         <View>
           <Text style={[styles.surahNameEnglish, isDark && styles.darkText]}>{item.name_simple}</Text>
-          <Text style={[styles.surahNameArabic, { fontSize: arabicNameFontSize }, isDark && styles.darkText]}>
+          <Text
+            style={[
+              styles.surahNameArabic,
+              { fontSize: arabicNameFontSize },
+              arabicFontFamily ? { fontFamily: arabicFontFamily } : null,
+              isDark && styles.darkText,
+            ]}
+          >
             {item.name_arabic}
           </Text>
         </View>
@@ -265,7 +274,7 @@ export default function MemorizeUnderstandScreen({ navigation }: any) {
           {renderHighlightedText(
             item.surah.name_arabic,
             trimmedSearch,
-            [styles.searchResultArabic, isDark && styles.darkText],
+            [styles.searchResultArabic, arabicFontFamily ? { fontFamily: arabicFontFamily } : null, isDark && styles.darkText],
             styles.highlightText
           )}
         </TouchableOpacity>
@@ -296,13 +305,19 @@ export default function MemorizeUnderstandScreen({ navigation }: any) {
           [styles.searchResultTitle, isDark && styles.darkText],
           styles.highlightText
         )}
-        <Text style={[styles.searchResultSubMeta, isDark && styles.darkMutedText]}>
+        <Text
+          style={[
+            styles.searchResultSubMeta,
+            arabicFontFamily ? { fontFamily: arabicFontFamily } : null,
+            isDark && styles.darkMutedText,
+          ]}
+        >
           {item.surahNameArabic}
         </Text>
         {renderHighlightedText(
           item.ayahText,
           stripArabicDiacritics(trimmedSearch),
-          [styles.searchResultAyahText, isDark && styles.darkText],
+          [styles.searchResultAyahText, arabicFontFamily ? { fontFamily: arabicFontFamily } : null, isDark && styles.darkText],
           styles.highlightText
         )}
       </TouchableOpacity>
@@ -511,7 +526,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   surahNameEnglish: { fontSize: 16, color: UI_COLORS.text, fontWeight: '600' },
-  surahNameArabic: { fontFamily: 'AmiriQuran', fontSize: 24, color: UI_COLORS.text, marginTop: 4 },
+  surahNameArabic: { fontSize: 24, color: UI_COLORS.text, marginTop: 4 },
   versesCount: { fontSize: 14, color: UI_COLORS.textMuted },
   resultBadgeRow: {
     flexDirection: 'row',
@@ -543,13 +558,11 @@ const styles = StyleSheet.create({
     fontSize: 24,
     marginTop: 4,
     color: UI_COLORS.text,
-    fontFamily: 'AmiriQuran',
   },
   searchResultSubMeta: {
     fontSize: 15,
     marginTop: 2,
     color: UI_COLORS.textMuted,
-    fontFamily: 'AmiriQuran',
   },
   searchResultAyahText: {
     fontSize: 15,
@@ -557,7 +570,6 @@ const styles = StyleSheet.create({
     marginTop: 8,
     color: UI_COLORS.text,
     textAlign: 'right',
-    fontFamily: 'AmiriQuran',
   },
   highlightText: {
     backgroundColor: '#ffe58f',

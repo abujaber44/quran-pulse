@@ -13,6 +13,7 @@ import {
 import { useAudioPlayer, useAudioPlayerStatus, setAudioModeAsync } from 'expo-audio';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useSettings } from '../context/SettingsContext';
+import { resolveArabicFontFamily } from '../theme/fonts';
 import { fetchSurahs } from '../services/quranApi';
 import { getSurahAudioUrl } from '../services/quranApi';
 import { UI_COLORS, UI_RADII, UI_SHADOWS } from '../theme/ui';
@@ -63,6 +64,7 @@ export default function QuranPlayerScreen() {
   const { settings } = useSettings();
   const isDark = settings.isDarkMode;
   const arabicNameFontSize = Math.max(18, settings.arabicFontSize - 10);
+  const arabicFontFamily = resolveArabicFontFamily(settings.arabicFontFamily);
 
   // Load surahs
   useEffect(() => {
@@ -296,7 +298,16 @@ export default function QuranPlayerScreen() {
       <Text style={styles.surahNumber}>{item.id}</Text>
       <View>
         <Text style={[styles.surahEnglish, isDark && styles.darkText]}>{item.name_simple}</Text>
-        <Text style={[styles.surahArabic, { fontSize: arabicNameFontSize }, isDark && styles.darkText]}>{item.name_arabic}</Text>
+        <Text
+          style={[
+            styles.surahArabic,
+            { fontSize: arabicNameFontSize },
+            arabicFontFamily ? { fontFamily: arabicFontFamily } : null,
+            isDark && styles.darkText,
+          ]}
+        >
+          {item.name_arabic}
+        </Text>
       </View>
     </TouchableOpacity>
   );
@@ -461,7 +472,7 @@ const styles = StyleSheet.create({
   selectedSurahItem: { backgroundColor: UI_COLORS.primarySoft, borderColor: '#bde2c8' },
   surahNumber: { fontSize: 20, fontWeight: 'bold', color: UI_COLORS.accent, width: 50, textAlign: 'center' },
   surahEnglish: { fontSize: 18, color: UI_COLORS.text, fontWeight: '600' },
-  surahArabic: { fontFamily: 'AmiriQuran', fontSize: 22, color: UI_COLORS.text, marginTop: 4 },
+  surahArabic: { fontSize: 22, color: UI_COLORS.text, marginTop: 4 },
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'center', alignItems: 'center' },
   modal: { backgroundColor: UI_COLORS.surface, padding: 20, borderRadius: UI_RADII.md, width: '90%', maxHeight: '80%' },
   reciterModal: { backgroundColor: UI_COLORS.surface, padding: 20, borderRadius: UI_RADII.md, width: '90%', maxHeight: '80%' },

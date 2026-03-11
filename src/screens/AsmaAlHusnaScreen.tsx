@@ -9,6 +9,7 @@ import {
   TouchableWithoutFeedback,
 } from 'react-native';
 import { useSettings } from '../context/SettingsContext';
+import { resolveArabicFontFamily } from '../theme/fonts';
 import { UI_COLORS } from '../theme/ui';
 import ScreenIntroTile from '../components/ScreenIntroTile';
 
@@ -28,6 +29,7 @@ export default function AsmaAlHusnaScreen() {
 
   const { settings } = useSettings();
   const isDark = settings.isDarkMode;
+  const arabicFontFamily = resolveArabicFontFamily(settings.arabicFontFamily);
 
   useEffect(() => {
     fetchNames();
@@ -80,7 +82,13 @@ export default function AsmaAlHusnaScreen() {
       </View>
 
       <View style={styles.content}>
-        <Text style={[styles.arabicName, { fontSize: settings.arabicFontSize }]}>
+        <Text
+          style={[
+            styles.arabicName,
+            { fontSize: settings.arabicFontSize },
+            arabicFontFamily ? { fontFamily: arabicFontFamily } : null,
+          ]}
+        >
           {item.name}
         </Text>
         <Text style={[styles.transliteration, isDark && styles.darkText]}>
@@ -238,7 +246,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   arabicName: {
-    fontFamily: 'AmiriQuran',
     fontSize: 28,
     color: '#2c3e50',
     textAlign: 'right',

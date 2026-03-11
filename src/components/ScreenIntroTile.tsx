@@ -7,6 +7,7 @@ type ScreenIntroTileProps = {
   description: string;
   subtitle?: string;
   isDark?: boolean;
+  titleFontFamily?: string;
   style?: StyleProp<ViewStyle>;
 };
 
@@ -15,12 +16,15 @@ export default function ScreenIntroTile({
   description,
   subtitle,
   isDark = false,
+  titleFontFamily,
   style,
 }: ScreenIntroTileProps) {
   return (
     <View style={[styles.tile, isDark && styles.darkTile, style]}>
       <View style={styles.accent} />
-      <Text style={[styles.title, isDark && styles.darkText]}>{title}</Text>
+      <Text style={[styles.title, titleFontFamily ? { fontFamily: titleFontFamily } : null, isDark && styles.darkText]}>
+        {title}
+      </Text>
       {subtitle ? <Text style={[styles.subtitle, isDark && styles.darkMutedText]}>{subtitle}</Text> : null}
       <Text style={[styles.description, isDark && styles.darkText]}>{description}</Text>
     </View>

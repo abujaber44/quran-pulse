@@ -15,6 +15,7 @@ import { getGlobalAyahNumber } from '../utils/quranUtils';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { getBookmarks, addBookmark, removeBookmark, BookmarkTag } from '../services/bookmarkService';
+import { resolveArabicFontFamily } from '../theme/fonts';
 import { UI_COLORS, UI_RADII, UI_SHADOWS } from '../theme/ui';
 import ScreenIntroTile from '../components/ScreenIntroTile';
 import CompactPlayerCard from '../components/CompactPlayerCard';
@@ -38,6 +39,7 @@ type AyahItemProps = {
   ayah: any;
   isDark: boolean;
   arabicFontSize: number;
+  arabicFontFamily?: string;
   isActiveAyah: boolean;
   isAnyAyahPlaying: boolean;
   isBookmarked: boolean;
@@ -55,6 +57,7 @@ const AyahItem = memo(({
   ayah,
   isDark,
   arabicFontSize,
+  arabicFontFamily,
   isActiveAyah,
   isAnyAyahPlaying,
   isBookmarked,
@@ -122,6 +125,7 @@ const AyahItem = memo(({
               fontSize: arabicFontSize,
               lineHeight: Math.max(arabicFontSize + 14, Math.round(arabicFontSize * 1.75)),
             },
+            arabicFontFamily ? { fontFamily: arabicFontFamily } : null,
             isDark && styles.darkText,
           ]}
         >
@@ -601,6 +605,7 @@ export default function SurahScreen({ route }: any) {
 
   const isDark = settings.isDarkMode;
   const ayahArabicFontSize = Math.max(24, settings.arabicFontSize);
+  const arabicFontFamily = resolveArabicFontFamily(settings.arabicFontFamily);
   const currentAyahNumForThisSurah = currentAyah?.surah === surah.id ? currentAyah?.ayah : null;
 
   const listExtraData = useMemo(() => ({
@@ -656,6 +661,7 @@ export default function SurahScreen({ route }: any) {
         ayah={item}
         isDark={isDark}
         arabicFontSize={ayahArabicFontSize}
+        arabicFontFamily={arabicFontFamily}
         isActiveAyah={isActiveAyah}
         isAnyAyahPlaying={isAnyAyahPlaying}
         isBookmarked={isBookmarked}
@@ -713,6 +719,7 @@ export default function SurahScreen({ route }: any) {
             title={surah.name_arabic}
             subtitle={`${surah.name_simple} (${surah.translated_name.name})`}
             description="Memorize mode helps focused repetition using your memorization pause setting, and Repeat lets you loop a single ayah or custom range. For reading, audio starts only when you tap Play on an ayah card."
+            titleFontFamily={arabicFontFamily}
             isDark={isDark}
             style={styles.introTile}
           />
@@ -973,7 +980,6 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   ayahText: {
-    fontFamily: 'AmiriQuran',
     lineHeight: 56,
     textAlign: 'right',
     writingDirection: 'rtl',

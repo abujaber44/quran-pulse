@@ -11,6 +11,7 @@ import {
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useSettings } from '../context/SettingsContext';
+import { resolveArabicFontFamily } from '../theme/fonts';
 import { UI_COLORS, UI_RADII, UI_SHADOWS } from '../theme/ui';
 import { fetchRandomDailyHadith, DailyHadith } from '../services/hadithService';
 import ScreenIntroTile from '../components/ScreenIntroTile';
@@ -187,6 +188,7 @@ export default function CalendarScreen() {
   const isDark = settings.isDarkMode;
   const hadithArabicFontSize = Math.max(18, settings.arabicFontSize - 10);
   const onDateArabicFontSize = Math.max(20, settings.arabicFontSize - 12);
+  const arabicFontFamily = resolveArabicFontFamily(settings.arabicFontFamily);
 
 
   // Automatically set to today's Hijri month on first load
@@ -525,6 +527,7 @@ export default function CalendarScreen() {
                           style={[
                             styles.onDateArabicText,
                             { fontSize: onDateArabicFontSize },
+                            arabicFontFamily ? { fontFamily: arabicFontFamily } : null,
                             isDark && styles.darkText,
                           ]}
                         >
@@ -546,7 +549,14 @@ export default function CalendarScreen() {
               {dailyHadith && (
                 <View style={[styles.hadithContainer, isDark && styles.darkCard]}>
                   <Text style={[styles.hadithTitle, isDark && styles.darkText]}>Hadith of the Day</Text>
-                  <Text style={[styles.hadithArabic, { fontSize: hadithArabicFontSize }, isDark && styles.darkText]}>
+                  <Text
+                    style={[
+                      styles.hadithArabic,
+                      { fontSize: hadithArabicFontSize },
+                      arabicFontFamily ? { fontFamily: arabicFontFamily } : null,
+                      isDark && styles.darkText,
+                    ]}
+                  >
                     {dailyHadith.arabic}
                   </Text>
                   <Text style={[styles.hadithEnglish, isDark && styles.darkMutedText]}>{dailyHadith.english}</Text>
@@ -719,7 +729,6 @@ const styles = StyleSheet.create({
     lineHeight: 36,
     textAlign: 'right',
     writingDirection: 'rtl',
-    fontFamily: 'AmiriQuran',
   },
   onDateSourceText: {
     marginTop: 5,
@@ -740,7 +749,6 @@ const styles = StyleSheet.create({
     color: UI_COLORS.text,
     textAlign: 'right',
     marginBottom: 8,
-    fontFamily: 'AmiriQuran',
   },
   hadithEnglish: {
     fontSize: 14,
