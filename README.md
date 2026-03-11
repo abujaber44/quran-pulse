@@ -20,7 +20,7 @@ Quran Pulse is a peaceful, modern companion app to help you connect deeply with 
 - **Repeat mode** (single ayah or custom range) for memorization
 - **Memorization mode** support
 - **Deep Quran search** in Memorize & Understand — search by surah name or any Arabic/English Quran word across all ayahs, then jump directly to the matching surah/ayah
-- **Athkar Screen** – morning/evening athkar, Tasbeeh 33x, and 99 Names of Allah (Asma Al-Husna)
+- **Athkar Screen** – morning/evening athkar, on-demand Fadl/Hadith details, Tasbeeh 33x, and 99 Names of Allah (Asma Al-Husna)
 - **Prayer Times, Athan & Qibla Compass** – accurate timings, full Athan audio alerts, and live Qibla direction guidance
 - **Quran Miracles** – curated reflection cards across real miracle categories with ayah references and source links
 - **Islamic Calendar** – full Hijri month view with corresponding Gregorian dates
@@ -39,7 +39,8 @@ Quran Pulse is a peaceful, modern companion app to help you connect deeply with 
 
 <div align="center" style="margin-top: 16px;">
   <img src="https://github.com/abujaber44/quran-pulse/blob/main/screenshots/PrayerTimes.png" width="30%" alt="Prayer Times & Athan" />
-  <img src="https://github.com/abujaber44/quran-pulse/blob/main/screenshots/Asma'aAlhusna.png" width="30%" alt="Athkar Screen" style="margin: 0 10px;" />
+  <img src="https://github.com/abujaber44/quran-pulse/blob/main/screenshots/Athkar.png" width="30%" alt="Athkar Screen" style="margin: 0 10px;" />
+  <img src="https://github.com/abujaber44/quran-pulse/blob/main/screenshots/Miracles.png" width="30%" alt="Miracles Screen" style="margin: 0 10px;" />
 </div>
 
 <p align="center">
@@ -115,8 +116,44 @@ Expected CMS JSON shape:
 
 ### 📿 Athkar Screen
 - Morning and evening athkar in one dedicated flow
+- Online athkar content loading via JSON endpoint, with automatic fallback to local content
+- On-demand **Show Fadl** per dhikr card
+- If Fadl is missing, the app shows Hadith text; if both are missing, a smart guidance fallback is shown
 - Tasbeeh 33x tracker with daily local progress persistence
 - Full 99 Beautiful Names of Allah tab with Arabic, transliteration, and English meaning
+
+Set Athkar endpoint in environment variables:
+
+```bash
+EXPO_PUBLIC_ATHKAR_API_URL=https://your-domain.com/athkar.json
+```
+
+Starter dataset (ready to host): [`cms/athkar.json`](cms/athkar.json)
+
+Expected Athkar JSON shape:
+
+```json
+{
+  "morning": [
+    {
+      "title": "Ayat Al-Kursi",
+      "text": "اللَّهُ لَا إِلَٰهَ إِلَّا هُوَ...",
+      "count": 1,
+      "fadl": "Optional fadl text",
+      "hadith_text": "Optional hadith text",
+      "source": "Optional source",
+      "audio": "Optional audio URL"
+    }
+  ],
+  "evening": [
+    {
+      "title": "Ayat Al-Kursi",
+      "text": "اللَّهُ لَا إِلَٰهَ إِلَّا هُوَ...",
+      "count": 1
+    }
+  ]
+}
+```
 
 ### 🎨 Design Philosophy
 - Inspired by tranquility, light, and closeness to Allah

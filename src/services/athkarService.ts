@@ -3,6 +3,9 @@ export type AthkarItem = {
   title: string;
   text: string;
   repetitions: number;
+  fadl?: string;
+  hadithText?: string;
+  source?: string;
 };
 
 export type AthkarContent = {
@@ -53,6 +56,12 @@ const mapList = (items: any[], section: 'morning' | 'evening'): AthkarItem[] => 
         title: titleFromEntry(entry, section === 'morning' ? 'Morning Athkar' : 'Evening Athkar'),
         text,
         repetitions: repetitionsFromEntry(entry),
+        fadl: typeof entry?.fadl === 'string' ? entry.fadl.trim() : undefined,
+        hadithText:
+          typeof (entry?.hadith_text ?? entry?.hadithText) === 'string'
+            ? String(entry?.hadith_text ?? entry?.hadithText).trim()
+            : undefined,
+        source: typeof entry?.source === 'string' ? entry.source.trim() : undefined,
       } as AthkarItem;
     })
     .filter((entry): entry is AthkarItem => !!entry);
