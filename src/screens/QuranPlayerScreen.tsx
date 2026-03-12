@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -65,6 +65,34 @@ export default function QuranPlayerScreen() {
   const isDark = settings.isDarkMode;
   const arabicNameFontSize = Math.max(18, settings.arabicFontSize - 10);
   const arabicFontFamily = resolveArabicFontFamily(settings.arabicFontFamily);
+
+  const applyLockScreenControls = useCallback((surah: Surah | null) => {
+    if (!surah) {
+      try {
+        player.setActiveForLockScreen(false);
+      } catch {
+        // Player may already be disposed during teardown.
+      }
+      return;
+    }
+
+    try {
+      player.setActiveForLockScreen(
+        true,
+        {
+          title: `${surah.id}. ${surah.name_simple}`,
+          artist: selectedReciter.name,
+          albumTitle: 'Quran Pulse',
+        },
+        {
+          showSeekBackward: true,
+          showSeekForward: true,
+        }
+      );
+    } catch (error) {
+      console.warn('Lock screen controls unavailable:', error);
+    }
+  }, [player, selectedReciter.name]);
 
   // Load surahs
   useEffect(() => {
@@ -171,32 +199,8 @@ export default function QuranPlayerScreen() {
 
   // Activate lock-screen controls for current surah
   useEffect(() => {
-    if (!selectedSurah) {
-      try {
-        player.setActiveForLockScreen(false);
-      } catch {
-        // Player may already be disposed during teardown.
-      }
-      return;
-    }
-
-    try {
-      player.setActiveForLockScreen(
-        true,
-        {
-          title: `${selectedSurah.id}. ${selectedSurah.name_simple}`,
-          artist: selectedReciter.name,
-          albumTitle: 'Quran Pulse',
-        },
-        {
-          showSeekBackward: true,
-          showSeekForward: true,
-        }
-      );
-    } catch (error) {
-      console.warn('Lock screen controls unavailable:', error);
-    }
-  }, [player, selectedSurah, selectedReciter]);
+    applyLockScreenControls(selectedSurah);
+  }, [applyLockScreenControls, selectedSurah]);
 
   // Auto-next when playback reaches end
   useEffect(() => {
@@ -214,6 +218,8 @@ export default function QuranPlayerScreen() {
       console.log('🎵 Playing Audio URL:', url);
       player.replace({ uri: url });
       player.play();
+      // Re-apply metadata after replacing track to keep lock screen controls active on auto-next.
+      applyLockScreenControls(selectedSurah);
     } catch (error) {
       console.error('Audio error:', error);
       Alert.alert('Error', 'Failed to load audio');
@@ -267,6 +273,7 @@ export default function QuranPlayerScreen() {
     } catch {
       // Ignore stale player state.
     }
+    applyLockScreenControls(null);
     setSelectedSurah(null);
   };
 

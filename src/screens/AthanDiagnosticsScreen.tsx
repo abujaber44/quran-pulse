@@ -54,26 +54,72 @@ const parsePrayerTime = (raw: string): { hour: number; minute: number } | null =
   return { hour, minute };
 };
 
+const parseDateLike = (value: unknown): Date | null => {
+  if (value instanceof Date) {
+    return Number.isNaN(value.getTime()) ? null : value;
+  }
+
+  if (typeof value === 'number') {
+    if (!Number.isFinite(value)) return null;
+    // Some runtimes return epoch seconds, others milliseconds.
+    const millis = value < 1_000_000_000_000 ? value * 1000 : value;
+    const parsed = new Date(millis);
+    return Number.isNaN(parsed.getTime()) ? null : parsed;
+  }
+
+  if (typeof value === 'string') {
+    const trimmed = value.trim();
+    if (!trimmed) return null;
+    const numericValue = Number(trimmed);
+    if (Number.isFinite(numericValue)) {
+      return parseDateLike(numericValue);
+    }
+    const parsed = new Date(trimmed);
+    return Number.isNaN(parsed.getTime()) ? null : parsed;
+  }
+
+  return null;
+};
+
 const extractTriggerDate = (trigger: Notifications.NotificationTrigger | null): Date | null => {
   if (!trigger || typeof trigger !== 'object') {
     return null;
   }
 
-  const rawDate = (trigger as { date?: unknown }).date;
-  if (rawDate instanceof Date) {
-    return Number.isNaN(rawDate.getTime()) ? null : rawDate;
+  const candidateFields: Array<unknown> = [
+    (trigger as { date?: unknown }).date,
+    (trigger as { value?: unknown }).value,
+    (trigger as { timestamp?: unknown }).timestamp,
+    (trigger as { triggerDate?: unknown }).triggerDate,
+    (trigger as { nextTriggerDate?: unknown }).nextTriggerDate,
+  ];
+
+  for (const candidate of candidateFields) {
+    const parsed = parseDateLike(candidate);
+    if (parsed) {
+      return parsed;
+    }
   }
-  if (typeof rawDate === 'number' || typeof rawDate === 'string') {
-    const parsedDate = new Date(rawDate);
-    return Number.isNaN(parsedDate.getTime()) ? null : parsedDate;
-  }
+
   return null;
 };
 
 const extractTriggerType = (trigger: Notifications.NotificationTrigger | null): string => {
   if (!trigger || typeof trigger !== 'object') return 'unknown';
   const rawType = (trigger as { type?: unknown }).type;
-  return typeof rawType === 'string' ? rawType : 'unknown';
+  if (typeof rawType === 'string') return rawType;
+  if (typeof rawType === 'number') {
+    if (rawType === 0) return 'date';
+    if (rawType === 1) return 'date';
+    if (rawType === 2) return 'timeInterval';
+    if (rawType === 3) return 'calendar';
+  }
+  if ('seconds' in (trigger as object)) return 'timeInterval';
+  if ('dateComponents' in (trigger as object)) return 'calendar';
+  if ('date' in (trigger as object) || 'timestamp' in (trigger as object) || 'value' in (trigger as object)) {
+    return 'date';
+  }
+  return 'unknown';
 };
 
 const extractTriggerChannelId = (trigger: Notifications.NotificationTrigger | null): string | null => {
@@ -93,11 +139,15 @@ const buildSchedulableTriggerInput = (
   const triggerType = extractTriggerType(trigger);
 
   if (triggerType === 'date') {
-    const rawDate = (trigger as { date?: unknown }).date;
-    if (rawDate instanceof Date || typeof rawDate === 'number') {
+    const rawDate =
+      (trigger as { date?: unknown }).date ??
+      (trigger as { timestamp?: unknown }).timestamp ??
+      (trigger as { value?: unknown }).value;
+    const parsedDate = parseDateLike(rawDate);
+    if (parsedDate) {
       return {
         type: Notifications.SchedulableTriggerInputTypes.DATE,
-        date: rawDate,
+        date: parsedDate,
       };
     }
     return null;
@@ -180,7 +230,7 @@ const resolveScheduledAtFromTrigger = async (
     }
     return {
       scheduledAt: null,
-      triggerNote: 'No next trigger date was returned by runtime.',
+      triggerNote: `No next trigger date was returned by runtime (trigger type: ${triggerType}).`,
       triggerType,
     };
   } catch {
