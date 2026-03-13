@@ -5,7 +5,6 @@ import {
   FlatList,
   StyleSheet,
   TouchableOpacity,
-  Alert,
   ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -14,6 +13,7 @@ import { getBookmarks, removeBookmark, Bookmark, BookmarkTag } from '../services
 import { useNavigation } from '@react-navigation/native';
 import type { StackNavigationProp } from '@react-navigation/stack';
 import { useSettings } from '../context/SettingsContext';
+import { useThemedAlert } from '../context/ThemedAlertContext';
 import { resolveArabicFontFamily } from '../theme/fonts';
 import { UI_COLORS, UI_RADII, UI_SHADOWS } from '../theme/ui';
 import ScreenIntroTile from '../components/ScreenIntroTile';
@@ -35,6 +35,7 @@ export default function BookmarksScreen() {
   const [selectedTag, setSelectedTag] = useState<'all' | BookmarkTag>('all');
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
   const { settings } = useSettings();
+  const { showAlert } = useThemedAlert();
   const isDark = settings.isDarkMode;
   const ayahFontSize = Math.max(24, settings.arabicFontSize - 6);
   const arabicFontFamily = resolveArabicFontFamily(settings.arabicFontFamily);
@@ -62,7 +63,11 @@ export default function BookmarksScreen() {
       setSurahs(surahData);
     } catch (error) {
       console.error('Failed to load bookmarks or surahs', error);
-      Alert.alert('Error', 'Could not load bookmarks');
+      showAlert({
+        title: 'Error',
+        message: 'Could not load bookmarks',
+        variant: 'danger',
+      });
     } finally {
       setLoading(false);
     }
@@ -71,13 +76,21 @@ export default function BookmarksScreen() {
   const handleRemove = async (surahId: number, ayahNum: number) => {
     await removeBookmark(surahId, ayahNum);
     loadData(); // Refresh list
-    Alert.alert('Removed', 'Ayah removed from bookmarks');
+    showAlert({
+      title: 'Removed',
+      message: 'Ayah removed from bookmarks',
+      variant: 'info',
+    });
   };
 
   const handlePress = (item: Bookmark) => {
     const fullSurah = surahs.find(s => s.id === item.surahId);
     if (!fullSurah) {
-      Alert.alert('Error', 'Could not find surah data');
+      showAlert({
+        title: 'Error',
+        message: 'Could not find surah data',
+        variant: 'danger',
+      });
       return;
     }
 

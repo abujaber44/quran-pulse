@@ -6,11 +6,11 @@ import {
   StyleSheet,
   Modal,
   FlatList,
-  Alert,
 } from 'react-native';
 import { fetchAyahs, fetchTranslations, fetchTafseer } from '../services/quranApi';
 import { useAudio, useAudioProgress } from '../context/AudioContext';
 import { useSettings } from '../context/SettingsContext';
+import { useThemedAlert } from '../context/ThemedAlertContext';
 import { getGlobalAyahNumber } from '../utils/quranUtils';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
@@ -333,6 +333,7 @@ export default function SurahScreen({ route }: any) {
   } = useAudio();
 
   const { settings } = useSettings();
+  const { showAlert } = useThemedAlert();
 
   useEffect(() => {
     return () => {
@@ -564,8 +565,12 @@ export default function SurahScreen({ route }: any) {
       tag,
     });
     setBookmarkedAyahs(prev => new Set(prev).add(key));
-    Alert.alert('Saved', `Ayah added to bookmarks (${tag === 'memorize' ? 'Memorize' : 'Read/Recite'})`);
-  }, [ayahs, surah.id, surah.name_simple]);
+    showAlert({
+      title: 'Saved',
+      message: `Ayah added to bookmarks (${tag === 'memorize' ? 'Memorize' : 'Read/Recite'})`,
+      variant: 'success',
+    });
+  }, [ayahs, showAlert, surah.id, surah.name_simple]);
 
   // Toggle bookmark
   const toggleBookmark = useCallback(async (ayahNum: number) => {
@@ -579,13 +584,18 @@ export default function SurahScreen({ route }: any) {
         newSet.delete(key);
         return newSet;
       });
-      Alert.alert('Removed', 'Ayah removed from bookmarks');
+      showAlert({
+        title: 'Removed',
+        message: 'Ayah removed from bookmarks',
+        variant: 'info',
+      });
     } else {
-      Alert.alert(
-        'Save Bookmark',
-        'Choose a bookmark folder tag:',
-        [
-          { text: 'Cancel', style: 'cancel' },
+      showAlert({
+        title: 'Save Bookmark',
+        message: 'Choose a bookmark folder tag:',
+        variant: 'info',
+        buttons: [
+          { text: 'Cancel', role: 'cancel' },
           {
             text: 'Memorize',
             onPress: () => {
@@ -598,10 +608,10 @@ export default function SurahScreen({ route }: any) {
               void saveBookmarkWithTag(ayahNum, 'read_recite');
             },
           },
-        ]
-      );
+        ],
+      });
     }
-  }, [bookmarkedAyahs, saveBookmarkWithTag, surah.id]);
+  }, [bookmarkedAyahs, saveBookmarkWithTag, showAlert, surah.id]);
 
   const isDark = settings.isDarkMode;
   const ayahArabicFontSize = Math.max(24, settings.arabicFontSize);
@@ -1007,7 +1017,7 @@ const styles = StyleSheet.create({
   modal: { backgroundColor: UI_COLORS.surface, padding: 20, borderRadius: UI_RADII.md, width: '90%', maxHeight: '80%' },
   modalTitle: { fontSize: 20, fontWeight: 'bold', textAlign: 'center', marginBottom: 16, color: UI_COLORS.text },
   modalItem: { padding: 14, borderBottomWidth: 1, borderColor: UI_COLORS.border },
-  modalItemText: { fontSize: 16 },
+  modalItemText: { fontSize: 16, color: UI_COLORS.text },
   modalClose: { textAlign: 'center', padding: 14, color: UI_COLORS.danger, fontWeight: 'bold' },
   rangePicker: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginVertical: 12 },
   rangeBtn: { fontSize: 28, paddingHorizontal: 20 },

@@ -5,12 +5,12 @@ import {
   StyleSheet,
   TouchableOpacity,
   ActivityIndicator,
-  Alert,
   ScrollView,
 } from 'react-native';
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useSettings } from '../context/SettingsContext';
+import { useThemedAlert } from '../context/ThemedAlertContext';
 import { resolveArabicFontFamily } from '../theme/fonts';
 import { UI_COLORS, UI_RADII, UI_SHADOWS } from '../theme/ui';
 import { fetchRandomDailyHadith, DailyHadith } from '../services/hadithService';
@@ -185,6 +185,7 @@ export default function CalendarScreen() {
   const [selectedDay, setSelectedDay] = useState<CalendarDay | null>(null);
   const [selectedDayApiInsight, setSelectedDayApiInsight] = useState<OnThisDateReflection | null>(null);
   const { settings } = useSettings();
+  const { showAlert } = useThemedAlert();
   const isDark = settings.isDarkMode;
   const hadithArabicFontSize = Math.max(18, settings.arabicFontSize - 10);
   const onDateArabicFontSize = Math.max(20, settings.arabicFontSize - 12);
@@ -330,11 +331,19 @@ export default function CalendarScreen() {
       if (response.data.code === 200) {
         setMonthData(response.data.data);
       } else {
-        Alert.alert('Error', 'Failed to load Islamic calendar');
+        showAlert({
+          title: 'Error',
+          message: 'Failed to load Islamic calendar',
+          variant: 'danger',
+        });
       }
     } catch (error) {
       console.error('API error:', error);
-      Alert.alert('Network Error', 'Please check your connection');
+      showAlert({
+        title: 'Network Error',
+        message: 'Please check your connection',
+        variant: 'danger',
+      });
     } finally {
       setLoading(false);
     }

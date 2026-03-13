@@ -11,7 +11,10 @@ import {
 import * as Notifications from 'expo-notifications';
 import { UI_COLORS, UI_RADII, UI_SHADOWS } from '../theme/ui';
 import ScreenIntroTile from '../components/ScreenIntroTile';
-import { canScheduleExactAlarms } from '../services/exactAlarmService';
+import {
+  canScheduleExactAlarms,
+  isIgnoringBatteryOptimizations,
+} from '../services/exactAlarmService';
 import {
   ATHAN_CHANNEL_ID,
   ATHAN_NOTIFICATION_ID_PREFIX,
@@ -256,6 +259,8 @@ export default function AthanDiagnosticsScreen({ route }: any) {
   const [scheduledAthans, setScheduledAthans] = useState<ScheduledAthan[]>([]);
   const [channelInfo, setChannelInfo] = useState<Notifications.NotificationChannel | null>(null);
   const [exactAlarmEnabled, setExactAlarmEnabled] = useState<boolean | null>(null);
+  const [notificationsEnabled, setNotificationsEnabled] = useState<boolean | null>(null);
+  const [batteryOptimizationIgnored, setBatteryOptimizationIgnored] = useState<boolean | null>(null);
   const [lastRefreshAt, setLastRefreshAt] = useState<Date | null>(null);
 
   const expectedUpcoming = useMemo<UpcomingPrayer[]>(() => {
@@ -346,13 +351,18 @@ export default function AthanDiagnosticsScreen({ route }: any) {
 
       setScheduledAthans(sortedAthans);
 
+      const permissions = await Notifications.getPermissionsAsync();
+      setNotificationsEnabled(permissions.status === 'granted');
+
       if (Platform.OS === 'android') {
         const channel = await Notifications.getNotificationChannelAsync(ATHAN_CHANNEL_ID);
         setChannelInfo(channel);
         setExactAlarmEnabled(await canScheduleExactAlarms());
+        setBatteryOptimizationIgnored(await isIgnoringBatteryOptimizations());
       } else {
         setChannelInfo(null);
         setExactAlarmEnabled(null);
+        setBatteryOptimizationIgnored(null);
       }
 
       setLastRefreshAt(new Date());
@@ -381,6 +391,21 @@ export default function AthanDiagnosticsScreen({ route }: any) {
           <Text style={styles.statusTitle}>Current Context</Text>
           <Text style={styles.statusText}>City: {city}</Text>
           <Text style={styles.statusText}>Athan schedules found: {scheduledAthans.length}</Text>
+          <Text style={styles.statusText}>
+            Exact alarm: {exactAlarmEnabled === null ? 'Unknown' : exactAlarmEnabled ? 'Granted' : 'Denied'}
+          </Text>
+          <Text style={styles.statusText}>
+            Notification permission:{' '}
+            {notificationsEnabled === null ? 'Unknown' : notificationsEnabled ? 'Granted' : 'Denied'}
+          </Text>
+          <Text style={styles.statusText}>
+            Battery optimization:{' '}
+            {batteryOptimizationIgnored === null
+              ? 'Unknown'
+              : batteryOptimizationIgnored
+                ? 'Ignored (Unrestricted)'
+                : 'Active (Optimized)'}
+          </Text>
           <Text style={styles.statusText}>
             Last refresh: {lastRefreshAt ? lastRefreshAt.toLocaleTimeString() : 'Not yet'}
           </Text>

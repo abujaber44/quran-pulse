@@ -25,7 +25,8 @@
           "audio",
           "fetch"
         ],
-        "NSLocationWhenInUseUsageDescription": "Allow location access to show Qibla direction and prayer times."
+        "NSLocationWhenInUseUsageDescription": "Allow location access to show Qibla direction and prayer times.",
+        "UIViewControllerBasedStatusBarAppearance": true
       }
     },
     "android": {

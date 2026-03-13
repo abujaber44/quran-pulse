@@ -1,7 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
-  Alert,
   FlatList,
   Keyboard,
   StyleSheet,
@@ -15,6 +14,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { fetchSurahs } from '../services/quranApi';
 import { Surah } from '../types';
 import { useSettings } from '../context/SettingsContext';
+import { useThemedAlert } from '../context/ThemedAlertContext';
 import { resolveArabicFontFamily } from '../theme/fonts';
 import { UI_COLORS, UI_RADII, UI_SHADOWS } from '../theme/ui';
 import ScreenIntroTile from '../components/ScreenIntroTile';
@@ -82,6 +82,7 @@ export default function MemorizeUnderstandScreen({ navigation }: any) {
   const isIndexRequestInFlightRef = useRef(false);
 
   const { settings } = useSettings();
+  const { showAlert } = useThemedAlert();
   const isDark = settings.isDarkMode;
   const arabicNameFontSize = Math.max(20, settings.arabicFontSize - 10);
   const arabicFontFamily = resolveArabicFontFamily(settings.arabicFontFamily);
@@ -284,7 +285,11 @@ export default function MemorizeUnderstandScreen({ navigation }: any) {
     const targetSurah = surahLookupById.get(item.surahId);
     const handlePress = () => {
       if (!targetSurah) {
-        Alert.alert('Error', 'Could not load the selected surah.');
+        showAlert({
+          title: 'Error',
+          message: 'Could not load the selected surah.',
+          variant: 'danger',
+        });
         return;
       }
       navigateToSurah(targetSurah, item.ayahNumber);

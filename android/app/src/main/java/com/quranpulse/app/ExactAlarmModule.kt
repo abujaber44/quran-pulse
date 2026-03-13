@@ -6,6 +6,7 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.os.Build
+import android.os.PowerManager
 import android.provider.Settings
 import com.facebook.react.bridge.Promise
 import com.facebook.react.bridge.ReactApplicationContext
@@ -58,5 +59,17 @@ class ExactAlarmModule(private val reactContext: ReactApplicationContext) :
     } catch (_: Exception) {
       promise.resolve(false)
     }
+  }
+
+  @ReactMethod
+  fun isIgnoringBatteryOptimizations(promise: Promise) {
+    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) {
+      promise.resolve(true)
+      return
+    }
+
+    val powerManager = reactContext.getSystemService(Context.POWER_SERVICE) as? PowerManager
+    val isIgnoring = powerManager?.isIgnoringBatteryOptimizations(reactContext.packageName) == true
+    promise.resolve(isIgnoring)
   }
 }

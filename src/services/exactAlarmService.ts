@@ -3,6 +3,7 @@ import { NativeModules, Platform } from 'react-native';
 type ExactAlarmNativeModule = {
   canScheduleExactAlarms?: () => Promise<boolean> | boolean;
   openExactAlarmSettings?: () => Promise<boolean> | boolean;
+  isIgnoringBatteryOptimizations?: () => Promise<boolean> | boolean;
 };
 
 const nativeModule = NativeModules.ExactAlarmModule as ExactAlarmNativeModule | undefined;
@@ -26,6 +27,17 @@ export const openExactAlarmSettings = async (): Promise<boolean> => {
 
   try {
     return toBoolean(await nativeModule.openExactAlarmSettings());
+  } catch {
+    return false;
+  }
+};
+
+export const isIgnoringBatteryOptimizations = async (): Promise<boolean> => {
+  if (Platform.OS !== 'android') return true;
+  if (!nativeModule?.isIgnoringBatteryOptimizations) return false;
+
+  try {
+    return toBoolean(await nativeModule.isIgnoringBatteryOptimizations());
   } catch {
     return false;
   }

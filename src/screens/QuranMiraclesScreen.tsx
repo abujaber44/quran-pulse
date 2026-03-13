@@ -1,7 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
-  Alert,
   FlatList,
   Linking,
   RefreshControl,
@@ -14,6 +13,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import ScreenIntroTile from '../components/ScreenIntroTile';
 import { useSettings } from '../context/SettingsContext';
+import { useThemedAlert } from '../context/ThemedAlertContext';
 import { fetchSurahs } from '../services/quranApi';
 import { fetchQuranMiraclesContent, MiraclesContentResult } from '../services/miraclesService';
 import { UI_COLORS, UI_RADII, UI_SHADOWS } from '../theme/ui';
@@ -82,6 +82,7 @@ const parseAyahRef = (ref: string): { surahId: number; ayahNum: number } | null 
 
 export default function QuranMiraclesScreen() {
   const { settings } = useSettings();
+  const { showAlert } = useThemedAlert();
   const isDark = settings.isDarkMode;
   const navigation = useNavigation<any>();
 
@@ -174,26 +175,42 @@ export default function QuranMiraclesScreen() {
     try {
       const supported = await Linking.canOpenURL(url);
       if (!supported) {
-        Alert.alert('Invalid Link', 'Unable to open this source URL on your device.');
+        showAlert({
+          title: 'Invalid Link',
+          message: 'Unable to open this source URL on your device.',
+          variant: 'danger',
+        });
         return;
       }
       await Linking.openURL(url);
     } catch {
-      Alert.alert('Error', 'Could not open source link. Please try again.');
+      showAlert({
+        title: 'Error',
+        message: 'Could not open source link. Please try again.',
+        variant: 'danger',
+      });
     }
-  }, []);
+  }, [showAlert]);
 
   const navigateToAyahRef = useCallback(
     (ref: string) => {
       const parsed = parseAyahRef(ref);
       if (!parsed) {
-        Alert.alert('Unsupported Reference', `Could not parse ayah reference: ${ref}`);
+        showAlert({
+          title: 'Unsupported Reference',
+          message: `Could not parse ayah reference: ${ref}`,
+          variant: 'danger',
+        });
         return;
       }
 
       const targetSurah = surahs.find((surah) => Number(surah.id) === parsed.surahId);
       if (!targetSurah) {
-        Alert.alert('Surah Not Ready', 'Surah metadata is still loading. Please try again in a moment.');
+        showAlert({
+          title: 'Surah Not Ready',
+          message: 'Surah metadata is still loading. Please try again in a moment.',
+          variant: 'info',
+        });
         return;
       }
 
@@ -204,7 +221,7 @@ export default function QuranMiraclesScreen() {
         scrollNonce: Date.now(),
       });
     },
-    [navigation, surahs]
+    [navigation, showAlert, surahs]
   );
 
   const renderMiracleCard = ({ item }: { item: MiracleItem }) => {

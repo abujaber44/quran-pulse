@@ -1,12 +1,19 @@
 import React, { useEffect, useState } from 'react';
-import { NavigationContainer, CommonActions, NavigationProp, ParamListBase } from '@react-navigation/native';
+import {
+  NavigationContainer,
+  CommonActions,
+  NavigationProp,
+  ParamListBase,
+} from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { TouchableOpacity, Text, View } from 'react-native';
 import * as Font from 'expo-font';
 import * as Notifications from 'expo-notifications';
+import Constants from 'expo-constants';
 
 import { AudioProvider } from './src/context/AudioContext';
 import { SettingsProvider } from './src/context/SettingsContext';
+import { ThemedAlertProvider } from './src/context/ThemedAlertContext';
 import { CUSTOM_FONT_ASSETS } from './src/theme/fonts';
 import { UI_COLORS, UI_RADII } from './src/theme/ui';
 
@@ -24,6 +31,7 @@ import QiblaCompassScreen from './src/screens/QiblaCompassScreen';
 import QuranMiraclesScreen from './src/screens/QuranMiraclesScreen';
 
 const Stack = createNativeStackNavigator();
+const isExpoGo = Constants.appOwnership === 'expo';
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -83,6 +91,7 @@ const getSharedHeaderOptions = (navigation: NavigationProp<ParamListBase>) => ({
   headerShadowVisible: false,
   headerStyle: { backgroundColor: UI_COLORS.surface },
   headerTitleStyle: { color: UI_COLORS.text, fontWeight: '700' as const },
+  ...(isExpoGo ? {} : { statusBarStyle: 'dark' as const }),
   headerBackVisible: false,
   headerTintColor: UI_COLORS.accent,
   headerLeftContainerStyle: { paddingLeft: 8 },
@@ -107,13 +116,20 @@ export default function App() {
 
   return (
     <SettingsProvider>
-      <AudioProvider>
-        <NavigationContainer>
-          <Stack.Navigator initialRouteName="Landing">
+      <ThemedAlertProvider>
+        <AudioProvider>
+          <NavigationContainer>
+            <Stack.Navigator
+              initialRouteName="Landing"
+              screenOptions={isExpoGo ? undefined : { statusBarStyle: 'dark' as const }}
+            >
             <Stack.Screen
               name="Landing"
               component={LandingScreen}
-              options={{ headerShown: false } as any}
+              options={{
+                headerShown: false,
+                ...(isExpoGo ? {} : { statusBarStyle: 'light' as const }),
+              } as any}
             />
             <Stack.Screen
               name="MemorizeUnderstand"
@@ -149,6 +165,7 @@ export default function App() {
                 headerShadowVisible: false,
                 headerStyle: { backgroundColor: UI_COLORS.surface },
                 headerTitleStyle: { color: UI_COLORS.text, fontWeight: '700' as const },
+                ...(isExpoGo ? {} : { statusBarStyle: 'dark' as const }),
                 headerBackVisible: true,
                 headerBackTitle: 'Prayer Times',
                 headerTintColor: UI_COLORS.accent,
@@ -163,6 +180,7 @@ export default function App() {
                 headerShadowVisible: false,
                 headerStyle: { backgroundColor: UI_COLORS.surface },
                 headerTitleStyle: { color: UI_COLORS.text, fontWeight: '700' as const },
+                ...(isExpoGo ? {} : { statusBarStyle: 'dark' as const }),
                 headerBackVisible: true,
                 headerBackTitle: 'Prayer Times',
                 headerTintColor: UI_COLORS.accent,
@@ -188,9 +206,10 @@ export default function App() {
               component={QuranMiraclesScreen}
               options={({ navigation }) => getSharedHeaderOptions(navigation)}
             />
-          </Stack.Navigator>
-        </NavigationContainer>
-      </AudioProvider>
+            </Stack.Navigator>
+          </NavigationContainer>
+        </AudioProvider>
+      </ThemedAlertProvider>
     </SettingsProvider>
   );
 }

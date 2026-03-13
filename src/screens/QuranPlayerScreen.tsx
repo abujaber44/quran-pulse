@@ -5,7 +5,6 @@ import {
   StyleSheet,
   TouchableOpacity,
   FlatList,
-  Alert,
   Modal,
   TextInput,
   TouchableWithoutFeedback,
@@ -13,6 +12,7 @@ import {
 import { useAudioPlayer, useAudioPlayerStatus, setAudioModeAsync } from 'expo-audio';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useSettings } from '../context/SettingsContext';
+import { useThemedAlert } from '../context/ThemedAlertContext';
 import { resolveArabicFontFamily } from '../theme/fonts';
 import { fetchSurahs } from '../services/quranApi';
 import { getSurahAudioUrl } from '../services/quranApi';
@@ -62,6 +62,7 @@ export default function QuranPlayerScreen() {
   const playerStatus = useAudioPlayerStatus(player);
 
   const { settings } = useSettings();
+  const { showAlert } = useThemedAlert();
   const isDark = settings.isDarkMode;
   const arabicNameFontSize = Math.max(18, settings.arabicFontSize - 10);
   const arabicFontFamily = resolveArabicFontFamily(settings.arabicFontFamily);
@@ -222,7 +223,11 @@ export default function QuranPlayerScreen() {
       applyLockScreenControls(selectedSurah);
     } catch (error) {
       console.error('Audio error:', error);
-      Alert.alert('Error', 'Failed to load audio');
+      showAlert({
+        title: 'Error',
+        message: 'Failed to load audio',
+        variant: 'danger',
+      });
     } finally {
       setIsLoading(false);
     }
@@ -485,7 +490,7 @@ const styles = StyleSheet.create({
   reciterModal: { backgroundColor: UI_COLORS.surface, padding: 20, borderRadius: UI_RADII.md, width: '90%', maxHeight: '80%' },
   modalTitle: { fontSize: 20, fontWeight: 'bold', textAlign: 'center', marginBottom: 16, color: UI_COLORS.text },
   reciterModalItem: { padding: 14, borderBottomWidth: 1, borderColor: UI_COLORS.border },
-  reciterModalText: { fontSize: 16 },
+  reciterModalText: { fontSize: 16, color: UI_COLORS.text },
   modalClose: { textAlign: 'center', padding: 14, color: UI_COLORS.danger, fontWeight: 'bold' },
   darkText: { color: UI_COLORS.white },
   introTile: { marginBottom: 12 },
