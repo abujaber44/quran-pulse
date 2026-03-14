@@ -353,7 +353,7 @@ export default function PrayerTimesScreen({ navigation }: any) {
       enableLights: true,
       enableVibrate: true,
       lockscreenVisibility: Notifications.AndroidNotificationVisibility.PUBLIC,
-      sound: 'athan.mp3',
+      sound: 'athan_v2.mp3',
     });
 
     await Notifications.setNotificationChannelAsync(ATHAN_REMINDER_CHANNEL_ID, {
@@ -648,7 +648,7 @@ export default function PrayerTimesScreen({ navigation }: any) {
             const content: Notifications.NotificationContentInput = {
               title: `${ATHAN_NOTIFICATION_TITLE_PREFIX} ${prayer.name}`,
               body: '🕌 اللَّهُمَّ رَبَّ هَذِهِ الدَّعْوَةِ التَّامَّةِ، وَالصَّلَاةِ الْقَائِمَةِ، آتِ مُحَمَّداً الْوَسِيلَةَ وَالْفَضِيلَةَ، وَابْعَثْهُ مَقَاماً مَحْمُوداً الَّذِي وَعَدْتَهُ، إَنَّكَ لَا تُخْلِفُ الْمِيعَادَ',
-              sound: 'athan.mp3',
+              sound: 'athan_v2.mp3',
               priority: Notifications.AndroidNotificationPriority.HIGH,
               vibrate: [0, 250, 250, 250],
               data: { source: 'athan', prayerName: prayer.name },

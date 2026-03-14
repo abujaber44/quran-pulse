@@ -56,7 +56,7 @@
           "icon": "./assets/notification-icon.png",
           "color": "#27ae60",
           "sounds": [
-            "./assets/sounds/athan.mp3"
+            "./assets/sounds/athan_v2.mp3"
           ]
         }
       ],
