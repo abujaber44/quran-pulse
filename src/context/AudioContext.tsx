@@ -1,9 +1,9 @@
 import React, { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react';
-import { Alert } from 'react-native';
 import { Audio } from 'expo-av';
 import { getReciter, saveReciter } from '../services/storage';
 import { getGlobalAyahNumber } from '../utils/quranUtils';
 import { useSettings } from './SettingsContext';
+import { useThemedAlert } from './ThemedAlertContext';
 
 interface Reciter {
   id: string;
@@ -62,6 +62,7 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
   const [memorizationMode, setMemorizationMode] = useState(false);
 
   const { settings } = useSettings();
+  const { showAlert } = useThemedAlert();
 
   const toggleMemorizationMode = useCallback(() => setMemorizationMode(prev => !prev), []);
 
@@ -91,15 +92,12 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const playAyah = useCallback(async (surah: number, ayah: number, global: number) => {
-    console.log('playAyah called for:', { surah, ayah, global });
-
     if (sound) {
       await sound.unloadAsync();
     }
 
     try {
       const uri = `${BASE_URL}/${selectedReciter.id}/${global}.mp3`;
-      console.log('Loading audio from:', uri);
 
       const { sound: newSound } = await Audio.Sound.createAsync(
         { uri },
@@ -113,7 +111,6 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
           setIsPlaying(status.isPlaying);
 
           if (status.didJustFinish) {
-            console.log('Ayah finished');
             if (repeatMode === 'single') {
               newSound.replayAsync();
             } else if (memorizationMode) {
@@ -130,9 +127,13 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
       setCurrentAyah({ surah, ayah, global });
     } catch (error) {
       console.error('Failed to play ayah:', error);
-      Alert.alert('Audio Error', 'Could not play the recitation. Please check your internet connection.');
+      showAlert({
+        title: 'Audio Error',
+        message: 'Could not play the recitation. Please check your internet connection.',
+        variant: 'danger',
+      });
     }
-  }, [memorizationMode, repeatMode, selectedReciter.id, settings.memorizationPause, sound]);
+  }, [memorizationMode, repeatMode, selectedReciter.id, settings.memorizationPause, showAlert, sound]);
 
   const togglePlayPause = useCallback(async () => {
     if (sound) {
@@ -160,8 +161,12 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
   }, [currentAyah, playAyah]);
 
   const downloadSurah = useCallback(async (surahId: number, totalVerses: number, surahs: any[]) => {
-    Alert.alert('Coming Soon', 'Offline download feature will be added in the next update.');
-  }, []);
+    showAlert({
+      title: 'Coming Soon',
+      message: 'Offline download feature will be added in the next update.',
+      variant: 'info',
+    });
+  }, [showAlert]);
 
   // New: Stop listening and clear state
   const stopListening = useCallback(async () => {

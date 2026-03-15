@@ -5,10 +5,10 @@ import {
   TouchableOpacity,
   StyleSheet,
   ScrollView,
-  Alert,
   Linking,
 } from 'react-native';
 import { useSettings } from '../context/SettingsContext';
+import { useThemedAlert } from '../context/ThemedAlertContext';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ARABIC_FONT_OPTIONS, resolveArabicFontFamily } from '../theme/fonts';
 import { UI_COLORS, UI_RADII, UI_SHADOWS } from '../theme/ui';
@@ -24,6 +24,7 @@ const PAUSE_STEP = 1;
 
 export default function SettingsScreen() {
   const { settings, updateSetting } = useSettings();
+  const { showAlert } = useThemedAlert();
   const { arabicFontSize, memorizationPause, arabicFontFamily } = settings;
   const resolvedArabicFontFamily = resolveArabicFontFamily(arabicFontFamily);
 
@@ -37,7 +38,11 @@ export default function SettingsScreen() {
 
   const openAppSettings = () => {
     Linking.openSettings().catch(() => {
-      Alert.alert('Unavailable', 'Could not open app settings on this device.');
+      showAlert({
+        title: 'Unavailable',
+        message: 'Could not open app settings on this device.',
+        variant: 'info',
+      });
     });
   };
 

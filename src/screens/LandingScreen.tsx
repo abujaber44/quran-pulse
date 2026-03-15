@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Animated, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Animated, ScrollView, Platform } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import type { StackNavigationProp } from '@react-navigation/stack';
 import { UI_COLORS, UI_RADII, UI_SHADOWS } from '../theme/ui';
@@ -208,7 +208,9 @@ const styles = StyleSheet.create({
     borderRadius: UI_RADII.lg,
     marginBottom: 12,
     overflow: 'hidden',
-    ...UI_SHADOWS.card,
+    ...(Platform.OS === 'android'
+      ? { elevation: 0, shadowOpacity: 0, shadowRadius: 0, shadowColor: 'transparent' }
+      : UI_SHADOWS.card),
   },
   cardAccent: {
     width: 8,
@@ -243,7 +245,9 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     paddingHorizontal: 12,
     marginBottom: 10,
-    ...UI_SHADOWS.input,
+    ...(Platform.OS === 'android'
+      ? { elevation: 0, shadowOpacity: 0, shadowRadius: 0, shadowColor: 'transparent' }
+      : UI_SHADOWS.input),
   },
   secondaryCardTitle: {
     fontSize: 15,
@@ -261,7 +265,9 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(215,239,225,0.35)',
     padding: 14,
-    ...UI_SHADOWS.card,
+    ...(Platform.OS === 'android'
+      ? { elevation: 0, shadowOpacity: 0, shadowRadius: 0, shadowColor: 'transparent' }
+      : UI_SHADOWS.card),
   },
   utilityTitle: {
     fontSize: 16,

@@ -4,7 +4,6 @@ import {
   Text,
   StyleSheet,
   ActivityIndicator,
-  Alert,
   TouchableOpacity,
   Switch,
   TextInput,
@@ -17,6 +16,7 @@ import * as Location from 'expo-location';
 import * as Notifications from 'expo-notifications';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useSettings } from '../context/SettingsContext';
+import { useThemedAlert } from '../context/ThemedAlertContext';
 import debounce from 'lodash.debounce';
 import { UI_COLORS, UI_RADII, UI_SHADOWS } from '../theme/ui';
 import ScreenIntroTile from '../components/ScreenIntroTile';
@@ -272,6 +272,7 @@ export default function PrayerTimesScreen({ navigation }: any) {
   const exactAlarmPromptShownRef = useRef(false);
 
   const { settings } = useSettings();
+  const { showAlert } = useThemedAlert();
   const isDark = settings.isDarkMode;
 
   // Debounced city search for autocomplete using Nominatim
@@ -352,7 +353,7 @@ export default function PrayerTimesScreen({ navigation }: any) {
       enableLights: true,
       enableVibrate: true,
       lockscreenVisibility: Notifications.AndroidNotificationVisibility.PUBLIC,
-      sound: 'athan.mp3',
+      sound: 'athan_v2.mp3',
     });
 
     await Notifications.setNotificationChannelAsync(ATHAN_REMINDER_CHANNEL_ID, {
@@ -382,11 +383,13 @@ export default function PrayerTimesScreen({ navigation }: any) {
     if (exactAlarmPromptShownRef.current) return;
     exactAlarmPromptShownRef.current = true;
 
-    Alert.alert(
-      'Enable Exact Athan Timing',
-      'To keep Athan alerts exactly on time, allow "Alarms & reminders" for Quran Pulse in Android settings.',
-      [
-        { text: 'Not now', style: 'cancel' },
+    showAlert({
+      title: 'Enable Exact Athan Timing',
+      message:
+        'To keep Athan alerts exactly on time, allow "Alarms & reminders" for Quran Pulse in Android settings.',
+      variant: 'info',
+      buttons: [
+        { text: 'Not now', role: 'cancel' },
         {
           text: 'Open Settings',
           onPress: () => {
@@ -397,9 +400,9 @@ export default function PrayerTimesScreen({ navigation }: any) {
             });
           },
         },
-      ]
-    );
-  }, [checkExactAlarmAccess]);
+      ],
+    });
+  }, [checkExactAlarmAccess, showAlert]);
 
   const loadSavedData = async () => {
     try {
@@ -447,7 +450,11 @@ export default function PrayerTimesScreen({ navigation }: any) {
       },
     });
     if (status !== 'granted') {
-      Alert.alert('Permission required', 'Please enable notifications for Athan alerts');
+      showAlert({
+        title: 'Permission required',
+        message: 'Please enable notifications for Athan alerts',
+        variant: 'info',
+      });
     }
 
     const exactAlarmAllowed = await checkExactAlarmAccess();
@@ -461,7 +468,11 @@ export default function PrayerTimesScreen({ navigation }: any) {
     try {
       const { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== 'granted') {
-        Alert.alert('Permission denied', 'Location permission is required to auto-detect city.');
+        showAlert({
+          title: 'Permission denied',
+          message: 'Location permission is required to auto-detect city.',
+          variant: 'info',
+        });
         setFetchingLocation(false);
         return;
       }
@@ -487,7 +498,11 @@ export default function PrayerTimesScreen({ navigation }: any) {
         loadPrayerTimes(cityName, undefined, detectedCoordinates);
       }
     } catch (err) {
-      Alert.alert('Location Error', 'Could not detect location. Please enter city manually.');
+      showAlert({
+        title: 'Location Error',
+        message: 'Could not detect location. Please enter city manually.',
+        variant: 'danger',
+      });
     } finally {
       setFetchingLocation(false);
     }
@@ -533,15 +548,20 @@ export default function PrayerTimesScreen({ navigation }: any) {
         }
       } else {
         setPrayerScheduleWindow([]);
-        Alert.alert(
-          'Invalid City',
-          `No prayer times found for "${cityName}". Please select a valid city from suggestions or try a major city near you.`
-        );
+        showAlert({
+          title: 'Invalid City',
+          message: `No prayer times found for "${cityName}". Please select a valid city from suggestions or try a major city near you.`,
+          variant: 'danger',
+        });
         setSearchInput(''); 
       }
     } catch (err) {
       setPrayerScheduleWindow([]);
-      Alert.alert('Network Error', 'Unable to fetch prayer times. Please check your internet connection.');
+      showAlert({
+        title: 'Network Error',
+        message: 'Unable to fetch prayer times. Please check your internet connection.',
+        variant: 'danger',
+      });
     } finally {
       setLoading(false);
     }
@@ -628,7 +648,7 @@ export default function PrayerTimesScreen({ navigation }: any) {
             const content: Notifications.NotificationContentInput = {
               title: `${ATHAN_NOTIFICATION_TITLE_PREFIX} ${prayer.name}`,
               body: '🕌 اللَّهُمَّ رَبَّ هَذِهِ الدَّعْوَةِ التَّامَّةِ، وَالصَّلَاةِ الْقَائِمَةِ، آتِ مُحَمَّداً الْوَسِيلَةَ وَالْفَضِيلَةَ، وَابْعَثْهُ مَقَاماً مَحْمُوداً الَّذِي وَعَدْتَهُ، إَنَّكَ لَا تُخْلِفُ الْمِيعَادَ',
-              sound: 'athan.mp3',
+              sound: 'athan_v2.mp3',
               priority: Notifications.AndroidNotificationPriority.HIGH,
               vibrate: [0, 250, 250, 250],
               data: { source: 'athan', prayerName: prayer.name },
@@ -726,7 +746,11 @@ export default function PrayerTimesScreen({ navigation }: any) {
   const handleManualUpdate = () => {
     const trimmed = searchInput.trim();
     if (trimmed.length < 3) {
-      Alert.alert('Invalid Input', 'Please enter at least 3 characters or select from suggestions.');
+      showAlert({
+        title: 'Invalid Input',
+        message: 'Please enter at least 3 characters or select from suggestions.',
+        variant: 'danger',
+      });
       return;
     }
 

@@ -1,11 +1,10 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   TouchableOpacity,
   FlatList,
-  Alert,
   Modal,
   TextInput,
   TouchableWithoutFeedback,
@@ -13,6 +12,7 @@ import {
 import { useAudioPlayer, useAudioPlayerStatus, setAudioModeAsync } from 'expo-audio';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useSettings } from '../context/SettingsContext';
+import { useThemedAlert } from '../context/ThemedAlertContext';
 import { resolveArabicFontFamily } from '../theme/fonts';
 import { fetchSurahs } from '../services/quranApi';
 import { getSurahAudioUrl } from '../services/quranApi';
@@ -62,9 +62,38 @@ export default function QuranPlayerScreen() {
   const playerStatus = useAudioPlayerStatus(player);
 
   const { settings } = useSettings();
+  const { showAlert } = useThemedAlert();
   const isDark = settings.isDarkMode;
   const arabicNameFontSize = Math.max(18, settings.arabicFontSize - 10);
   const arabicFontFamily = resolveArabicFontFamily(settings.arabicFontFamily);
+
+  const applyLockScreenControls = useCallback((surah: Surah | null) => {
+    if (!surah) {
+      try {
+        player.setActiveForLockScreen(false);
+      } catch {
+        // Player may already be disposed during teardown.
+      }
+      return;
+    }
+
+    try {
+      player.setActiveForLockScreen(
+        true,
+        {
+          title: `${surah.id}. ${surah.name_simple}`,
+          artist: selectedReciter.name,
+          albumTitle: 'Quran Pulse',
+        },
+        {
+          showSeekBackward: true,
+          showSeekForward: true,
+        }
+      );
+    } catch (error) {
+      console.warn('Lock screen controls unavailable:', error);
+    }
+  }, [player, selectedReciter.name]);
 
   // Load surahs
   useEffect(() => {
@@ -171,32 +200,8 @@ export default function QuranPlayerScreen() {
 
   // Activate lock-screen controls for current surah
   useEffect(() => {
-    if (!selectedSurah) {
-      try {
-        player.setActiveForLockScreen(false);
-      } catch {
-        // Player may already be disposed during teardown.
-      }
-      return;
-    }
-
-    try {
-      player.setActiveForLockScreen(
-        true,
-        {
-          title: `${selectedSurah.id}. ${selectedSurah.name_simple}`,
-          artist: selectedReciter.name,
-          albumTitle: 'Quran Pulse',
-        },
-        {
-          showSeekBackward: true,
-          showSeekForward: true,
-        }
-      );
-    } catch (error) {
-      console.warn('Lock screen controls unavailable:', error);
-    }
-  }, [player, selectedSurah, selectedReciter]);
+    applyLockScreenControls(selectedSurah);
+  }, [applyLockScreenControls, selectedSurah]);
 
   // Auto-next when playback reaches end
   useEffect(() => {
@@ -211,12 +216,17 @@ export default function QuranPlayerScreen() {
     setIsLoading(true);
     try {
       const url = getSurahAudioUrl(selectedReciter.id, selectedSurah.id);
-      console.log('🎵 Playing Audio URL:', url);
       player.replace({ uri: url });
       player.play();
+      // Re-apply metadata after replacing track to keep lock screen controls active on auto-next.
+      applyLockScreenControls(selectedSurah);
     } catch (error) {
       console.error('Audio error:', error);
-      Alert.alert('Error', 'Failed to load audio');
+      showAlert({
+        title: 'Error',
+        message: 'Failed to load audio',
+        variant: 'danger',
+      });
     } finally {
       setIsLoading(false);
     }
@@ -267,6 +277,7 @@ export default function QuranPlayerScreen() {
     } catch {
       // Ignore stale player state.
     }
+    applyLockScreenControls(null);
     setSelectedSurah(null);
   };
 
@@ -478,7 +489,7 @@ const styles = StyleSheet.create({
   reciterModal: { backgroundColor: UI_COLORS.surface, padding: 20, borderRadius: UI_RADII.md, width: '90%', maxHeight: '80%' },
   modalTitle: { fontSize: 20, fontWeight: 'bold', textAlign: 'center', marginBottom: 16, color: UI_COLORS.text },
   reciterModalItem: { padding: 14, borderBottomWidth: 1, borderColor: UI_COLORS.border },
-  reciterModalText: { fontSize: 16 },
+  reciterModalText: { fontSize: 16, color: UI_COLORS.text },
   modalClose: { textAlign: 'center', padding: 14, color: UI_COLORS.danger, fontWeight: 'bold' },
   darkText: { color: UI_COLORS.white },
   introTile: { marginBottom: 12 },
