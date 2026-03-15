@@ -216,7 +216,6 @@ export default function QuranPlayerScreen() {
     setIsLoading(true);
     try {
       const url = getSurahAudioUrl(selectedReciter.id, selectedSurah.id);
-      console.log('🎵 Playing Audio URL:', url);
       player.replace({ uri: url });
       player.play();
       // Re-apply metadata after replacing track to keep lock screen controls active on auto-next.

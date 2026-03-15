@@ -523,9 +523,7 @@ export default function SurahScreen({ route }: any) {
         setCurrentTafseer(text);
       }
     } catch (error: any) {
-      if (error.name === 'AbortError') {
-        console.log('Tafseer fetch cancelled');
-      } else {
+      if (error.name !== 'AbortError') {
         console.error('Tafseer load error:', error);
         if (!controller.signal.aborted) {
           setCurrentTafseer('Failed to load tafseer. Check your connection.');

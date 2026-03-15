@@ -92,15 +92,12 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const playAyah = useCallback(async (surah: number, ayah: number, global: number) => {
-    console.log('playAyah called for:', { surah, ayah, global });
-
     if (sound) {
       await sound.unloadAsync();
     }
 
     try {
       const uri = `${BASE_URL}/${selectedReciter.id}/${global}.mp3`;
-      console.log('Loading audio from:', uri);
 
       const { sound: newSound } = await Audio.Sound.createAsync(
         { uri },
@@ -114,7 +111,6 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
           setIsPlaying(status.isPlaying);
 
           if (status.didJustFinish) {
-            console.log('Ayah finished');
             if (repeatMode === 'single') {
               newSound.replayAsync();
             } else if (memorizationMode) {

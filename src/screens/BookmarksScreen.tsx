@@ -101,7 +101,6 @@ export default function BookmarksScreen() {
       initialAyah: item.ayahNum,
       scrollNonce: Date.now()
     });
-    console.log(`Navigating to Surah ${fullSurah.name_simple} at Ayah ${item.ayahNum}`);
   };
 
   const renderItem = ({ item }: { item: Bookmark }) => (
