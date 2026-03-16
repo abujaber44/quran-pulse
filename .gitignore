@@ -18,10 +18,6 @@ android/.gradle/
 *.apk
 *.aab
 
-# Lock files (optional - prevents merge conflicts)
-package-lock.json
-yarn.lock
-
 # Logs and temp files
 *.log
 *.tmp
