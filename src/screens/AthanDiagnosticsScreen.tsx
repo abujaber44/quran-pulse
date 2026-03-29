@@ -409,6 +409,9 @@ export default function AthanDiagnosticsScreen({ route }: any) {
           <Text style={styles.statusText}>
             Last refresh: {lastRefreshAt ? lastRefreshAt.toLocaleTimeString() : 'Not yet'}
           </Text>
+          <Text style={styles.statusHint}>
+            After restarting your phone, open Prayer Times once to refresh the next 7 days of athan scheduling.
+          </Text>
           <TouchableOpacity style={styles.refreshButton} onPress={() => void refreshDiagnostics()}>
             <Text style={styles.refreshButtonText}>Refresh Diagnostics</Text>
           </TouchableOpacity>
@@ -545,6 +548,12 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: UI_COLORS.text,
     lineHeight: 21,
+  },
+  statusHint: {
+    marginTop: 6,
+    fontSize: 13,
+    color: UI_COLORS.textMuted,
+    lineHeight: 20,
   },
   refreshButton: {
     marginTop: 12,

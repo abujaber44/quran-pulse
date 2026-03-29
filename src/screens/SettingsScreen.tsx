@@ -205,6 +205,9 @@ export default function SettingsScreen() {
           <Text style={styles.helperText}>
             Tip: Athan notification on/off controls are available on the Prayer Times screen for each prayer.
           </Text>
+          <Text style={styles.helperText}>
+            After restarting your phone, open Prayer Times once to refresh the next 7 days of athan notifications.
+          </Text>
         </View>
 
         <View style={{ height: 50 }} />

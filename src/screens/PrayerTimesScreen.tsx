@@ -936,7 +936,8 @@ export default function PrayerTimesScreen({ navigation }: any) {
 
         {/* Note */}
         <Text style={[styles.note, isDark && styles.darkText]}>
-          Athan is scheduled for the next 7 days, with a reminder to reopen Prayer Times before expiry.
+          Athan is scheduled for the next 7 days, with a reminder to reopen Prayer Times before expiry. After a
+          phone restart, open Prayer Times once to refresh schedules.
         </Text>
         {Platform.OS === 'android' && !exactAlarmEnabled ? (
           <TouchableOpacity style={styles.exactAlarmWarningCard} onPress={promptExactAlarmAccess}>
