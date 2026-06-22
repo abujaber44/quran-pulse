@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -16,6 +16,7 @@ import { resolveArabicFontFamily } from '../theme/fonts';
 import { UI_COLORS, UI_RADII, UI_SHADOWS } from '../theme/ui';
 import { fetchAthkarContentOnline, AthkarItem } from '../services/athkarService';
 import ScreenIntroTile from '../components/ScreenIntroTile';
+import { getAiInsight } from '../services/aiService';
 
 interface AllahName {
   number: number;
@@ -163,6 +164,10 @@ export default function AthkarScreen() {
   const [athkarLoading, setAthkarLoading] = useState(true);
   const [athkarSourceLabel, setAthkarSourceLabel] = useState<string>('');
   const [expandedFadlId, setExpandedFadlId] = useState<string | null>(null);
+  const [aiExplainId, setAiExplainId] = useState<string | null>(null);
+  const [aiExplainText, setAiExplainText] = useState('');
+  const [aiExplainLoading, setAiExplainLoading] = useState(false);
+  const aiCacheRef = useRef<Map<string, string>>(new Map());
 
   const [names, setNames] = useState<AllahName[]>([]);
   const [filteredNames, setFilteredNames] = useState<AllahName[]>([]);
@@ -380,6 +385,41 @@ export default function AthkarScreen() {
           >
             <Text style={styles.fadlButtonText}>{expandedFadlId === item.id ? 'Hide Fadl' : 'Show Fadl'}</Text>
           </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.aiExplainButton}
+            onPress={async () => {
+              if (aiExplainId === item.id) {
+                setAiExplainId(null);
+                return;
+              }
+              const cached = aiCacheRef.current.get(item.id);
+              if (cached) {
+                setAiExplainText(cached);
+                setAiExplainId(item.id);
+                return;
+              }
+              setAiExplainId(item.id);
+              setAiExplainLoading(true);
+              try {
+                const insight = await getAiInsight('athkar', {
+                  title: item.title,
+                  text: item.text,
+                  repetitions: item.repetitions,
+                  fadl: item.fadl,
+                });
+                aiCacheRef.current.set(item.id, insight);
+                setAiExplainText(insight);
+              } catch {
+                setAiExplainText('Could not load explanation. Please try again.');
+              } finally {
+                setAiExplainLoading(false);
+              }
+            }}
+          >
+            <Text style={styles.aiExplainButtonText}>
+              {aiExplainId === item.id ? 'Hide AI' : 'AI ✦'}
+            </Text>
+          </TouchableOpacity>
         </View>
       </View>
       <Text
@@ -405,6 +445,17 @@ export default function AthkarScreen() {
           {item.source && item.source.trim().length > 0 ? (
             <Text style={styles.fadlSourceText}>Source: {item.source}</Text>
           ) : null}
+        </View>
+      ) : null}
+
+      {aiExplainId === item.id ? (
+        <View style={styles.aiExplainBox}>
+          <Text style={styles.aiExplainLabel}>✦ AI Explanation</Text>
+          {aiExplainLoading ? (
+            <ActivityIndicator size="small" color={UI_COLORS.accent} style={{ marginTop: 8 }} />
+          ) : (
+            <Text style={[styles.aiExplainContent, isDark && styles.darkText]}>{aiExplainText}</Text>
+          )}
         </View>
       ) : null}
     </View>
@@ -752,6 +803,39 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: UI_COLORS.textMuted,
     fontWeight: '600',
+  },
+  aiExplainButton: {
+    borderWidth: 1,
+    borderColor: UI_COLORS.accent,
+    backgroundColor: '#f0f7ff',
+    borderRadius: 999,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+  },
+  aiExplainButtonText: {
+    fontSize: 11,
+    color: UI_COLORS.accent,
+    fontWeight: '700',
+  },
+  aiExplainBox: {
+    marginTop: 10,
+    backgroundColor: '#f0f7ff',
+    borderWidth: 1,
+    borderColor: UI_COLORS.accent,
+    borderRadius: UI_RADII.md,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+  },
+  aiExplainLabel: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: UI_COLORS.accent,
+    marginBottom: 6,
+  },
+  aiExplainContent: {
+    fontSize: 14,
+    lineHeight: 21,
+    color: UI_COLORS.text,
   },
   fadlBox: {
     marginTop: 10,

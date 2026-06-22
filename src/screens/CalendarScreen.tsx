@@ -15,6 +15,7 @@ import { resolveArabicFontFamily } from '../theme/fonts';
 import { UI_COLORS, UI_RADII, UI_SHADOWS } from '../theme/ui';
 import { fetchRandomDailyHadith, DailyHadith } from '../services/hadithService';
 import ScreenIntroTile from '../components/ScreenIntroTile';
+import { getAiInsight } from '../services/aiService';
 
 const API_BASE = 'https://api.aladhan.com/v1';
 const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -182,6 +183,8 @@ export default function CalendarScreen() {
   const [monthData, setMonthData] = useState<CalendarDay[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [dailyHadith, setDailyHadith] = useState<DailyHadith | null>(null);
+  const [hadithReflection, setHadithReflection] = useState<string | null>(null);
+  const [loadingReflection, setLoadingReflection] = useState(false);
   const [selectedDay, setSelectedDay] = useState<CalendarDay | null>(null);
   const [selectedDayApiInsight, setSelectedDayApiInsight] = useState<OnThisDateReflection | null>(null);
   const { settings } = useSettings();
@@ -570,6 +573,40 @@ export default function CalendarScreen() {
                   </Text>
                   <Text style={[styles.hadithEnglish, isDark && styles.darkMutedText]}>{dailyHadith.english}</Text>
                   <Text style={[styles.hadithSource, isDark && styles.darkMutedText]}>({dailyHadith.source})</Text>
+
+                  {hadithReflection ? (
+                    <View style={styles.reflectionBox}>
+                      <Text style={styles.reflectionLabel}>✦ AI Reflection</Text>
+                      <Text style={[styles.reflectionText, isDark && styles.darkMutedText]}>{hadithReflection}</Text>
+                    </View>
+                  ) : (
+                    <TouchableOpacity
+                      style={styles.reflectionButton}
+                      onPress={async () => {
+                        if (loadingReflection || !dailyHadith) return;
+                        setLoadingReflection(true);
+                        try {
+                          const reflection = await getAiInsight('hadith', {
+                            arabic: dailyHadith.arabic,
+                            english: dailyHadith.english,
+                            source: dailyHadith.source,
+                          });
+                          setHadithReflection(reflection);
+                        } catch {
+                          setHadithReflection('Could not load reflection. Please try again.');
+                        } finally {
+                          setLoadingReflection(false);
+                        }
+                      }}
+                      disabled={loadingReflection}
+                    >
+                      {loadingReflection ? (
+                        <ActivityIndicator size="small" color={UI_COLORS.accent} />
+                      ) : (
+                        <Text style={styles.reflectionButtonText}>✦ AI Reflection</Text>
+                      )}
+                    </TouchableOpacity>
+                  )}
                 </View>
               )}
 
@@ -770,6 +807,38 @@ const styles = StyleSheet.create({
     color: UI_COLORS.textMuted,
     textAlign: 'center',
     fontStyle: 'italic',
+  },
+  reflectionButton: {
+    marginTop: 14,
+    paddingVertical: 10,
+    borderRadius: UI_RADII.sm,
+    borderWidth: 1,
+    borderColor: UI_COLORS.accent,
+    alignItems: 'center',
+  },
+  reflectionButtonText: {
+    color: UI_COLORS.accent,
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  reflectionBox: {
+    marginTop: 14,
+    padding: 12,
+    backgroundColor: '#f0f7ff',
+    borderRadius: UI_RADII.sm,
+    borderLeftWidth: 3,
+    borderLeftColor: UI_COLORS.accent,
+  },
+  reflectionLabel: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: UI_COLORS.accent,
+    marginBottom: 6,
+  },
+  reflectionText: {
+    fontSize: 14,
+    lineHeight: 21,
+    color: UI_COLORS.text,
   },
 
   // Legend at bottom

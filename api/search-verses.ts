@@ -1,0 +1,80 @@
+import Anthropic from '@anthropic-ai/sdk';
+import type { VercelRequest, VercelResponse } from '@vercel/node';
+
+const client = new Anthropic();
+
+const SYSTEM_PROMPT = `You are a Quran search engine. Given a conceptual query, return 5-10 relevant Quranic verses as a JSON array.
+
+CRITICAL RULES:
+- Only return REAL verses with accurate surah IDs (1-114) and ayah numbers
+- Never fabricate or guess verse references
+- Return the response as a raw JSON array (no markdown, no code blocks)
+- Each item must have: surahId (number), surahName (string), ayahNumber (number), verseKey (string like "2:255"), translation (brief English translation), relevance (1-2 sentence explanation of why this verse is relevant)
+
+Example response format:
+[{"surahId":2,"surahName":"Al-Baqarah","ayahNumber":255,"verseKey":"2:255","translation":"Allah - there is no deity except Him, the Ever-Living, the Sustainer of existence...","relevance":"Known as Ayat al-Kursi, this verse emphasizes Allah's supreme power and sovereignty."}]`;
+
+const ipRequestCounts = new Map<string, { count: number; resetAt: number }>();
+
+function isRateLimited(ip: string): boolean {
+  const now = Date.now();
+  const entry = ipRequestCounts.get(ip);
+  if (!entry || now > entry.resetAt) {
+    ipRequestCounts.set(ip, { count: 1, resetAt: now + 60_000 });
+    return false;
+  }
+  entry.count++;
+  return entry.count > 10;
+}
+
+export default async function handler(req: VercelRequest, res: VercelResponse) {
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Method not allowed' });
+  }
+
+  const ip = (req.headers['x-forwarded-for'] as string)?.split(',')[0] ?? 'unknown';
+  if (isRateLimited(ip)) {
+    return res.status(429).json({ error: 'Too many requests. Please try again later.' });
+  }
+
+  const { query } = req.body as { query?: string };
+  if (!query || query.trim().length < 2) {
+    return res.status(400).json({ error: 'Query must be at least 2 characters' });
+  }
+
+  try {
+    const response = await client.messages.create({
+      model: 'claude-haiku-4-5',
+      max_tokens: 2048,
+      system: SYSTEM_PROMPT,
+      messages: [{ role: 'user', content: `Find Quranic verses about: ${query.trim()}` }],
+    });
+
+    const textBlock = response.content.find((b): b is Anthropic.TextBlock => b.type === 'text');
+    const text = textBlock?.text ?? '[]';
+
+    const cleaned = text.replace(/^```(?:json)?\s*/i, '').replace(/\s*```\s*$/, '').trim();
+
+    let results;
+    try {
+      results = JSON.parse(cleaned);
+    } catch (parseError) {
+      console.error('Failed to parse AI response:', text);
+      results = [];
+    }
+
+    const validated = (results as any[]).filter(
+      (r: any) =>
+        typeof r.surahId === 'number' &&
+        r.surahId >= 1 &&
+        r.surahId <= 114 &&
+        typeof r.ayahNumber === 'number' &&
+        typeof r.verseKey === 'string',
+    );
+
+    return res.status(200).json({ results: validated });
+  } catch (error) {
+    console.error('Search error:', error);
+    return res.status(500).json({ error: 'Search failed. Please try again.' });
+  }
+}

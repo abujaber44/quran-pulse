@@ -761,6 +761,17 @@ export default function PrayerTimesScreen({ navigation }: any) {
   const distanceToKaabaKm = currentCoordinates ? calculateDistanceToKaabaKm(currentCoordinates) : null;
   const nextPrayer = useMemo(() => getNextPrayerInfo(prayers, new Date(countdownNow)), [prayers, countdownNow]);
 
+  const PRAYER_ICONS: Record<string, string> = { Fajr: '🌅', Dhuhr: '☀️', Asr: '🌤️', Maghrib: '🌇', Isha: '🌙' };
+
+  const isPrayerPast = (prayerTime: string): boolean => {
+    const parsed = parsePrayerTime(prayerTime);
+    if (!parsed) return false;
+    const now = new Date();
+    const pDate = new Date(now);
+    pDate.setHours(parsed.hour, parsed.minute, 0, 0);
+    return pDate <= now;
+  };
+
   if (loading) {
     return (
       <View style={[styles.center, isDark && styles.darkBg]}>
@@ -807,29 +818,54 @@ export default function PrayerTimesScreen({ navigation }: any) {
 
         {/* City and search controls */}
         <View style={[styles.cityPanel, isDark && styles.darkCard]}>
-          <Text style={[styles.headerTitle, isDark && styles.darkText]}>Athan Times for</Text>
-          <Text style={[styles.cityName, isDark && styles.darkText]}>{city}</Text>
+          <View style={styles.cityHeaderRow}>
+            <View>
+              <Text style={[styles.headerTitle, isDark && styles.darkMutedText]}>📍 Athan Times for</Text>
+              <Text style={[styles.cityName, isDark && styles.darkText]}>{city}</Text>
+            </View>
+            <TouchableOpacity
+              style={[styles.locationButton, isDark && styles.darkLocationButton]}
+              onPress={getLocationAndCity}
+              disabled={fetchingLocation}
+              activeOpacity={0.7}
+            >
+              {fetchingLocation ? (
+                <ActivityIndicator size="small" color={UI_COLORS.primary} />
+              ) : (
+                <Text style={styles.locationButtonText}>📌 Locate</Text>
+              )}
+            </TouchableOpacity>
+          </View>
 
-          {/* City Search with Autocomplete */}
           <View style={styles.searchContainer}>
-            <TextInput
-              style={styles.cityInput}
-              placeholder="Search or enter city name..."
-              placeholderTextColor="#aaa"
-              value={searchInput}
-              onChangeText={(text) => {
-                setSearchInput(text);
-              }}
-              autoCapitalize="words"
-              autoCorrect={false}
-              underlineColorAndroid="transparent"
-            />
+            <View style={[styles.searchRow, isDark && styles.darkSearchRow]}>
+              <Text style={styles.searchIcon}>🔍</Text>
+              <TextInput
+                style={[styles.cityInput, isDark && styles.darkText]}
+                placeholder="Search city..."
+                placeholderTextColor="#aaa"
+                value={searchInput}
+                onChangeText={(text) => {
+                  setSearchInput(text);
+                }}
+                autoCapitalize="words"
+                autoCorrect={false}
+                underlineColorAndroid="transparent"
+              />
+              {searchInput.length > 0 && (
+                <TouchableOpacity onPress={() => { setSearchInput(''); setSuggestions([]); }}>
+                  <Text style={styles.searchClear}>✕</Text>
+                </TouchableOpacity>
+              )}
+            </View>
 
-            {/* Suggestions dropdown */}
             {(suggestionsLoading || suggestions.length > 0) && (
-              <View style={styles.suggestionsContainer}>
+              <View style={[styles.suggestionsContainer, isDark && styles.darkCard]}>
                 {suggestionsLoading ? (
-                  <Text style={styles.loadingSuggestions}>Searching cities...</Text>
+                  <View style={styles.suggestionsLoadingRow}>
+                    <ActivityIndicator size="small" color={UI_COLORS.primary} />
+                    <Text style={styles.loadingSuggestions}>Searching...</Text>
+                  </View>
                 ) : (
                   suggestions.map((item) => (
                     <TouchableOpacity
@@ -837,89 +873,91 @@ export default function PrayerTimesScreen({ navigation }: any) {
                       style={styles.suggestionItem}
                       onPress={() => handleSelectSuggestion(item)}
                     >
-                      <Text style={styles.suggestionText}>{item}</Text>
+                      <Text style={styles.suggestionIcon}>📍</Text>
+                      <Text style={[styles.suggestionText, isDark && styles.darkText]}>{item}</Text>
                     </TouchableOpacity>
                   ))
                 )}
               </View>
             )}
 
-            {/* Manual update button (optional, for when no suggestions) */}
             {searchInput.trim().length >= 3 && suggestions.length === 0 && !suggestionsLoading && (
               <TouchableOpacity style={styles.updateButton} onPress={handleManualUpdate}>
-                <Text style={styles.updateButtonText}>Update City</Text>
+                <Text style={styles.updateButtonText}>Use "{searchInput.trim()}"</Text>
               </TouchableOpacity>
             )}
           </View>
-
-          <View style={styles.guideTextContainer}>
-            <Text style={styles.guideText}>
-              Type a city name above to search and select, or tap "Use My Location" below to auto-detect your city. Prayer times are fetched for major cities worldwide.
-            </Text>
-          </View>
-
-          {/* Use My Location – entire container is now the button */}
-          <TouchableOpacity
-            style={[styles.locationContainer, isDark && styles.darkLocationContainer]}
-            onPress={getLocationAndCity}
-            disabled={fetchingLocation}
-            activeOpacity={0.8}
-          >
-            <View style={styles.locationInner}>
-              <Text style={styles.locationText}>{fetchingLocation ? 'Detecting...' : '➤ Use My Location'}</Text>
-            </View>
-          </TouchableOpacity>
         </View>
 
-        <Text style={[styles.sectionTitle, isDark && styles.darkText]}>Today&apos;s Prayer Schedule</Text>
-
-        {/* Prayer Times Cards */}
-        {prayers.map((prayer, i) => (
-          <View key={i} style={[styles.prayerCard, isDark && styles.darkCard]}>
-            <View>
-              <Text style={[styles.prayerName, isDark && styles.darkText]}>{prayer.name}</Text>
-              <Text style={[styles.prayerTime, isDark && styles.darkText]}>{prayer.time}</Text>
-            </View>
-            <Switch
-              value={prayer.enabled}
-              onValueChange={() => togglePrayer(i)}
-              trackColor={{ false: '#ccc', true: '#27ae60' }}
-              thumbColor={prayer.enabled ? '#fff' : '#f4f3f4'}
-            />
-          </View>
-        ))}
-
-        <Text style={[styles.sectionTitle, isDark && styles.darkText]}>Tools</Text>
-
-        <View style={[styles.qiblaCard, isDark && styles.darkCard]}>
-          <Text style={[styles.qiblaTitle, isDark && styles.darkText]}>Qibla Compass</Text>
-          {qiblaBearing === null ? (
-            <Text style={[styles.qiblaHint, isDark && styles.darkText]}>
-              Choose a city or tap "Use My Location" to calculate Qibla direction.
-            </Text>
-          ) : (
+        {/* Qibla Summary — above prayers for visibility */}
+        {qiblaBearing !== null && (
+          <View style={[styles.qiblaCard, isDark && styles.darkCard, { marginBottom: 14 }]}>
             <View style={styles.qiblaSummaryRow}>
               <View style={[styles.qiblaSummaryPill, isDark && styles.darkQiblaSummaryPill]}>
-                <Text style={[styles.qiblaSummaryLabel, isDark && styles.darkMutedText]}>Qibla Bearing</Text>
+                <Text style={[styles.qiblaSummaryLabel, isDark && styles.darkMutedText]}>🧭 Qibla</Text>
                 <Text style={[styles.qiblaSummaryValue, isDark && styles.darkText]}>
                   {Math.round(qiblaBearing)}°
                 </Text>
               </View>
               <View style={[styles.qiblaSummaryPill, isDark && styles.darkQiblaSummaryPill]}>
-                <Text style={[styles.qiblaSummaryLabel, isDark && styles.darkMutedText]}>Distance to Kaaba</Text>
+                <Text style={[styles.qiblaSummaryLabel, isDark && styles.darkMutedText]}>🕋 Distance</Text>
                 <Text style={[styles.qiblaSummaryValue, isDark && styles.darkText]}>
-                  {distanceToKaabaKm !== null ? `${distanceToKaabaKm.toFixed(1)} km` : '--'}
+                  {distanceToKaabaKm !== null ? `${distanceToKaabaKm.toFixed(0)} km` : '--'}
                 </Text>
               </View>
             </View>
-          )}
-          <TouchableOpacity
-            style={styles.qiblaOpenButton}
-            onPress={() => navigation.navigate('QiblaCompass', { city, coordinates: currentCoordinates })}
-          >
-            <Text style={styles.qiblaOpenButtonText}>Open Full Qibla Compass</Text>
-          </TouchableOpacity>
-        </View>
+            <TouchableOpacity
+              style={styles.qiblaOpenButton}
+              onPress={() => navigation.navigate('QiblaCompass', { city, coordinates: currentCoordinates })}
+            >
+              <Text style={styles.qiblaOpenButtonText}>Open Full Qibla Compass →</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
+        <Text style={[styles.sectionTitle, isDark && styles.darkText]}>Today&apos;s Prayer Schedule</Text>
+
+        {/* Prayer Times Cards */}
+        {prayers.map((prayer, i) => {
+          const isNext = nextPrayer?.name === prayer.name && !nextPrayer?.isTomorrow;
+          const past = isPrayerPast(prayer.time);
+          return (
+            <View
+              key={i}
+              style={[
+                styles.prayerCard,
+                isDark && styles.darkCard,
+                isNext && styles.prayerCardNext,
+                past && styles.prayerCardPast,
+              ]}
+            >
+              <View style={styles.prayerCardLeft}>
+                <Text style={styles.prayerIcon}>{PRAYER_ICONS[prayer.name] ?? '🕌'}</Text>
+                <View>
+                  <Text style={[styles.prayerName, isDark && styles.darkText, past && styles.prayerNamePast]}>
+                    {prayer.name}
+                  </Text>
+                  <Text style={[styles.prayerTime, isDark && styles.darkText, past && styles.prayerTimePast]}>
+                    {prayer.time}
+                  </Text>
+                  {isNext && nextPrayer && (
+                    <Text style={styles.prayerCountdownInline}>
+                      in {formatCountdown(nextPrayer.remainingMs)}
+                    </Text>
+                  )}
+                </View>
+              </View>
+              <Switch
+                value={prayer.enabled}
+                onValueChange={() => togglePrayer(i)}
+                trackColor={{ false: '#ccc', true: '#27ae60' }}
+                thumbColor={prayer.enabled ? '#fff' : '#f4f3f4'}
+              />
+            </View>
+          );
+        })}
+
+        <Text style={[styles.sectionTitle, isDark && styles.darkText]}>Tools</Text>
 
         <View style={[styles.diagnosticsCard, isDark && styles.darkCard]}>
           <Text style={[styles.diagnosticsTitle, isDark && styles.darkText]}>Athan Diagnostics</Text>
@@ -998,8 +1036,31 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     ...UI_SHADOWS.card,
   },
-  headerTitle: { fontSize: 18, color: UI_COLORS.textMuted, marginBottom: 4 },
-  cityName: { fontSize: 28, fontWeight: 'bold', color: UI_COLORS.text, marginBottom: 4 },
+  cityHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  headerTitle: { fontSize: 13, color: UI_COLORS.textMuted, fontWeight: '600' },
+  cityName: { fontSize: 24, fontWeight: '800', color: UI_COLORS.text, marginTop: 2 },
+  locationButton: {
+    backgroundColor: '#f0f7ff',
+    borderWidth: 1,
+    borderColor: UI_COLORS.accent,
+    borderRadius: UI_RADII.sm,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+  },
+  darkLocationButton: {
+    backgroundColor: '#1e2a36',
+    borderColor: '#415061',
+  },
+  locationButtonText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: UI_COLORS.accent,
+  },
   sectionTitle: {
     fontSize: 18,
     fontWeight: '700',
@@ -1023,8 +1084,32 @@ const styles = StyleSheet.create({
     ...UI_SHADOWS.card,
   },
   darkCard: { backgroundColor: UI_COLORS.darkSurface, borderColor: '#30353b' },
+  prayerCardNext: {
+    borderLeftColor: UI_COLORS.accent,
+    borderLeftWidth: 5,
+    backgroundColor: '#f0f7ff',
+  },
+  prayerCardPast: {
+    opacity: 0.5,
+  },
+  prayerCardLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  prayerIcon: {
+    fontSize: 24,
+  },
   prayerName: { fontSize: 15, fontWeight: 'bold', color: UI_COLORS.text },
+  prayerNamePast: { color: UI_COLORS.textMuted },
   prayerTime: { fontSize: 15, color: UI_COLORS.primary, fontWeight: '600', marginTop: 3 },
+  prayerTimePast: { color: UI_COLORS.textMuted },
+  prayerCountdownInline: {
+    fontSize: 12,
+    color: UI_COLORS.accent,
+    fontWeight: '700',
+    marginTop: 2,
+  },
   note: { fontSize: 14, color: UI_COLORS.textMuted, textAlign: 'center', marginTop: 24, fontStyle: 'italic' },
   exactAlarmWarningCard: {
     marginTop: 12,
@@ -1053,21 +1138,37 @@ const styles = StyleSheet.create({
   // Autocomplete styles
   searchContainer: {
     width: '100%',
-    marginTop: 10,
-    marginBottom: 4,
     position: 'relative',
     zIndex: 20,
   },
-  cityInput: {
-    backgroundColor: UI_COLORS.surface,
+  searchRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: UI_COLORS.background,
     borderRadius: UI_RADII.md,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    fontSize: 16,
-    color: UI_COLORS.text,
     borderWidth: 1,
     borderColor: UI_COLORS.border,
-    ...UI_SHADOWS.input,
+    paddingHorizontal: 12,
+  },
+  darkSearchRow: {
+    backgroundColor: '#1a2430',
+    borderColor: '#354252',
+  },
+  searchIcon: {
+    fontSize: 16,
+    marginRight: 8,
+  },
+  cityInput: {
+    flex: 1,
+    paddingVertical: 12,
+    fontSize: 15,
+    color: UI_COLORS.text,
+  },
+  searchClear: {
+    fontSize: 16,
+    color: UI_COLORS.textMuted,
+    fontWeight: '600',
+    paddingLeft: 8,
   },
   suggestionsContainer: {
     backgroundColor: UI_COLORS.surface,
@@ -1080,22 +1181,30 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     marginTop: 8,
   },
-  suggestionsList: {
-    flexGrow: 0,
+  suggestionsLoadingRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 14,
+    gap: 8,
   },
   suggestionItem: {
-    paddingVertical: 14,
-    paddingHorizontal: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 14,
     borderBottomWidth: 1,
     borderColor: UI_COLORS.border,
+    gap: 8,
+  },
+  suggestionIcon: {
+    fontSize: 14,
   },
   suggestionText: {
-    fontSize: 16,
+    fontSize: 15,
     color: UI_COLORS.text,
   },
   loadingSuggestions: {
-    padding: 16,
-    textAlign: 'center',
     color: UI_COLORS.textMuted,
     fontSize: 14,
   },
@@ -1109,50 +1218,9 @@ const styles = StyleSheet.create({
   },
   updateButtonText: {
     color: UI_COLORS.white,
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '600',
   },
-  guideTextContainer: {
-    marginTop: 0,
-    marginBottom: 12,
-    paddingHorizontal: 0,
-  },
-  guideText: {
-    fontSize: 14,
-    color: UI_COLORS.textMuted,
-    textAlign: 'center',
-    lineHeight: 20,
-  },
-  locationBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-locationContainer: {
-  alignItems: 'center',
-  marginBottom: 0,
-  backgroundColor: UI_COLORS.surface,
-  borderRadius: UI_RADII.lg,
-  paddingVertical: 14,
-  paddingHorizontal: 16,
-  borderWidth: 1,
-  borderColor: UI_COLORS.border,
-  ...UI_SHADOWS.input,
-  width: '100%',
-},
-darkLocationContainer: {
-  backgroundColor: UI_COLORS.darkSurface,
-  borderColor: '#30353b',
-},
-locationInner: {
-  flexDirection: 'row',
-  alignItems: 'center',
-  justifyContent: 'center',
-},
-locationText: {
-  fontSize: 16,
-  color: UI_COLORS.primary,
-  fontWeight: '600',
-},
 qiblaCard: {
   backgroundColor: UI_COLORS.surface,
   borderRadius: UI_RADII.lg,

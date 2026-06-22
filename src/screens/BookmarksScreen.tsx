@@ -17,6 +17,8 @@ import { useThemedAlert } from '../context/ThemedAlertContext';
 import { resolveArabicFontFamily } from '../theme/fonts';
 import { UI_COLORS, UI_RADII, UI_SHADOWS } from '../theme/ui';
 import ScreenIntroTile from '../components/ScreenIntroTile';
+import MemorizationQuizModal from '../components/MemorizationQuizModal';
+import type { BookmarkForQuiz } from '../services/aiService';
 
 type RootStackParamList = {
   Surah: {
@@ -33,6 +35,7 @@ export default function BookmarksScreen() {
   const [surahs, setSurahs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedTag, setSelectedTag] = useState<'all' | BookmarkTag>('all');
+  const [quizModalVisible, setQuizModalVisible] = useState(false);
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
   const { settings } = useSettings();
   const { showAlert } = useThemedAlert();
@@ -188,6 +191,16 @@ export default function BookmarksScreen() {
           </Text>
         </TouchableOpacity>
       </View>
+
+      {selectedTag === 'memorize' && visibleBookmarks.length >= 1 && (
+        <TouchableOpacity
+          style={styles.coachButton}
+          onPress={() => setQuizModalVisible(true)}
+        >
+          <Text style={styles.coachButtonText}>AI Coach ✦ — Test Your Memory</Text>
+        </TouchableOpacity>
+      )}
+
       {visibleBookmarks.length === 0 ? (
         <Text style={[styles.filteredEmptyText, isDark && styles.darkMutedText]}>
           No bookmarks found for this tag.
@@ -198,6 +211,20 @@ export default function BookmarksScreen() {
         keyExtractor={(item) => `${item.surahId}-${item.ayahNum}`}
         renderItem={renderItem}
         contentContainerStyle={styles.list}
+      />
+
+      <MemorizationQuizModal
+        visible={quizModalVisible}
+        onClose={() => setQuizModalVisible(false)}
+        bookmarks={bookmarks
+          .filter((b) => b.tag === 'memorize')
+          .map((b): BookmarkForQuiz => ({
+            surahId: b.surahId,
+            surahName: b.surahName,
+            ayahNum: b.ayahNum,
+            ayahText: b.ayahText,
+            translation: b.translation,
+          }))}
       />
       </View>
     //</SafeAreaView>
@@ -321,6 +348,20 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: UI_COLORS.text,
     textAlign: 'center',
+  },
+  coachButton: {
+    marginHorizontal: 16,
+    marginBottom: 12,
+    backgroundColor: UI_COLORS.accent,
+    paddingVertical: 14,
+    borderRadius: UI_RADII.sm,
+    alignItems: 'center',
+    ...UI_SHADOWS.card,
+  },
+  coachButtonText: {
+    color: UI_COLORS.white,
+    fontSize: 15,
+    fontWeight: '700',
   },
   darkText: { color: UI_COLORS.white },
   darkMutedText: { color: '#a8b3bd' },

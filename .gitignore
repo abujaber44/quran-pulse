@@ -1,5 +1,6 @@
 # Dependencies
 node_modules/
+api/node_modules/
 
 # Expo and local caches
 .expo/
@@ -51,3 +52,4 @@ Desktop.ini
 
 # Git
 .git/
+.vercel

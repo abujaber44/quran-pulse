@@ -19,6 +19,7 @@ import { resolveArabicFontFamily } from '../theme/fonts';
 import { UI_COLORS, UI_RADII, UI_SHADOWS } from '../theme/ui';
 import ScreenIntroTile from '../components/ScreenIntroTile';
 import CompactPlayerCard from '../components/CompactPlayerCard';
+import AskAyahModal from '../components/AskAyahModal';
 
 const reciters = [
   { id: 'ar.alafasy', name: 'Mishary Rashid Alafasy' },
@@ -51,6 +52,7 @@ type AyahItemProps = {
   onToggleBookmark: (ayahNum: number) => void;
   onToggleTranslation: (ayahNum: number) => void;
   onToggleTafseer: (ayahNum: number) => void;
+  onAskAI: (ayah: any) => void;
 };
 
 const AyahItem = memo(({
@@ -69,6 +71,7 @@ const AyahItem = memo(({
   onToggleBookmark,
   onToggleTranslation,
   onToggleTafseer,
+  onAskAI,
 }: AyahItemProps) => {
   return (
     <View
@@ -171,6 +174,21 @@ const AyahItem = memo(({
             {expandedTafseer === ayah.verse_number
               ? (loadingTafseer ? 'Loading...' : 'Hide Tafseer')
               : 'Show Tafseer'}
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          onPress={() => onAskAI(ayah)}
+          style={[
+            styles.actionChip,
+            isDark && styles.darkActionChip,
+            { borderColor: UI_COLORS.accent },
+          ]}
+          hitSlop={TOUCH_HIT_SLOP}
+          activeOpacity={0.85}
+        >
+          <Text style={[styles.actionChipText, { color: UI_COLORS.accent }]}>
+            Ask AI ✦
           </Text>
         </TouchableOpacity>
       </View>
@@ -298,6 +316,7 @@ export default function SurahScreen({ route }: any) {
   const [currentTafseer, setCurrentTafseer] = useState<string>('');
   const [loadingTafseer, setLoadingTafseer] = useState(false);
   const [expandedTranslation, setExpandedTranslation] = useState<number | null>(null); // New: for translation
+  const [askAyah, setAskAyah] = useState<{ ayahNumber: number; verseKey: string; arabicText: string; translation: string } | null>(null);
 
   // For cancelling previous tafseer fetch
   const abortControllerRef = useRef<AbortController | null>(null);
@@ -611,6 +630,15 @@ export default function SurahScreen({ route }: any) {
     }
   }, [bookmarkedAyahs, saveBookmarkWithTag, showAlert, surah.id]);
 
+  const handleAskAI = useCallback((ayah: any) => {
+    setAskAyah({
+      ayahNumber: ayah.verse_number,
+      verseKey: ayah.verse_key,
+      arabicText: ayah.text_uthmani,
+      translation: ayah.translation ?? '',
+    });
+  }, []);
+
   const isDark = settings.isDarkMode;
   const ayahArabicFontSize = Math.max(24, settings.arabicFontSize);
   const arabicFontFamily = resolveArabicFontFamily(settings.arabicFontFamily);
@@ -681,6 +709,7 @@ export default function SurahScreen({ route }: any) {
         onToggleBookmark={toggleBookmark}
         onToggleTranslation={toggleTranslation}
         onToggleTafseer={toggleTafseer}
+        onAskAI={handleAskAI}
       />
     );
   }, [
@@ -697,6 +726,7 @@ export default function SurahScreen({ route }: any) {
     toggleBookmark,
     toggleTranslation,
     toggleTafseer,
+    handleAskAI,
   ]);
 
   return (
@@ -844,6 +874,16 @@ export default function SurahScreen({ route }: any) {
             </View>
           </View>
         </Modal>
+
+        <AskAyahModal
+          visible={askAyah !== null}
+          onClose={() => setAskAyah(null)}
+          surahName={surah.name_simple}
+          ayahNumber={askAyah?.ayahNumber ?? 0}
+          verseKey={askAyah?.verseKey ?? ''}
+          arabicText={askAyah?.arabicText ?? ''}
+          translation={askAyah?.translation ?? ''}
+        />
       </View>
     </SafeAreaView>
   );

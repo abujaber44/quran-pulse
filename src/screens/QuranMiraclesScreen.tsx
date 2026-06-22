@@ -18,6 +18,7 @@ import { fetchSurahs } from '../services/quranApi';
 import { fetchQuranMiraclesContent, MiraclesContentResult } from '../services/miraclesService';
 import { UI_COLORS, UI_RADII, UI_SHADOWS } from '../theme/ui';
 import { MiracleCategory, MiracleItem, Surah } from '../types';
+import AskMiracleModal from '../components/AskMiracleModal';
 
 type CategoryFilter = 'all' | MiracleCategory;
 type LanguageFilter = 'en' | 'ar';
@@ -95,6 +96,7 @@ export default function QuranMiraclesScreen() {
   const [sourceType, setSourceType] = useState<'cms' | 'fallback'>('fallback');
   const [updatedAt, setUpdatedAt] = useState<string | undefined>(undefined);
   const [warning, setWarning] = useState<string | undefined>(undefined);
+  const [selectedMiracle, setSelectedMiracle] = useState<MiracleItem | null>(null);
 
   const loadMiracles = useCallback(async (isRefresh: boolean) => {
     if (isRefresh) {
@@ -303,6 +305,13 @@ export default function QuranMiraclesScreen() {
           </View>
         ) : null}
 
+        <TouchableOpacity
+          style={styles.aiInsightButton}
+          onPress={() => setSelectedMiracle(item)}
+        >
+          <Text style={styles.aiInsightButtonText}>Ask AI ✦ — Explain This Miracle</Text>
+        </TouchableOpacity>
+
         {item.sources.length > 0 ? (
           <View style={styles.sourcesWrap}>
             <Text style={[styles.sourcesTitle, isDark && styles.darkText]}>Sources</Text>
@@ -445,6 +454,18 @@ export default function QuranMiraclesScreen() {
           }
         />
       </View>
+
+      <AskMiracleModal
+        visible={selectedMiracle !== null}
+        onClose={() => setSelectedMiracle(null)}
+        miracle={selectedMiracle ? {
+          title: selectedMiracle.title,
+          summary: selectedMiracle.summary,
+          detail: selectedMiracle.detail,
+          category: selectedMiracle.category,
+          ayahRefs: selectedMiracle.ayahRefs,
+        } : null}
+      />
     </SafeAreaView>
   );
 }
@@ -695,6 +716,19 @@ const styles = StyleSheet.create({
     backgroundColor: '#ecf6ff',
     paddingHorizontal: 10,
     paddingVertical: 6,
+  },
+  aiInsightButton: {
+    backgroundColor: UI_COLORS.accent,
+    paddingVertical: 12,
+    borderRadius: UI_RADII.sm,
+    alignItems: 'center',
+    marginTop: 12,
+    marginBottom: 4,
+  },
+  aiInsightButtonText: {
+    color: UI_COLORS.white,
+    fontSize: 14,
+    fontWeight: '700',
   },
   sourcesWrap: {
     marginTop: 11,

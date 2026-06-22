@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, ScrollView, StyleSheet, Text, Vibration, View } from 'react-native';
+import { ActivityIndicator, Animated, Easing, ScrollView, StyleSheet, Text, Vibration, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as Location from 'expo-location';
 import { useSettings } from '../context/SettingsContext';
@@ -24,6 +24,39 @@ const isValidCoordinates = (value: unknown): value is Coordinates => {
 };
 
 const QIBLA_VIBRATION_INTERVAL_MS = 1000;
+const COMPASS_SIZE = 300;
+const COMPASS_RADIUS = COMPASS_SIZE / 2;
+const TICK_COUNT = 36;
+
+const TickMarks = React.memo(() => {
+  const ticks = [];
+  for (let i = 0; i < TICK_COUNT; i++) {
+    const angle = (i * 360) / TICK_COUNT;
+    const isMajor = i % 3 === 0;
+    ticks.push(
+      <View
+        key={i}
+        style={[
+          styles.tick,
+          {
+            height: isMajor ? 12 : 6,
+            width: isMajor ? 2 : 1,
+            backgroundColor: isMajor ? '#8aa8c0' : '#b9d3e6',
+            top: 0,
+            left: COMPASS_RADIUS - 1,
+            transform: [
+              { translateY: 0 },
+              { rotate: `${angle}deg` },
+              { translateY: 0 },
+            ],
+            transformOrigin: `center ${COMPASS_RADIUS}px`,
+          },
+        ]}
+      />,
+    );
+  }
+  return <>{ticks}</>;
+});
 
 export default function QiblaCompassScreen({ route }: any) {
   const city = typeof route?.params?.city === 'string' ? route.params.city : '';
@@ -38,9 +71,15 @@ export default function QiblaCompassScreen({ route }: any) {
   const qiblaVibrationIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const qiblaFlashIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
+  const dialAnim = useRef(new Animated.Value(0)).current;
+  const arrowAnim = useRef(new Animated.Value(0)).current;
+  const glowAnim = useRef(new Animated.Value(0)).current;
+  const prevHeadingRef = useRef<number>(0);
+
   const { settings } = useSettings();
   const isDark = settings.isDarkMode;
 
+  // --- Coordinate resolution (unchanged) ---
   useEffect(() => {
     if (currentCoordinates || !city) return;
     let isActive = true;
@@ -71,6 +110,7 @@ export default function QiblaCompassScreen({ route }: any) {
     };
   }, [city, currentCoordinates]);
 
+  // --- Heading subscription (unchanged) ---
   useEffect(() => {
     let isActive = true;
     let subscription: Location.LocationSubscription | null = null;
@@ -103,6 +143,7 @@ export default function QiblaCompassScreen({ route }: any) {
     };
   }, []);
 
+  // --- Qibla calculations (unchanged) ---
   const qiblaBearing = currentCoordinates ? calculateQiblaBearing(currentCoordinates) : null;
   const distanceToKaabaKm = currentCoordinates ? calculateDistanceToKaabaKm(currentCoordinates) : null;
   const rotationToQibla =
@@ -112,6 +153,45 @@ export default function QiblaCompassScreen({ route }: any) {
     heading !== null && qiblaBearing !== null ? ((qiblaBearing - heading + 540) % 360) - 180 : null;
   const isFacingQibla = signedTurnDelta !== null && Math.abs(signedTurnDelta) <= 5;
 
+  // --- Smooth animated rotation ---
+  useEffect(() => {
+    if (heading === null) return;
+
+    let targetDial = -heading;
+    const prevDial = prevHeadingRef.current;
+    let diff = targetDial - prevDial;
+    if (diff > 180) diff -= 360;
+    if (diff < -180) diff += 360;
+    targetDial = prevDial + diff;
+    prevHeadingRef.current = targetDial;
+
+    Animated.timing(dialAnim, {
+      toValue: targetDial,
+      duration: 200,
+      easing: Easing.out(Easing.quad),
+      useNativeDriver: true,
+    }).start();
+
+    if (rotationToQibla !== null) {
+      Animated.timing(arrowAnim, {
+        toValue: rotationToQibla,
+        duration: 200,
+        easing: Easing.out(Easing.quad),
+        useNativeDriver: true,
+      }).start();
+    }
+  }, [heading, rotationToQibla]);
+
+  // --- Glow animation ---
+  useEffect(() => {
+    Animated.timing(glowAnim, {
+      toValue: isFacingQibla ? 1 : 0,
+      duration: 400,
+      useNativeDriver: false,
+    }).start();
+  }, [isFacingQibla]);
+
+  // --- Vibration & flash (unchanged) ---
   useEffect(() => {
     if (!isFacingQibla) {
       if (qiblaVibrationIntervalRef.current) {
@@ -155,78 +235,63 @@ export default function QiblaCompassScreen({ route }: any) {
   }, [isFacingQibla]);
 
   const qiblaTurnInstruction = () => {
-    if (signedTurnDelta === null) return 'Align your phone with North to start guidance.';
+    if (signedTurnDelta === null) return { text: 'Align your phone to start', arrow: '' };
     const delta = Math.round(Math.abs(signedTurnDelta));
-    if (delta <= 5) return 'You are facing Qibla.';
-    return signedTurnDelta > 0 ? `Turn right ${delta}°` : `Turn left ${delta}°`;
+    if (delta <= 5) return { text: 'You are facing Qibla', arrow: '🕋' };
+    return signedTurnDelta > 0
+      ? { text: `Turn right ${delta}°`, arrow: '→' }
+      : { text: `Turn left ${delta}°`, arrow: '←' };
   };
 
   const compassQuality = useMemo(() => {
     if (!isCompassAvailable) {
-      return {
-        label: 'Unavailable',
-        badgeColor: UI_COLORS.danger,
-        textColor: UI_COLORS.white,
-        needsCalibrationPrompt: true,
-        guidance: 'Compass sensor is unavailable on this device/runtime.',
-      };
+      return { label: 'Unavailable', badgeColor: UI_COLORS.danger, textColor: UI_COLORS.white, needsCalibrationPrompt: true, guidance: 'Compass sensor is unavailable on this device/runtime.' };
     }
-
     if (headingAccuracy === null) {
-      return {
-        label: 'Initializing',
-        badgeColor: '#c98200',
-        textColor: UI_COLORS.white,
-        needsCalibrationPrompt: true,
-        guidance: 'Move your phone slowly to initialize compass direction.',
-      };
+      return { label: 'Initializing', badgeColor: '#c98200', textColor: UI_COLORS.white, needsCalibrationPrompt: true, guidance: 'Move your phone slowly to initialize compass direction.' };
     }
-
     if (headingAccuracy <= 1) {
-      return {
-        label: 'Low Accuracy',
-        badgeColor: '#c98200',
-        textColor: UI_COLORS.white,
-        needsCalibrationPrompt: true,
-        guidance: 'Re-calibrate by moving phone in a figure-8 and keep away from metal objects.',
-      };
+      return { label: 'Low Accuracy', badgeColor: '#c98200', textColor: UI_COLORS.white, needsCalibrationPrompt: true, guidance: 'Re-calibrate by moving phone in a figure-8 and keep away from metal objects.' };
     }
-
     if (headingAccuracy === 2) {
-      return {
-        label: 'Medium Accuracy',
-        badgeColor: UI_COLORS.accent,
-        textColor: UI_COLORS.white,
-        needsCalibrationPrompt: true,
-        guidance: 'Keep phone flat and away from magnetic interference for better heading confidence.',
-      };
+      return { label: 'Medium', badgeColor: UI_COLORS.accent, textColor: UI_COLORS.white, needsCalibrationPrompt: true, guidance: 'Keep phone flat and away from magnetic interference for better accuracy.' };
     }
-
-    return {
-      label: 'Calibrated',
-      badgeColor: UI_COLORS.primary,
-      textColor: UI_COLORS.white,
-      needsCalibrationPrompt: false,
-      guidance: '',
-    };
+    return { label: 'Calibrated', badgeColor: UI_COLORS.primary, textColor: UI_COLORS.white, needsCalibrationPrompt: false, guidance: '' };
   }, [headingAccuracy, isCompassAvailable]);
+
+  const instruction = qiblaTurnInstruction();
+
+  const dialInterpolation = dialAnim.interpolate({
+    inputRange: [-360, 360],
+    outputRange: ['-360deg', '360deg'],
+  });
+
+  const arrowInterpolation = arrowAnim.interpolate({
+    inputRange: [0, 360],
+    outputRange: ['0deg', '360deg'],
+  });
+
+  const glowColor = glowAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['rgba(31, 157, 85, 0)', 'rgba(31, 157, 85, 0.25)'],
+  });
 
   return (
     <SafeAreaView style={[styles.container, isDark && styles.darkBg]} edges={['left', 'right', 'bottom']}>
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         <ScreenIntroTile
           title="Qibla Compass"
-          description="Use live heading guidance to face the Kaaba precisely. Compass labels rotate with your orientation, and alignment feedback activates when Qibla is reached."
+          description="Face the Kaaba with live heading guidance. The compass rotates with your orientation."
           isDark={isDark}
           style={styles.introTile}
         />
 
         <View style={[styles.summaryCard, isDark && styles.darkCard]}>
-          <Text style={[styles.summaryTitle, isDark && styles.darkText]}>{city || 'Current City'}</Text>
+          <Text style={[styles.summaryTitle, isDark && styles.darkText]}>🕋 {city || 'Current City'}</Text>
           <Text style={[styles.summaryText, isDark && styles.darkMutedText]}>
             {distanceToKaabaKm !== null
               ? `Distance to Kaaba: ${distanceToKaabaKm.toFixed(1)} km`
-              : 'Distance to Kaaba will appear after coordinates are resolved.'}
+              : 'Distance will appear after coordinates are resolved.'}
           </Text>
           {resolvingCoordinates ? (
             <View style={styles.loadingRow}>
@@ -259,14 +324,16 @@ export default function QiblaCompassScreen({ route }: any) {
           ) : (
             <>
               <View style={styles.qiblaCompassWrap}>
+                <Animated.View style={[styles.glowRing, { backgroundColor: glowColor }]} />
                 <View style={[styles.qiblaDial, isDark && styles.darkQiblaDial]}>
                   <View style={[styles.qiblaOuterRing, isDark && styles.darkQiblaOuterRing]} />
-                  <View
+                  <Animated.View
                     style={[
                       styles.qiblaFaceLayer,
-                      heading !== null ? { transform: [{ rotate: `${dialRotation}deg` }] } : null,
+                      { transform: [{ rotate: dialInterpolation }] },
                     ]}
                   >
+                    <TickMarks />
                     <View style={[styles.qiblaInnerRing, isDark && styles.darkQiblaInnerRing]} />
                     <View style={[styles.qiblaCrossLine, styles.qiblaCrossHorizontal]} />
                     <View style={[styles.qiblaCrossLine, styles.qiblaCrossVertical]} />
@@ -278,42 +345,50 @@ export default function QiblaCompassScreen({ route }: any) {
                     <Text style={[styles.qiblaInterCardinal, styles.qiblaSouthEast]}>SE</Text>
                     <Text style={[styles.qiblaInterCardinal, styles.qiblaSouthWest]}>SW</Text>
                     <Text style={[styles.qiblaInterCardinal, styles.qiblaNorthWest]}>NW</Text>
-                  </View>
-                  <View
+                  </Animated.View>
+                  <Animated.View
                     style={[
                       styles.qiblaArrowWrap,
-                      rotationToQibla !== null ? { transform: [{ rotate: `${rotationToQibla}deg` }] } : null,
+                      { transform: [{ rotate: arrowInterpolation }] },
                     ]}
                   >
-                    <View style={styles.qiblaArrowStem} />
-                    <Text style={styles.qiblaArrow}>▲</Text>
-                  </View>
+                    <View style={styles.qiblaArrowInner}>
+                      <View style={styles.qiblaArrowHead} />
+                      <View style={styles.qiblaArrowStem} />
+                    </View>
+                  </Animated.View>
                   <View style={[styles.qiblaCenterDot, isFacingQibla && styles.qiblaCenterDotAligned]} />
                 </View>
               </View>
 
+              <View style={styles.instructionWrap}>
+                <Text style={styles.instructionArrow}>{instruction.arrow}</Text>
+                <Text style={[styles.instructionText, isFacingQibla && styles.instructionAligned]}>
+                  {instruction.text}
+                </Text>
+              </View>
+
               <View style={styles.qiblaMetricsRow}>
                 <View style={[styles.qiblaMetricPill, isDark && styles.darkQiblaMetricPill]}>
-                  <Text style={[styles.qiblaMetricLabel, isDark && styles.darkMutedText]}>Qibla</Text>
+                  <Text style={[styles.qiblaMetricLabel, isDark && styles.darkMutedText]}>🧭 Qibla</Text>
                   <Text style={[styles.qiblaMetricValue, isDark && styles.darkText]}>{Math.round(qiblaBearing)}°</Text>
                 </View>
                 <View style={[styles.qiblaMetricPill, isDark && styles.darkQiblaMetricPill]}>
-                  <Text style={[styles.qiblaMetricLabel, isDark && styles.darkMutedText]}>Heading</Text>
+                  <Text style={[styles.qiblaMetricLabel, isDark && styles.darkMutedText]}>📍 Heading</Text>
                   <Text style={[styles.qiblaMetricValue, isDark && styles.darkText]}>
                     {heading !== null ? `${Math.round(heading)}°` : '--'}
                   </Text>
                 </View>
                 <View style={[styles.qiblaMetricPill, isDark && styles.darkQiblaMetricPill]}>
-                  <Text style={[styles.qiblaMetricLabel, isDark && styles.darkMutedText]}>Distance</Text>
+                  <Text style={[styles.qiblaMetricLabel, isDark && styles.darkMutedText]}>🕋 Distance</Text>
                   <Text style={[styles.qiblaMetricValue, isDark && styles.darkText]}>
-                    {distanceToKaabaKm !== null ? `${distanceToKaabaKm.toFixed(1)} km` : '--'}
+                    {distanceToKaabaKm !== null ? `${distanceToKaabaKm.toFixed(0)} km` : '--'}
                   </Text>
                 </View>
               </View>
 
-              <Text style={styles.qiblaInstruction}>{qiblaTurnInstruction()}</Text>
               {compassQuality.needsCalibrationPrompt ? (
-                <Text style={[styles.qiblaCalibration, isDark && styles.darkText]}>{compassQuality.guidance}</Text>
+                <Text style={[styles.qiblaCalibration, isDark && styles.darkMutedText]}>{compassQuality.guidance}</Text>
               ) : null}
             </>
           )}
@@ -336,91 +411,52 @@ const styles = StyleSheet.create({
     borderRadius: UI_RADII.lg,
     borderWidth: 1,
     borderColor: UI_COLORS.border,
-    padding: 14,
+    padding: 16,
     marginBottom: 14,
     ...UI_SHADOWS.card,
   },
-  summaryTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: UI_COLORS.text,
-    marginBottom: 4,
-  },
-  summaryText: {
-    fontSize: 14,
-    color: UI_COLORS.textMuted,
-    lineHeight: 20,
-  },
-  loadingRow: {
-    marginTop: 10,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  loadingText: {
-    fontSize: 13,
-    color: UI_COLORS.textMuted,
-  },
+  summaryTitle: { fontSize: 20, fontWeight: '700', color: UI_COLORS.text, marginBottom: 4 },
+  summaryText: { fontSize: 14, color: UI_COLORS.textMuted, lineHeight: 20 },
+  loadingRow: { marginTop: 10, flexDirection: 'row', alignItems: 'center', gap: 8 },
+  loadingText: { fontSize: 13, color: UI_COLORS.textMuted },
   qiblaCard: {
     backgroundColor: UI_COLORS.surface,
     borderRadius: UI_RADII.lg,
     borderWidth: 1,
     borderColor: UI_COLORS.border,
-    padding: 16,
+    padding: 20,
     marginBottom: 10,
     ...UI_SHADOWS.card,
   },
-  qiblaCardFlash: {
-    backgroundColor: '#dff5e7',
-    borderColor: '#87c8a0',
-  },
-  qiblaCardFlashDark: {
-    backgroundColor: '#264536',
-    borderColor: '#4f8f6a',
-  },
+  qiblaCardFlash: { backgroundColor: '#dff5e7', borderColor: '#87c8a0' },
+  qiblaCardFlashDark: { backgroundColor: '#264536', borderColor: '#4f8f6a' },
   qiblaHeaderRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 14,
+    marginBottom: 16,
   },
-  qiblaTitle: {
-    fontSize: 21,
-    fontWeight: '700',
-    color: UI_COLORS.text,
-    letterSpacing: 0.2,
-  },
-  qiblaStatusBadge: {
-    borderRadius: 999,
-    paddingHorizontal: 12,
-    paddingVertical: 5,
-  },
-  qiblaStatusBadgeText: {
-    fontSize: 11,
-    fontWeight: '700',
-  },
-  qiblaHint: {
-    fontSize: 14,
-    textAlign: 'center',
-    color: UI_COLORS.textMuted,
-    lineHeight: 20,
-  },
-  qiblaCompassWrap: {
-    alignItems: 'center',
-    marginBottom: 14,
+  qiblaTitle: { fontSize: 22, fontWeight: '700', color: UI_COLORS.text },
+  qiblaStatusBadge: { borderRadius: 999, paddingHorizontal: 12, paddingVertical: 5 },
+  qiblaStatusBadgeText: { fontSize: 11, fontWeight: '700' },
+  qiblaHint: { fontSize: 14, textAlign: 'center', color: UI_COLORS.textMuted, lineHeight: 20 },
+  qiblaCompassWrap: { alignItems: 'center', marginBottom: 20 },
+  glowRing: {
+    position: 'absolute',
+    width: COMPASS_SIZE + 30,
+    height: COMPASS_SIZE + 30,
+    borderRadius: (COMPASS_SIZE + 30) / 2,
   },
   qiblaDial: {
-    width: 188,
-    height: 188,
-    borderRadius: 94,
+    width: COMPASS_SIZE,
+    height: COMPASS_SIZE,
+    borderRadius: COMPASS_RADIUS,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: '#edf5fb',
     overflow: 'hidden',
   },
-  darkQiblaDial: {
-    backgroundColor: '#1a2430',
-  },
+  darkQiblaDial: { backgroundColor: '#1a2430' },
   qiblaFaceLayer: {
     position: 'absolute',
     width: '100%',
@@ -428,117 +464,103 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  tick: {
+    position: 'absolute',
+  },
   qiblaOuterRing: {
     position: 'absolute',
-    width: 188,
-    height: 188,
-    borderRadius: 94,
-    borderWidth: 2,
-    borderColor: '#b9d3e6',
+    width: COMPASS_SIZE,
+    height: COMPASS_SIZE,
+    borderRadius: COMPASS_RADIUS,
+    borderWidth: 3,
+    borderColor: '#9abdd4',
   },
-  darkQiblaOuterRing: {
-    borderColor: '#415061',
-  },
+  darkQiblaOuterRing: { borderColor: '#415061' },
   qiblaInnerRing: {
     position: 'absolute',
-    width: 142,
-    height: 142,
-    borderRadius: 71,
+    width: COMPASS_SIZE * 0.72,
+    height: COMPASS_SIZE * 0.72,
+    borderRadius: (COMPASS_SIZE * 0.72) / 2,
     borderWidth: 1,
     borderColor: '#c8d9e6',
   },
-  darkQiblaInnerRing: {
-    borderColor: '#354252',
-  },
-  qiblaCrossLine: {
-    position: 'absolute',
-    backgroundColor: '#d5e4ef',
-  },
-  qiblaCrossHorizontal: {
-    width: 156,
-    height: 1,
-  },
-  qiblaCrossVertical: {
-    width: 1,
-    height: 156,
-  },
-  qiblaCardinal: {
-    position: 'absolute',
-    fontSize: 12,
-    fontWeight: '700',
-    color: UI_COLORS.textMuted,
-  },
-  qiblaNorth: {
-    top: 13,
-    color: UI_COLORS.accent,
-  },
-  qiblaEast: {
-    right: 14,
-  },
-  qiblaSouth: {
-    bottom: 13,
-  },
-  qiblaWest: {
-    left: 14,
-  },
+  darkQiblaInnerRing: { borderColor: '#354252' },
+  qiblaCrossLine: { position: 'absolute', backgroundColor: '#d5e4ef' },
+  qiblaCrossHorizontal: { width: COMPASS_SIZE * 0.8, height: 1 },
+  qiblaCrossVertical: { width: 1, height: COMPASS_SIZE * 0.8 },
+  qiblaCardinal: { position: 'absolute', fontSize: 16, fontWeight: '800', color: UI_COLORS.textMuted },
+  qiblaNorth: { top: 18, color: UI_COLORS.danger, fontSize: 18 },
+  qiblaEast: { right: 18 },
+  qiblaSouth: { bottom: 18 },
+  qiblaWest: { left: 18 },
   qiblaInterCardinal: {
     position: 'absolute',
-    fontSize: 10,
+    fontSize: 11,
     fontWeight: '700',
-    color: '#6f8598',
-    letterSpacing: 0.2,
+    color: '#8aa8c0',
   },
-  qiblaNorthEast: {
-    top: 30,
-    right: 32,
-  },
-  qiblaSouthEast: {
-    right: 32,
-    bottom: 30,
-  },
-  qiblaSouthWest: {
-    left: 32,
-    bottom: 30,
-  },
-  qiblaNorthWest: {
-    top: 30,
-    left: 32,
-  },
+  qiblaNorthEast: { top: 42, right: 42 },
+  qiblaSouthEast: { right: 42, bottom: 42 },
+  qiblaSouthWest: { left: 42, bottom: 42 },
+  qiblaNorthWest: { top: 42, left: 42 },
   qiblaArrowWrap: {
     position: 'absolute',
-    height: 124,
+    width: COMPASS_SIZE,
+    height: COMPASS_SIZE,
     alignItems: 'center',
     justifyContent: 'flex-start',
+    paddingTop: 15,
+  },
+  qiblaArrowInner: {
+    alignItems: 'center',
+  },
+  qiblaArrowHead: {
+    width: 0,
+    height: 0,
+    borderLeftWidth: 12,
+    borderRightWidth: 12,
+    borderBottomWidth: 24,
+    borderLeftColor: 'transparent',
+    borderRightColor: 'transparent',
+    borderBottomColor: UI_COLORS.primary,
+    marginBottom: -2,
   },
   qiblaArrowStem: {
-    width: 2,
-    height: 70,
-    backgroundColor: '#73b891',
-    marginBottom: -4,
-  },
-  qiblaArrow: {
-    fontSize: 44,
-    color: UI_COLORS.primary,
-    textShadowColor: 'rgba(0,0,0,0.15)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 2,
+    width: 4,
+    height: COMPASS_RADIUS - 40,
+    backgroundColor: UI_COLORS.primary,
+    borderBottomLeftRadius: 2,
+    borderBottomRightRadius: 2,
   },
   qiblaCenterDot: {
-    width: 14,
-    height: 14,
-    borderRadius: 7,
+    width: 18,
+    height: 18,
+    borderRadius: 9,
     backgroundColor: UI_COLORS.accent,
-    borderWidth: 2,
+    borderWidth: 3,
     borderColor: UI_COLORS.white,
+    ...UI_SHADOWS.input,
   },
-  qiblaCenterDotAligned: {
-    backgroundColor: UI_COLORS.primary,
+  qiblaCenterDotAligned: { backgroundColor: UI_COLORS.primary },
+  instructionWrap: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 18,
+    gap: 10,
   },
+  instructionArrow: { fontSize: 28 },
+  instructionText: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: UI_COLORS.text,
+  },
+  instructionAligned: { color: UI_COLORS.primary },
   qiblaMetricsRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     gap: 10,
-    marginBottom: 8,
+    marginBottom: 12,
   },
   qiblaMetricPill: {
     flex: 1,
@@ -546,30 +568,13 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#d2e1ec',
     backgroundColor: '#f7fbff',
-    paddingVertical: 9,
+    paddingVertical: 12,
     paddingHorizontal: 10,
+    alignItems: 'center',
   },
-  darkQiblaMetricPill: {
-    backgroundColor: '#1e2a36',
-    borderColor: '#354252',
-  },
-  qiblaMetricLabel: {
-    fontSize: 12,
-    color: UI_COLORS.textMuted,
-    marginBottom: 2,
-  },
-  qiblaMetricValue: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: UI_COLORS.text,
-  },
-  qiblaInstruction: {
-    fontSize: 16,
-    textAlign: 'center',
-    color: UI_COLORS.primary,
-    fontWeight: '700',
-    marginBottom: 8,
-  },
+  darkQiblaMetricPill: { backgroundColor: '#1e2a36', borderColor: '#354252' },
+  qiblaMetricLabel: { fontSize: 12, color: UI_COLORS.textMuted, marginBottom: 4 },
+  qiblaMetricValue: { fontSize: 20, fontWeight: '800', color: UI_COLORS.text },
   qiblaCalibration: {
     fontSize: 13,
     textAlign: 'center',
