@@ -12,7 +12,20 @@ export interface Bookmark {
   translation: string;
   timestamp: number;
   tag: BookmarkTag;
+  note?: string;
 }
+
+export const updateBookmarkNote = async (surahId: number, ayahNum: number, note: string): Promise<void> => {
+  try {
+    const existing = await getBookmarks();
+    const updated = existing.map(b =>
+      b.surahId === surahId && b.ayahNum === ayahNum ? { ...b, note } : b
+    );
+    await AsyncStorage.setItem(BOOKMARKS_KEY, JSON.stringify(updated));
+  } catch (error) {
+    console.error('Failed to update bookmark note', error);
+  }
+};
 
 export const addBookmark = async (bookmark: Bookmark): Promise<void> => {
   try {
@@ -63,6 +76,7 @@ export const getBookmarks = async (): Promise<Bookmark[]> => {
         translation: typeof item.translation === 'string' ? item.translation : '',
         timestamp: typeof item.timestamp === 'number' ? item.timestamp : Date.now(),
         tag: item.tag === 'memorize' || item.tag === 'read_recite' ? item.tag : 'read_recite',
+        note: typeof (item as any).note === 'string' ? (item as any).note : undefined,
       }));
   } catch (error) {
     console.error('Failed to load bookmarks', error);
