@@ -6,6 +6,7 @@ import {
   RefreshControl,
   StyleSheet,
   Text,
+  ScrollView,
   TouchableOpacity,
   View,
 } from 'react-native';
@@ -17,8 +18,11 @@ import { useThemedAlert } from '../context/ThemedAlertContext';
 import { fetchSurahs } from '../services/quranApi';
 import { fetchQuranMiraclesContent, MiraclesContentResult } from '../services/miraclesService';
 import { UI_COLORS, UI_RADII, UI_SHADOWS } from '../theme/ui';
+import { UI_GLASS } from '../theme/ui';
+import GlassBackground from '../components/GlassBackground';
 import { MiracleCategory, MiracleItem, Surah } from '../types';
 import AskMiracleModal from '../components/AskMiracleModal';
+import { useLanguage } from '../i18n';
 
 type CategoryFilter = 'all' | MiracleCategory;
 type LanguageFilter = 'en' | 'ar';
@@ -31,6 +35,20 @@ const CATEGORY_BADGE_PALETTE: Array<{ bg: string; text: string }> = [
   { bg: '#f9e2e5', text: '#8b3142' },
   { bg: '#d9f5f2', text: '#145d57' },
 ];
+
+const CATEGORY_ICONS: Record<string, string> = {
+  'all': '✨',
+  'Language & Eloquence': '📝',
+  'Numerical Patterns': '🔢',
+  'Cosmology & Natural World': '🌍',
+  'Human Development': '🧬',
+  'Water & Seas': '🌊',
+  'History & Prophecy': '📜',
+  'Law, Society & Civilization': '⚖️',
+};
+
+const getCategoryIcon = (category: string): string =>
+  CATEGORY_ICONS[category] ?? '📖';
 
 const formatCategoryLabel = (category: string): string => {
   const trimmed = category.trim();
@@ -84,12 +102,13 @@ const parseAyahRef = (ref: string): { surahId: number; ayahNum: number } | null 
 export default function QuranMiraclesScreen() {
   const { settings } = useSettings();
   const { showAlert } = useThemedAlert();
+  const { t, lang } = useLanguage();
   const isDark = settings.isDarkMode;
   const navigation = useNavigation<any>();
 
   const [items, setItems] = useState<MiracleItem[]>([]);
   const [surahs, setSurahs] = useState<Surah[]>([]);
-  const [selectedLanguage, setSelectedLanguage] = useState<LanguageFilter>('en');
+  const [selectedLanguage, setSelectedLanguage] = useState<LanguageFilter>(lang as LanguageFilter);
   const [selectedCategory, setSelectedCategory] = useState<CategoryFilter>('all');
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -154,7 +173,7 @@ export default function QuranMiraclesScreen() {
   }, [languageItems]);
 
   const categoryFilters = useMemo<Array<{ key: CategoryFilter; label: string }>>(
-    () => [{ key: 'all', label: 'All' }, ...availableCategories.map((category) => ({
+    () => [{ key: 'all', label: t.allCategories }, ...availableCategories.map((category) => ({
       key: category,
       label: formatCategoryLabel(category),
     }))],
@@ -300,7 +319,7 @@ export default function QuranMiraclesScreen() {
 
         {item.caution ? (
           <View style={[styles.cautionBox, isDark && styles.darkCautionBox]}>
-            <Text style={[styles.cautionLabel, isDark && styles.darkText]}>Note</Text>
+            <Text style={[styles.cautionLabel, isDark && styles.darkText]}>{t.note}</Text>
             <Text style={[styles.cautionText, isDark && styles.darkMutedText]}>{item.caution}</Text>
           </View>
         ) : null}
@@ -309,12 +328,12 @@ export default function QuranMiraclesScreen() {
           style={styles.aiInsightButton}
           onPress={() => setSelectedMiracle(item)}
         >
-          <Text style={styles.aiInsightButtonText}>Ask AI ✦ — Explain This Miracle</Text>
+          <Text style={styles.aiInsightButtonText}>{t.askAiExplainMiracle}</Text>
         </TouchableOpacity>
 
         {item.sources.length > 0 ? (
           <View style={styles.sourcesWrap}>
-            <Text style={[styles.sourcesTitle, isDark && styles.darkText]}>Sources</Text>
+            <Text style={[styles.sourcesTitle, isDark && styles.darkText]}>{t.sources}</Text>
             <View style={styles.sourcesRow}>
               {item.sources.slice(0, 3).map((source) => (
                 <TouchableOpacity
@@ -336,101 +355,64 @@ export default function QuranMiraclesScreen() {
 
   if (loading) {
     return (
-      <View style={[styles.loaderContainer, isDark && styles.darkBg]}>
-        <ActivityIndicator size="large" color={UI_COLORS.primary} />
-        <Text style={[styles.loaderText, isDark && styles.darkText]}>Loading miracle insights...</Text>
-      </View>
+      <GlassBackground isDark={isDark}>
+        <View style={styles.loaderContainer}>
+          <ActivityIndicator size="large" color={UI_COLORS.primary} />
+          <Text style={[styles.loaderText, isDark && styles.darkText]}>Loading miracle insights...</Text>
+        </View>
+      </GlassBackground>
     );
   }
 
   return (
-    <SafeAreaView style={[styles.safeArea, isDark && styles.darkBg]} edges={['left', 'right', 'bottom']}>
-      <View style={[styles.container, isDark && styles.darkBg]}>
+    <GlassBackground isDark={isDark}>
+      <SafeAreaView style={styles.safeArea} edges={['left', 'right', 'bottom']}>
+      <View style={styles.container}>
         <ScreenIntroTile
-          title="Quran Miracles"
+          title={t.miraclesTitle}
           subtitle="Dynamic Categories with Sources"
-          description="Explore Quran reflection cards grouped by real miracle categories, with ayah references and source links."
+          description={t.miraclesDescription}
           isDark={isDark}
           style={styles.introTile}
         />
 
-        <View style={styles.filterRow}>
-          <View style={styles.languageFilterGroup}>
-            <TouchableOpacity
-              style={[
-                styles.filterChip,
-                selectedLanguage === 'en' && styles.filterChipActive,
-                isDark && styles.darkFilterChip,
-                selectedLanguage === 'en' && isDark && styles.darkFilterChipActive,
-              ]}
-              onPress={() => setSelectedLanguage('en')}
-            >
-              <Text
-                style={[
-                  styles.filterChipText,
-                  selectedLanguage === 'en' && styles.filterChipTextActive,
-                  isDark && styles.darkMutedText,
-                ]}
-              >
-                English
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[
-                styles.filterChip,
-                selectedLanguage === 'ar' && styles.filterChipActive,
-                isDark && styles.darkFilterChip,
-                selectedLanguage === 'ar' && isDark && styles.darkFilterChipActive,
-              ]}
-              onPress={() => setSelectedLanguage('ar')}
-            >
-              <Text
-                style={[
-                  styles.filterChipText,
-                  selectedLanguage === 'ar' && styles.filterChipTextActive,
-                  isDark && styles.darkMutedText,
-                ]}
-              >
-                العربية
-              </Text>
-            </TouchableOpacity>
-          </View>
-
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.categoryScroll}
+        >
           {categoryFilters.map((filter) => {
             const selected = selectedCategory === filter.key;
+            const icon = getCategoryIcon(filter.key);
             return (
               <TouchableOpacity
                 key={filter.key}
                 style={[
-                  styles.filterChip,
-                  selected && styles.filterChipActive,
-                  isDark && styles.darkFilterChip,
-                  selected && isDark && styles.darkFilterChipActive,
+                  styles.categoryTab,
+                  selected && styles.categoryTabActive,
+                  isDark && styles.darkCategoryTab,
+                  selected && isDark && styles.darkCategoryTabActive,
                 ]}
                 onPress={() => setSelectedCategory(filter.key)}
+                activeOpacity={0.8}
               >
+                <Text style={styles.categoryIcon}>{icon}</Text>
                 <Text
                   style={[
-                    styles.filterChipText,
-                    selected && styles.filterChipTextActive,
+                    styles.categoryLabel,
+                    selected && styles.categoryLabelActive,
                     isDark && styles.darkMutedText,
-                    selected && styles.filterChipTextActive,
+                    selected && styles.categoryLabelActive,
                   ]}
+                  numberOfLines={1}
                 >
                   {filter.label}
                 </Text>
+                {selected && <View style={styles.categoryDot} />}
               </TouchableOpacity>
             );
           })}
-        </View>
-
-        <View style={[styles.statusCard, isDark && styles.darkCard]}>
-          <Text style={[styles.statusText, isDark && styles.darkMutedText]}>
-            Content source: {sourceType === 'cms' ? 'Live CMS' : 'Fallback dataset'}
-          </Text>
-          {updatedAt ? <Text style={[styles.statusSubText, isDark && styles.darkMutedText]}>Updated: {updatedAt}</Text> : null}
-          {warning ? <Text style={styles.warningText}>{warning}</Text> : null}
-        </View>
+        </ScrollView>
 
         <FlatList
           data={filteredItems}
@@ -466,68 +448,74 @@ export default function QuranMiraclesScreen() {
           ayahRefs: selectedMiracle.ayahRefs,
         } : null}
       />
-    </SafeAreaView>
+      </SafeAreaView>
+    </GlassBackground>
   );
 }
 
 const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: UI_COLORS.background },
-  container: { flex: 1, backgroundColor: UI_COLORS.background },
-  darkBg: { backgroundColor: UI_COLORS.darkBackground },
-  darkCard: { backgroundColor: UI_COLORS.darkSurface, borderColor: '#30353b' },
+  safeArea: { flex: 1 },
+  container: { flex: 1 },
+  darkCard: { backgroundColor: 'rgba(26, 38, 52, 0.75)', borderColor: 'rgba(255, 255, 255, 0.08)' },
   darkText: { color: UI_COLORS.white },
   darkMutedText: { color: '#a8b3bd' },
   introTile: { marginBottom: 8 },
   loaderContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   loaderText: { marginTop: 10, color: UI_COLORS.text, fontSize: 14 },
-  filterRow: {
+  categoryScroll: {
     paddingHorizontal: 16,
-    marginBottom: 10,
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
+    paddingBottom: 14,
+    gap: 10,
   },
-  languageFilterGroup: {
-    width: '100%',
-    flexDirection: 'row',
-    gap: 8,
-    marginBottom: 2,
-  },
-  filterChip: {
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 999,
+  categoryTab: {
+    alignItems: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    borderRadius: UI_RADII.lg,
     borderWidth: 1,
-    borderColor: UI_COLORS.border,
-    backgroundColor: UI_COLORS.surface,
+    borderColor: 'rgba(255, 255, 255, 0.45)',
+    backgroundColor: 'rgba(255, 255, 255, 0.65)',
+    minWidth: 80,
   },
-  darkFilterChip: {
-    backgroundColor: UI_COLORS.darkSurface,
-    borderColor: '#3b434d',
-  },
-  filterChipActive: {
-    backgroundColor: UI_COLORS.primary,
+  categoryTabActive: {
+    backgroundColor: 'rgba(31, 157, 85, 0.12)',
     borderColor: UI_COLORS.primary,
   },
-  darkFilterChipActive: {
-    backgroundColor: UI_COLORS.primary,
+  darkCategoryTab: {
+    backgroundColor: 'rgba(26, 38, 52, 0.75)',
+    borderColor: 'rgba(255, 255, 255, 0.08)',
+  },
+  darkCategoryTabActive: {
+    backgroundColor: 'rgba(31, 157, 85, 0.2)',
     borderColor: UI_COLORS.primary,
   },
-  filterChipText: {
-    color: UI_COLORS.text,
-    fontSize: 12,
+  categoryIcon: {
+    fontSize: 22,
+    marginBottom: 4,
+  },
+  categoryLabel: {
+    fontSize: 11,
     fontWeight: '700',
+    color: UI_COLORS.textMuted,
+    textAlign: 'center',
   },
-  filterChipTextActive: {
-    color: UI_COLORS.white,
+  categoryLabelActive: {
+    color: UI_COLORS.primary,
+  },
+  categoryDot: {
+    width: 5,
+    height: 5,
+    borderRadius: 3,
+    backgroundColor: UI_COLORS.primary,
+    marginTop: 4,
   },
   statusCard: {
     marginHorizontal: 16,
     marginBottom: 8,
     borderRadius: UI_RADII.md,
     borderWidth: 1,
-    borderColor: UI_COLORS.border,
-    backgroundColor: UI_COLORS.surface,
+    borderColor: 'rgba(255, 255, 255, 0.45)',
+    backgroundColor: 'rgba(255, 255, 255, 0.65)',
     paddingVertical: 10,
     paddingHorizontal: 12,
     ...UI_SHADOWS.input,
@@ -553,10 +541,10 @@ const styles = StyleSheet.create({
     paddingBottom: 26,
   },
   card: {
-    backgroundColor: UI_COLORS.surface,
+    backgroundColor: 'rgba(255, 255, 255, 0.65)',
     borderRadius: UI_RADII.lg,
     borderWidth: 1,
-    borderColor: UI_COLORS.border,
+    borderColor: 'rgba(255, 255, 255, 0.45)',
     padding: 14,
     marginVertical: 7,
     ...UI_SHADOWS.card,

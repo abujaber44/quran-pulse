@@ -12,7 +12,10 @@ import { useThemedAlert } from '../context/ThemedAlertContext';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ARABIC_FONT_OPTIONS, resolveArabicFontFamily } from '../theme/fonts';
 import { UI_COLORS, UI_RADII, UI_SHADOWS } from '../theme/ui';
+import { UI_GLASS } from '../theme/ui';
+import GlassBackground from '../components/GlassBackground';
 import ScreenIntroTile from '../components/ScreenIntroTile';
+import { useLanguage } from '../i18n';
 
 const FONT_MIN = 24;
 const FONT_MAX = 48;
@@ -25,6 +28,8 @@ const PAUSE_STEP = 1;
 export default function SettingsScreen() {
   const { settings, updateSetting } = useSettings();
   const { showAlert } = useThemedAlert();
+  const { lang, t, setLanguage } = useLanguage();
+  const isDark = settings.isDarkMode;
   const { arabicFontSize, memorizationPause, arabicFontFamily } = settings;
   const resolvedArabicFontFamily = resolveArabicFontFamily(arabicFontFamily);
 
@@ -67,6 +72,7 @@ export default function SettingsScreen() {
   };
 
   return (
+    <GlassBackground isDark={isDark}>
     <SafeAreaView style={styles.container} edges={['left', 'right', 'bottom']}>
       <ScrollView contentContainerStyle={styles.scroll}>
         <ScreenIntroTile
@@ -190,9 +196,33 @@ export default function SettingsScreen() {
           </Text>
         </View>
 
+        {/* Language */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>{t.language}</Text>
+          <Text style={styles.helperText}>{t.languageDesc}</Text>
+          <View style={styles.languageRow}>
+            <TouchableOpacity
+              style={[styles.languageOption, lang === 'en' && styles.languageOptionActive]}
+              onPress={() => setLanguage('en')}
+            >
+              <Text style={[styles.languageOptionText, lang === 'en' && styles.languageOptionTextActive]}>
+                English
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.languageOption, lang === 'ar' && styles.languageOptionActive]}
+              onPress={() => setLanguage('ar')}
+            >
+              <Text style={[styles.languageOptionText, lang === 'ar' && styles.languageOptionTextActive]}>
+                العربية
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+
         {/* Suggestions / quick actions */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Quick Actions</Text>
+          <Text style={styles.sectionTitle}>{t.quickActions}</Text>
           <TouchableOpacity style={styles.actionButton} onPress={resetFontSize}>
             <Text style={styles.actionButtonText}>Reset Font Size to Default</Text>
           </TouchableOpacity>
@@ -213,11 +243,12 @@ export default function SettingsScreen() {
         <View style={{ height: 50 }} />
       </ScrollView>
     </SafeAreaView>
+    </GlassBackground>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: UI_COLORS.background },
+  container: { flex: 1 },
   scroll: { padding: 20, paddingBottom: 42 },
   introTile: {
     marginHorizontal: 0,
@@ -225,10 +256,10 @@ const styles = StyleSheet.create({
   },
   section: {
     marginBottom: 16,
-    backgroundColor: UI_COLORS.surface,
+    backgroundColor: 'rgba(255, 255, 255, 0.65)',
     borderRadius: UI_RADII.lg,
     borderWidth: 1,
-    borderColor: UI_COLORS.border,
+    borderColor: 'rgba(255, 255, 255, 0.45)',
     padding: 16,
     ...UI_SHADOWS.card,
   },
@@ -287,6 +318,33 @@ const styles = StyleSheet.create({
     color: UI_COLORS.text,
     textAlign: 'center',
     writingDirection: 'rtl',
+  },
+  languageRow: {
+    flexDirection: 'row',
+    gap: 10,
+    marginTop: 10,
+  },
+  languageOption: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: UI_RADII.sm,
+    borderWidth: 1.5,
+    borderColor: UI_COLORS.border,
+    backgroundColor: 'rgba(255,255,255,0.5)',
+    alignItems: 'center',
+  },
+  languageOptionActive: {
+    borderColor: UI_COLORS.primary,
+    backgroundColor: UI_COLORS.primarySoft,
+  },
+  languageOptionText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: UI_COLORS.textMuted,
+  },
+  languageOptionTextActive: {
+    color: UI_COLORS.primaryDeep,
+    fontWeight: '700',
   },
   actionButton: {
     marginTop: 10,

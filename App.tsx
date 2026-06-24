@@ -16,6 +16,7 @@ import { SettingsProvider } from './src/context/SettingsContext';
 import { ThemedAlertProvider } from './src/context/ThemedAlertContext';
 import { CUSTOM_FONT_ASSETS } from './src/theme/fonts';
 import { UI_COLORS, UI_RADII } from './src/theme/ui';
+import LanguageProvider from './src/i18n/LanguageProvider';
 
 import LandingScreen from './src/screens/LandingScreen';
 import MemorizeUnderstandScreen from './src/screens/MemorizeUnderstandScreen';
@@ -49,15 +50,9 @@ const CustomBackButton = ({ navigation }: { navigation: NavigationProp<ParamList
       height: 36,
       borderRadius: UI_RADII.lg,
       paddingHorizontal: 10,
-      //backgroundColor: 'rgba(45,127,184,0.14)',
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'center',
-      shadowColor: UI_COLORS.accent,
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.14,
-      shadowRadius: 4,
-      elevation: 2,
     }}
     onPress={() => {
       navigation.dispatch(
@@ -89,12 +84,12 @@ const getSharedHeaderOptions = (navigation: NavigationProp<ParamListBase>) => ({
   title: 'Quran Pulse',
   headerTitleAlign: 'center' as const,
   headerShadowVisible: false,
-  headerStyle: { backgroundColor: UI_COLORS.surface },
+  headerStyle: { backgroundColor: 'rgba(234, 242, 248, 0.85)' },
   headerTitleStyle: { color: UI_COLORS.text, fontWeight: '700' as const },
   ...(isExpoGo ? {} : { statusBarStyle: 'dark' as const }),
   headerBackVisible: false,
   headerTintColor: UI_COLORS.accent,
-  headerLeftContainerStyle: { paddingLeft: 8 },
+  headerLeftContainerStyle: { paddingLeft: 8, paddingRight: 0 },
   headerTitleContainerStyle: { paddingHorizontal: 8 },
   headerLeft: () => <CustomBackButton navigation={navigation} />,
 });
@@ -115,6 +110,7 @@ export default function App() {
   }
 
   return (
+    <LanguageProvider>
     <SettingsProvider>
       <ThemedAlertProvider>
         <AudioProvider>
@@ -163,7 +159,7 @@ export default function App() {
                 title: 'Quran Pulse',
                 headerTitleAlign: 'center' as const,
                 headerShadowVisible: false,
-                headerStyle: { backgroundColor: UI_COLORS.surface },
+                headerStyle: { backgroundColor: 'rgba(234, 242, 248, 0.85)' },
                 headerTitleStyle: { color: UI_COLORS.text, fontWeight: '700' as const },
                 ...(isExpoGo ? {} : { statusBarStyle: 'dark' as const }),
                 headerBackVisible: true,
@@ -178,7 +174,7 @@ export default function App() {
                 title: 'Quran Pulse',
                 headerTitleAlign: 'center' as const,
                 headerShadowVisible: false,
-                headerStyle: { backgroundColor: UI_COLORS.surface },
+                headerStyle: { backgroundColor: 'rgba(234, 242, 248, 0.85)' },
                 headerTitleStyle: { color: UI_COLORS.text, fontWeight: '700' as const },
                 ...(isExpoGo ? {} : { statusBarStyle: 'dark' as const }),
                 headerBackVisible: true,
@@ -211,5 +207,6 @@ export default function App() {
         </AudioProvider>
       </ThemedAlertProvider>
     </SettingsProvider>
+    </LanguageProvider>
   );
 }

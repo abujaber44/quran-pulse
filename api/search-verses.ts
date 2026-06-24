@@ -3,7 +3,8 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 
 const client = new Anthropic();
 
-const SYSTEM_PROMPT = `You are a Quran search engine. Given a conceptual query, return 5-10 relevant Quranic verses as a JSON array.
+const SYSTEM_PROMPTS: Record<string, string> = {
+  en: `You are a Quran search engine. Given a conceptual query, return 5-10 relevant Quranic verses as a JSON array.
 
 CRITICAL RULES:
 - Only return REAL verses with accurate surah IDs (1-114) and ayah numbers
@@ -12,7 +13,19 @@ CRITICAL RULES:
 - Each item must have: surahId (number), surahName (string), ayahNumber (number), verseKey (string like "2:255"), translation (brief English translation), relevance (1-2 sentence explanation of why this verse is relevant)
 
 Example response format:
-[{"surahId":2,"surahName":"Al-Baqarah","ayahNumber":255,"verseKey":"2:255","translation":"Allah - there is no deity except Him, the Ever-Living, the Sustainer of existence...","relevance":"Known as Ayat al-Kursi, this verse emphasizes Allah's supreme power and sovereignty."}]`;
+[{"surahId":2,"surahName":"Al-Baqarah","ayahNumber":255,"verseKey":"2:255","translation":"Allah - there is no deity except Him, the Ever-Living, the Sustainer of existence...","relevance":"Known as Ayat al-Kursi, this verse emphasizes Allah's supreme power and sovereignty."}]`,
+
+  ar: `أنت محرك بحث في القرآن الكريم. بناءً على استفسار مفاهيمي، أرجع 5-10 آيات قرآنية ذات صلة كمصفوفة JSON.
+
+قواعد حاسمة:
+- أرجع فقط آيات حقيقية بأرقام سور دقيقة (1-114) وأرقام آيات صحيحة
+- لا تختلق أو تخمن مراجع الآيات
+- أرجع الاستجابة كمصفوفة JSON خام (بدون markdown أو كتل كود)
+- كل عنصر يجب أن يحتوي: surahId (رقم)، surahName (اسم السورة بالعربية)، ayahNumber (رقم)، verseKey (مثل "2:255")، translation (ترجمة/نص الآية بالعربية)، relevance (جملة أو اثنتان بالعربية توضح سبب صلة هذه الآية)
+
+مثال:
+[{"surahId":2,"surahName":"البقرة","ayahNumber":255,"verseKey":"2:255","translation":"اللَّهُ لَا إِلَٰهَ إِلَّا هُوَ الْحَيُّ الْقَيُّومُ...","relevance":"تُعرف بآية الكرسي، وتؤكد على قدرة الله المطلقة وسيادته."}]`,
+};
 
 const ipRequestCounts = new Map<string, { count: number; resetAt: number }>();
 
@@ -37,16 +50,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(429).json({ error: 'Too many requests. Please try again later.' });
   }
 
-  const { query } = req.body as { query?: string };
+  const { query, lang } = req.body as { query?: string; lang?: string };
   if (!query || query.trim().length < 2) {
     return res.status(400).json({ error: 'Query must be at least 2 characters' });
   }
+
+  const systemPrompt = SYSTEM_PROMPTS[lang === 'ar' ? 'ar' : 'en'];
 
   try {
     const response = await client.messages.create({
       model: 'claude-haiku-4-5',
       max_tokens: 2048,
-      system: SYSTEM_PROMPT,
+      system: systemPrompt,
       messages: [{ role: 'user', content: `Find Quranic verses about: ${query.trim()}` }],
     });
 

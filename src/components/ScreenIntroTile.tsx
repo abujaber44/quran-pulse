@@ -1,6 +1,7 @@
 import React from 'react';
 import { StyleProp, StyleSheet, Text, View, ViewStyle } from 'react-native';
-import { UI_COLORS, UI_RADII, UI_SHADOWS } from '../theme/ui';
+import { LinearGradient } from 'expo-linear-gradient';
+import { UI_COLORS, UI_RADII, UI_SHADOWS, UI_GLASS } from '../theme/ui';
 
 type ScreenIntroTileProps = {
   title: string;
@@ -21,8 +22,18 @@ export default function ScreenIntroTile({
 }: ScreenIntroTileProps) {
   return (
     <View style={[styles.tile, isDark && styles.darkTile, style]}>
-      <View style={styles.accent} />
-      <Text style={[styles.title, titleFontFamily ? { fontFamily: titleFontFamily } : null, isDark && styles.darkText]}>
+      <LinearGradient
+        colors={isDark ? ['rgba(31,157,85,0.15)', 'rgba(31,157,85,0.05)'] : ['rgba(31,157,85,0.12)', 'rgba(215,239,225,0.3)']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.gradientBg}
+      />
+      <View style={styles.accentRow}>
+        <View style={styles.accentLine} />
+        <View style={styles.accentDot} />
+        <View style={styles.accentLine} />
+      </View>
+      <Text style={[styles.title, titleFontFamily ? { fontFamily: titleFontFamily } : null, isDark && styles.darkTitle]}>
         {title}
       </Text>
       {subtitle ? <Text style={[styles.subtitle, isDark && styles.darkMutedText]}>{subtitle}</Text> : null}
@@ -34,52 +45,70 @@ export default function ScreenIntroTile({
 const styles = StyleSheet.create({
   tile: {
     marginHorizontal: 16,
-    marginTop: 8,
+    marginTop: 10,
     marginBottom: 16,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    borderRadius: UI_RADII.lg,
-    borderWidth: 1,
-    borderColor: '#cde9d5',
-    backgroundColor: UI_COLORS.primarySoft,
+    paddingHorizontal: 20,
+    paddingVertical: 18,
+    borderRadius: UI_RADII.xl,
+    ...UI_GLASS.frosted,
+    overflow: 'hidden',
     ...UI_SHADOWS.card,
   },
   darkTile: {
-    backgroundColor: '#1f2d2f',
-    borderColor: '#2f474a',
+    ...UI_GLASS.frostedDark,
   },
-  accent: {
-    width: 56,
-    height: 5,
+  gradientBg: {
+    ...StyleSheet.absoluteFillObject,
+    borderRadius: UI_RADII.xl,
+  },
+  accentRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 12,
+    gap: 6,
+  },
+  accentLine: {
+    width: 24,
+    height: 2,
     borderRadius: 999,
-    alignSelf: 'center',
-    marginBottom: 10,
+    backgroundColor: UI_COLORS.primary,
+    opacity: 0.5,
+  },
+  accentDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
     backgroundColor: UI_COLORS.primary,
   },
   title: {
-    fontSize: 32,
+    fontSize: 30,
     textAlign: 'center',
     color: UI_COLORS.primaryDeep,
     fontWeight: '700',
     fontFamily: 'AmiriQuran',
-    letterSpacing: 0.4,
+    letterSpacing: 0.3,
+  },
+  darkTitle: {
+    color: '#e0f0e8',
   },
   subtitle: {
-    marginTop: 2,
-    fontSize: 16,
+    marginTop: 4,
+    fontSize: 15,
     textAlign: 'center',
     color: UI_COLORS.textMuted,
     fontStyle: 'italic',
   },
   description: {
-    marginTop: 8,
+    marginTop: 10,
     fontSize: 14,
-    lineHeight: 21,
+    lineHeight: 22,
     textAlign: 'center',
     color: UI_COLORS.text,
+    opacity: 0.85,
   },
   darkText: {
-    color: UI_COLORS.white,
+    color: 'rgba(255,255,255,0.85)',
   },
   darkMutedText: {
     color: '#a8b3bd',

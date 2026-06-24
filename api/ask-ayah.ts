@@ -3,7 +3,8 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 
 const client = new Anthropic();
 
-const SYSTEM_PROMPT = `You are a knowledgeable Islamic scholar and Quran teacher. Answer questions about Quranic verses grounding your responses in classical tafsir sources (Ibn Kathir, Al-Tabari, Al-Qurtubi, Al-Sa'di).
+const SYSTEM_PROMPTS: Record<string, string> = {
+  en: `You are a knowledgeable Islamic scholar and Quran teacher. Answer questions about Quranic verses grounding your responses in classical tafsir sources (Ibn Kathir, Al-Tabari, Al-Qurtubi, Al-Sa'di).
 
 Guidelines:
 - Always reference which tafsir source you are drawing from
@@ -12,7 +13,18 @@ Guidelines:
 - If a question is outside your knowledge, say so honestly
 - Keep responses focused and concise (2-4 paragraphs)
 - You may reference related verses when relevant
-- IMPORTANT: Write your response in BOTH languages. First write the full answer in English, then add a separator line "---", then write the same answer in Arabic (أجب بالعربية). Both sections should be complete and self-contained.`;
+- Respond entirely in English.`,
+
+  ar: `أنت عالم إسلامي ومعلم قرآن ذو خبرة واسعة. أجب عن أسئلة الآيات القرآنية مستنداً إلى مصادر التفسير الكلاسيكية (ابن كثير، الطبري، القرطبي، السعدي).
+
+الإرشادات:
+- اذكر دائماً مصدر التفسير الذي تستند إليه
+- كن محترماً ودقيقاً وتعليمياً
+- إذا كان السؤال خارج نطاق معرفتك، قل ذلك بصدق
+- اجعل الإجابات مركّزة وموجزة (2-4 فقرات)
+- يمكنك الإشارة إلى آيات ذات صلة عند الحاجة
+- أجب بالكامل باللغة العربية.`,
+};
 
 interface ChatMessage {
   role: 'user' | 'assistant';
@@ -54,17 +66,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(429).json({ error: 'Too many requests. Please try again later.' });
   }
 
-  const { surahName, ayahNumber, verseKey, arabicText, translation, question, conversationHistory } = req.body as RequestBody;
+  const { surahName, ayahNumber, verseKey, arabicText, translation, question, conversationHistory, lang } = req.body as RequestBody & { lang?: string };
 
   if (!question || !verseKey) {
     return res.status(400).json({ error: 'Missing required fields: question, verseKey' });
   }
 
+  const systemPrompt = SYSTEM_PROMPTS[lang === 'ar' ? 'ar' : 'en'];
   const contextPrompt = `The user is asking about Surah ${surahName}, Ayah ${ayahNumber} (${verseKey}):\n\nArabic: ${arabicText}\nTranslation: ${translation}`;
 
   const messages: Anthropic.MessageParam[] = [
     { role: 'user', content: contextPrompt },
-    { role: 'assistant', content: 'I understand. I will answer questions about this ayah grounding my responses in classical tafsir.' },
+    { role: 'assistant', content: lang === 'ar' ? 'فهمت. سأجيب عن أسئلة هذه الآية مستنداً إلى التفسير الكلاسيكي.' : 'I understand. I will answer questions about this ayah grounding my responses in classical tafsir.' },
     ...conversationHistory.map((msg) => ({
       role: msg.role as 'user' | 'assistant',
       content: msg.content,
@@ -75,8 +88,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {
     const response = await client.messages.create({
       model: 'claude-haiku-4-5',
-      max_tokens: 1024,
-      system: SYSTEM_PROMPT,
+      max_tokens: 2048,
+      system: systemPrompt,
       messages,
     });
 

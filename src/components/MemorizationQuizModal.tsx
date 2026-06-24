@@ -20,6 +20,7 @@ import {
   saveQuizResults,
   type QuizAttempt,
 } from '../services/memorizationService';
+import { useLanguage } from '../i18n';
 
 interface MemorizationQuizModalProps {
   visible: boolean;
@@ -34,6 +35,7 @@ export default function MemorizationQuizModal({
   onClose,
   bookmarks,
 }: MemorizationQuizModalProps) {
+  const { t } = useLanguage();
   const [state, setState] = useState<QuizState>('loading');
   const [questions, setQuestions] = useState<QuizQuestion[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -57,7 +59,7 @@ export default function MemorizationQuizModal({
       const quizQuestions = await getMemorizationQuiz(bookmarks, history, controller.signal);
 
       if (quizQuestions.length === 0) {
-        setErrorMessage('Could not generate quiz questions. Please try again.');
+        setErrorMessage(t.couldNotGenerateQuiz);
         setState('error');
         return;
       }
@@ -119,7 +121,7 @@ export default function MemorizationQuizModal({
       <SafeAreaView style={styles.safeArea}>
         <View style={styles.container}>
           <View style={styles.header}>
-            <Text style={styles.headerTitle}>AI Memorization Coach</Text>
+            <Text style={styles.headerTitle}>{t.aiMemorizationCoach}</Text>
             <TouchableOpacity onPress={handleClose} style={styles.closeButton}>
               <Text style={styles.closeText}>✕</Text>
             </TouchableOpacity>
@@ -129,7 +131,7 @@ export default function MemorizationQuizModal({
             {state === 'loading' && (
               <View style={styles.centeredState}>
                 <ActivityIndicator size="large" color={UI_COLORS.primary} />
-                <Text style={styles.stateText}>Generating your personalized quiz...</Text>
+                <Text style={styles.stateText}>{t.generatingQuiz}</Text>
               </View>
             )}
 
@@ -146,20 +148,20 @@ export default function MemorizationQuizModal({
               <View>
                 <View style={styles.progressRow}>
                   <Text style={styles.progressText}>
-                    Question {currentIndex + 1} of {questions.length}
+                    {t.question} {currentIndex + 1} {t.of} {questions.length}
                   </Text>
                   <Text style={styles.scoreText}>
-                    {correctCount}/{results.length} correct
+                    {correctCount}/{results.length} {t.correct}
                   </Text>
                 </View>
 
                 <View style={styles.questionCard}>
                   <Text style={styles.questionType}>
                     {currentQuestion.type === 'identify_surah'
-                      ? '📖 Identify the Surah'
+                      ? t.identifySurah
                       : currentQuestion.type === 'next_ayah'
-                        ? '➡️ What Comes Next?'
-                        : '✏️ Fill in the Blank'}
+                        ? t.whatComesNext
+                        : t.fillInBlank}
                   </Text>
                   <Text style={styles.questionPrompt}>{currentQuestion.prompt}</Text>
                 </View>
@@ -199,15 +201,15 @@ export default function MemorizationQuizModal({
                   <View style={styles.feedbackWrap}>
                     <Text style={styles.feedbackText}>
                       {selectedAnswer === currentQuestion.correctAnswer
-                        ? '✅ Correct! MashaAllah!'
-                        : `❌ The correct answer is: ${currentQuestion.correctAnswer}`}
+                        ? `✅ ${t.correctAnswer}`
+                        : `❌ ${t.incorrectAnswer} ${currentQuestion.correctAnswer}`}
                     </Text>
                     <Text style={styles.feedbackVerse}>
-                      Verse: {currentQuestion.verseKey}
+                      {t.verse}: {currentQuestion.verseKey}
                     </Text>
                     <TouchableOpacity style={styles.nextButton} onPress={handleNext}>
                       <Text style={styles.nextButtonText}>
-                        {currentIndex + 1 < questions.length ? 'Next Question →' : 'See Results'}
+                        {currentIndex + 1 < questions.length ? t.nextQuestion : t.seeResults}
                       </Text>
                     </TouchableOpacity>
                   </View>
@@ -217,23 +219,23 @@ export default function MemorizationQuizModal({
 
             {state === 'summary' && (
               <View style={styles.centeredState}>
-                <Text style={styles.summaryTitle}>Quiz Complete!</Text>
+                <Text style={styles.summaryTitle}>{t.quizComplete}</Text>
                 <View style={styles.scoreCard}>
                   <Text style={styles.scoreBig}>
                     {correctCount}/{questions.length}
                   </Text>
                   <Text style={styles.scoreLabel}>
                     {correctCount === questions.length
-                      ? 'Perfect! MashaAllah! 🌟'
+                      ? t.perfectScore
                       : correctCount >= questions.length * 0.7
-                        ? 'Great job! Keep it up! 💪'
-                        : 'Keep practicing! You\'ll get there! 📖'}
+                        ? t.greatJob
+                        : t.keepPracticing}
                   </Text>
                 </View>
 
                 {results.filter((r) => !r.correct).length > 0 && (
                   <View style={styles.weakArea}>
-                    <Text style={styles.weakTitle}>Review these verses:</Text>
+                    <Text style={styles.weakTitle}>{t.reviewVerses}</Text>
                     {results
                       .filter((r) => !r.correct)
                       .map((r) => (
@@ -245,10 +247,10 @@ export default function MemorizationQuizModal({
                 )}
 
                 <TouchableOpacity style={styles.retryButton} onPress={loadQuiz}>
-                  <Text style={styles.retryButtonText}>Take Another Quiz</Text>
+                  <Text style={styles.retryButtonText}>{t.takeAnotherQuiz}</Text>
                 </TouchableOpacity>
                 <TouchableOpacity style={styles.doneButton} onPress={handleClose}>
-                  <Text style={styles.doneButtonText}>Done</Text>
+                  <Text style={styles.doneButtonText}>{t.done}</Text>
                 </TouchableOpacity>
               </View>
             )}

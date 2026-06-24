@@ -17,9 +17,12 @@ import { resolveArabicFontFamily } from '../theme/fonts';
 import { fetchSurahs } from '../services/quranApi';
 import { getSurahAudioUrl } from '../services/quranApi';
 import { UI_COLORS, UI_RADII, UI_SHADOWS } from '../theme/ui';
+import { UI_GLASS } from '../theme/ui';
+import GlassBackground from '../components/GlassBackground';
 import ScreenIntroTile from '../components/ScreenIntroTile';
 import { normalizeArabicForSearch } from '../utils/arabicSearch';
 import CompactPlayerCard from '../components/CompactPlayerCard';
+import { useLanguage } from '../i18n';
 
 interface Surah {
   id: number;
@@ -63,6 +66,7 @@ export default function QuranPlayerScreen() {
 
   const { settings } = useSettings();
   const { showAlert } = useThemedAlert();
+  const { t } = useLanguage();
   const isDark = settings.isDarkMode;
   const arabicNameFontSize = Math.max(18, settings.arabicFontSize - 10);
   const arabicFontFamily = resolveArabicFontFamily(settings.arabicFontFamily);
@@ -203,13 +207,6 @@ export default function QuranPlayerScreen() {
     applyLockScreenControls(selectedSurah);
   }, [applyLockScreenControls, selectedSurah]);
 
-  // Auto-next when playback reaches end
-  useEffect(() => {
-    if (playerStatus.didJustFinish) {
-      handleNext();
-    }
-  }, [playerStatus.didJustFinish]);
-
   const loadAndPlayAudio = async () => {
     if (!selectedSurah) return;
 
@@ -264,6 +261,13 @@ export default function QuranPlayerScreen() {
       setSelectedSurah(allSurahs[index + 1]);
     }
   };
+
+  // Auto-advance to next surah when playback finishes
+  useEffect(() => {
+    if (playerStatus.didJustFinish) {
+      handleNext();
+    }
+  }, [playerStatus.didJustFinish, handleNext]);
 
   const seekTo = async (value: number) => {
     if (playerStatus.isLoaded) {
@@ -324,10 +328,11 @@ export default function QuranPlayerScreen() {
   );
 
   return (
-    <View style={[styles.container, isDark && styles.darkContainer]}>
+    <GlassBackground isDark={isDark}>
+    <View style={styles.container}>
       <ScreenIntroTile
-        title="Listen to Quran"
-        description="Listen to the beautiful recitation of the Quran with your favorite reciters. Let the words of Allah soothe your soul, guide your day, and bring tranquility to your heart."
+        title={t.quranPlayerTitle}
+        description={t.quranPlayerDesc}
         isDark={isDark}
         style={styles.introTile}
       />
@@ -336,7 +341,7 @@ export default function QuranPlayerScreen() {
         style={[styles.reciterSelector, isDark && styles.darkReciterSelector]}
         onPress={() => setReciterModalVisible(true)}
       >
-        <Text style={[styles.reciterLabel, isDark && styles.darkText]}>Reciter</Text>
+        <Text style={[styles.reciterLabel, isDark && styles.darkText]}>{t.reciter}</Text>
         <Text style={[styles.selectedReciterText, isDark && styles.darkText]}>
           {selectedReciter.name}
         </Text>
@@ -347,7 +352,7 @@ export default function QuranPlayerScreen() {
         <View style={[styles.searchWrapper, isDark && styles.darkSearchWrapper]}>
           <TextInput
             style={[styles.searchInput, isDark && styles.darkText]}
-            placeholder="Search Surah..."
+            placeholder={t.searchSurahs}
             placeholderTextColor="#aaa"
             value={searchQuery}
             onChangeText={setSearchQuery}
@@ -369,7 +374,7 @@ export default function QuranPlayerScreen() {
         <CompactPlayerCard
           isDark={isDark}
           badgeLabel={String(selectedSurah.id)}
-          title="Now Playing"
+          title={t.nowPlaying}
           subtitle={selectedSurah.name_simple}
           currentMs={(playerStatus.currentTime || 0) * 1000}
           durationMs={(playerStatus.duration || 0) * 1000}
@@ -405,7 +410,7 @@ export default function QuranPlayerScreen() {
       <Modal visible={reciterModalVisible} animationType="slide" transparent>
         <View style={styles.modalOverlay}>
           <View style={styles.reciterModal}>
-            <Text style={styles.modalTitle}>Choose Reciter</Text>
+            <Text style={styles.modalTitle}>{t.selectReciter}</Text>
             <FlatList
               data={RECITERS}
               renderItem={renderReciter}
@@ -418,24 +423,24 @@ export default function QuranPlayerScreen() {
         </View>
       </Modal>
     </View>
+    </GlassBackground>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: UI_COLORS.background },
-  darkContainer: { backgroundColor: UI_COLORS.darkBackground },
+  container: { flex: 1 },
   reciterSelector: {
     padding: 16,
-    backgroundColor: UI_COLORS.surface,
+    backgroundColor: 'rgba(255, 255, 255, 0.65)',
     borderBottomWidth: 1,
-    borderColor: UI_COLORS.border,
+    borderColor: 'rgba(255, 255, 255, 0.45)',
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
   },
   darkReciterSelector: {
-    backgroundColor: UI_COLORS.darkSurface,
-    borderColor: '#30353b',
+    backgroundColor: 'rgba(26, 38, 52, 0.75)',
+    borderColor: 'rgba(255, 255, 255, 0.08)',
   },
   reciterLabel: { fontSize: 16, color: UI_COLORS.textMuted },
   selectedReciterText: { fontSize: 18, fontWeight: '600', color: UI_COLORS.text },
@@ -443,15 +448,15 @@ const styles = StyleSheet.create({
   searchWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: UI_COLORS.surface,
+    backgroundColor: 'rgba(255, 255, 255, 0.65)',
     borderRadius: UI_RADII.md,
     borderWidth: 1,
-    borderColor: UI_COLORS.border,
+    borderColor: 'rgba(255, 255, 255, 0.45)',
     ...UI_SHADOWS.input,
   },
   darkSearchWrapper: {
-    backgroundColor: UI_COLORS.darkSurface,
-    borderColor: '#30353b',
+    backgroundColor: 'rgba(26, 38, 52, 0.75)',
+    borderColor: 'rgba(255, 255, 255, 0.08)',
   },
   searchInput: {
     flex: 1,
@@ -466,19 +471,19 @@ const styles = StyleSheet.create({
   surahItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: UI_COLORS.surface,
+    backgroundColor: 'rgba(255, 255, 255, 0.65)',
     padding: 16,
     borderRadius: UI_RADII.md,
     marginBottom: 10,
     borderWidth: 1,
-    borderColor: UI_COLORS.border,
+    borderColor: 'rgba(255, 255, 255, 0.45)',
     borderLeftWidth: 5,
     borderLeftColor: UI_COLORS.accent,
     ...UI_SHADOWS.card,
   },
   darkSurahItem: {
-    backgroundColor: UI_COLORS.darkSurface,
-    borderColor: '#30353b',
+    backgroundColor: 'rgba(26, 38, 52, 0.75)',
+    borderColor: 'rgba(255, 255, 255, 0.08)',
   },
   selectedSurahItem: { backgroundColor: UI_COLORS.primarySoft, borderColor: '#bde2c8' },
   surahNumber: { fontSize: 20, fontWeight: 'bold', color: UI_COLORS.accent, width: 50, textAlign: 'center' },

@@ -3,28 +3,51 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 
 const client = new Anthropic();
 
-const PROMPTS: Record<string, string> = {
-  miracle: `You are a knowledgeable Islamic scholar explaining Quranic miracles. Given a miracle claim with its category, summary, and referenced ayahs:
+const PROMPTS: Record<string, Record<string, string>> = {
+  miracle: {
+    en: `You are a knowledgeable Islamic scholar explaining Quranic miracles. Given a miracle claim with its category, summary, and referenced ayahs:
 - Provide a clear, educational explanation of why this is considered miraculous
 - Reference relevant scientific or linguistic evidence where appropriate
 - Mention what classical and modern scholars have said
 - Be balanced — note if a claim is disputed among scholars
 - Keep your response to 3-4 focused paragraphs
-- IMPORTANT: Write your response in BOTH languages. First write the full explanation in English, then add a separator line "---", then write the same explanation in Arabic (فسّر بالعربية). Both sections should be complete and self-contained.`,
-
-  hadith: `You are a wise Islamic scholar providing a personal daily reflection on a hadith. Given the hadith text in Arabic and English with its source:
+- Respond entirely in English.`,
+    ar: `أنت عالم إسلامي ذو خبرة واسعة في شرح إعجاز القرآن. بناءً على ادعاء الإعجاز مع فئته وملخصه والآيات المرجعية:
+- قدّم شرحاً واضحاً وتعليمياً لسبب اعتبار هذا إعجازاً
+- أشر إلى الأدلة العلمية أو اللغوية ذات الصلة
+- اذكر ما قاله العلماء الكلاسيكيون والمعاصرون
+- كن متوازناً — أشر إذا كان الادعاء مختلفاً عليه
+- اجعل إجابتك 3-4 فقرات مركّزة
+- أجب بالكامل باللغة العربية.`,
+  },
+  hadith: {
+    en: `You are a wise Islamic scholar providing a personal daily reflection on a hadith. Given the hadith text in Arabic and English with its source:
 - Write a 2-3 sentence personal reflection connecting this hadith to daily life
 - Include one practical action the reader can take today
 - Be warm, encouraging, and concise
 - Do not repeat the hadith text — the reader already sees it
-- IMPORTANT: Write your response in BOTH languages. First write the reflection in English, then add a separator line "---", then write the same reflection in Arabic (تأمّل بالعربية). Both sections should be complete and self-contained.`,
-
-  athkar: `You are a knowledgeable Islamic scholar explaining a dhikr (remembrance of Allah). Given the dhikr text, its title, and repetition count:
+- Respond entirely in English.`,
+    ar: `أنت عالم إسلامي حكيم تقدّم تأملاً يومياً شخصياً حول حديث. بناءً على نص الحديث بالعربية والإنجليزية مع مصدره:
+- اكتب 2-3 جمل تأمّل شخصي تربط الحديث بالحياة اليومية
+- أضف إجراءً عملياً يمكن للقارئ اتخاذه اليوم
+- كن دافئاً ومشجعاً وموجزاً
+- لا تكرر نص الحديث — القارئ يراه بالفعل
+- أجب بالكامل باللغة العربية.`,
+  },
+  athkar: {
+    en: `You are a knowledgeable Islamic scholar explaining a dhikr (remembrance of Allah). Given the dhikr text, its title, and repetition count:
 - Explain the meaning of the Arabic words
 - Describe the spiritual significance and benefits mentioned in hadith
 - Explain when and why this dhikr is recited (morning, evening, or both)
 - Keep your response to 2-3 concise paragraphs
-- IMPORTANT: Write your response in BOTH languages. First write the full explanation in English, then add a separator line "---", then write the same explanation in Arabic (اشرح بالعربية). Both sections should be complete and self-contained.`,
+- Respond entirely in English.`,
+    ar: `أنت عالم إسلامي ذو خبرة في شرح الأذكار. بناءً على نص الذكر وعنوانه وعدد التكرار:
+- اشرح معنى الكلمات العربية
+- صف الأهمية الروحية والفوائد المذكورة في الأحاديث
+- اشرح متى ولماذا يُقرأ هذا الذكر (صباحاً أو مساءً أو كليهما)
+- اجعل إجابتك 2-3 فقرات موجزة
+- أجب بالكامل باللغة العربية.`,
+  },
 };
 
 const ipRequestCounts = new Map<string, { count: number; resetAt: number }>();
@@ -50,11 +73,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(429).json({ error: 'Too many requests. Please try again later.' });
   }
 
-  const { type, context } = req.body as { type?: string; context?: Record<string, any> };
+  const { type, context, lang } = req.body as { type?: string; context?: Record<string, any>; lang?: string };
 
   if (!type || !context || !PROMPTS[type]) {
     return res.status(400).json({ error: 'Missing or invalid type. Must be: miracle, hadith, or athkar' });
   }
+
+  const resolvedLang = lang === 'ar' ? 'ar' : 'en';
 
   let userMessage = '';
 
@@ -78,8 +103,8 @@ ${context.fadl ? `Known Benefit: ${context.fadl}` : ''}`;
   try {
     const response = await client.messages.create({
       model: 'claude-haiku-4-5',
-      max_tokens: 1024,
-      system: PROMPTS[type],
+      max_tokens: 2048,
+      system: PROMPTS[type][resolvedLang],
       messages: [{ role: 'user', content: userMessage }],
     });
 
