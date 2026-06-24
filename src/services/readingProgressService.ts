@@ -2,6 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const STORAGE_KEY = '@quran_pulse_reading_progress';
 const STREAK_KEY = '@quran_pulse_reading_streak';
+const LAST_READ_KEY = '@quran_pulse_last_read';
 
 export interface ReadingProgress {
   surahsRead: Record<number, { lastAyah: number; completedAt?: number }>;
@@ -81,4 +82,21 @@ export function getSurahProgress(progress: ReadingProgress, surahId: number, tot
 
 export function getCompletedSurahCount(progress: ReadingProgress): number {
   return Object.values(progress.surahsRead).filter(s => s.completedAt).length;
+}
+
+export interface LastReadPosition {
+  surahId: number;
+  surahName: string;
+  ayahNum: number;
+  timestamp: number;
+}
+
+export async function saveLastRead(position: LastReadPosition): Promise<void> {
+  await AsyncStorage.setItem(LAST_READ_KEY, JSON.stringify(position));
+}
+
+export async function getLastRead(): Promise<LastReadPosition | null> {
+  const raw = await AsyncStorage.getItem(LAST_READ_KEY);
+  if (!raw) return null;
+  return JSON.parse(raw) as LastReadPosition;
 }

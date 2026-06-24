@@ -5,11 +5,12 @@ import {
   FlatList,
   StyleSheet,
   TouchableOpacity,
+  TextInput,
   ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { fetchSurahs } from '../services/quranApi';
-import { getBookmarks, removeBookmark, Bookmark, BookmarkTag } from '../services/bookmarkService';
+import { getBookmarks, removeBookmark, updateBookmarkNote, Bookmark, BookmarkTag } from '../services/bookmarkService';
 import { useNavigation } from '@react-navigation/native';
 import type { StackNavigationProp } from '@react-navigation/stack';
 import { useSettings } from '../context/SettingsContext';
@@ -138,6 +139,18 @@ export default function BookmarksScreen() {
         {item.ayahText}
       </Text>
       <Text style={[styles.translation, isDark && styles.darkText]}>{item.translation}</Text>
+      <TextInput
+        style={[styles.noteInput, isDark && styles.darkNoteInput]}
+        placeholder={t.addNote}
+        placeholderTextColor={UI_COLORS.textLight}
+        defaultValue={item.note ?? ''}
+        onEndEditing={(e) => {
+          const text = e.nativeEvent.text.trim();
+          void updateBookmarkNote(item.surahId, item.ayahNum, text);
+        }}
+        multiline
+        maxLength={200}
+      />
     </TouchableOpacity>
   );
 
@@ -342,6 +355,23 @@ const styles = StyleSheet.create({
     color: UI_COLORS.text,
     marginTop: 12,
     lineHeight: 24,
+  },
+  noteInput: {
+    marginTop: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(200,217,230,0.4)',
+    backgroundColor: 'rgba(255,255,255,0.5)',
+    fontSize: 13,
+    color: UI_COLORS.text,
+    fontStyle: 'italic',
+  },
+  darkNoteInput: {
+    backgroundColor: 'rgba(26,38,52,0.5)',
+    borderColor: 'rgba(255,255,255,0.08)',
+    color: '#e0e0e0',
   },
   emptyText: {
     fontSize: 18,

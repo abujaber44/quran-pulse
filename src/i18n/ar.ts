@@ -261,4 +261,20 @@ export default {
   medinan: 'مدنية',
   revelationOrder: 'ترتيب النزول',
   numberOfVerses: 'الآيات',
+
+  // Search History
+  recentSearches: 'عمليات البحث الأخيرة',
+  clearHistory: 'مسح',
+
+  // Bookmark Notes
+  addNote: 'أضف ملاحظة...',
+  noteSaved: 'تم حفظ الملاحظة',
+
+  // Juz Browser
+  juz: 'جزء',
+  browseBySurah: 'السور',
+  browseByJuz: 'الأجزاء',
+
+  // Last Read
+  continueFrom: 'تابع من',
 } as const;

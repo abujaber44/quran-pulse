@@ -9,7 +9,7 @@ import {
 } from 'react-native';
 import { ActivityIndicator } from 'react-native';
 import { fetchAyahs, fetchTranslations, fetchTafseer, fetchWordByWord, fetchSurahInfo, type WordByWord, type SurahInfo } from '../services/quranApi';
-import { recordAyahRead } from '../services/readingProgressService';
+import { recordAyahRead, saveLastRead } from '../services/readingProgressService';
 import ShareAyahCard from '../components/ShareAyahCard';
 import { useAudio, useAudioProgress } from '../context/AudioContext';
 import { useSettings } from '../context/SettingsContext';
@@ -556,6 +556,7 @@ export default function SurahScreen({ route }: any) {
     const global = getGlobalAyahNumber(surah.id, ayahNum, surahs);
     playAyah(surah.id, ayahNum, global);
     void recordAyahRead(surah.id, ayahNum, surah.verses_count);
+    void saveLastRead({ surahId: surah.id, surahName: surah.name_simple, ayahNum, timestamp: Date.now() });
   }, [playAyah, surah.id, surahs, surah.verses_count]);
 
   // Fixed toggleTafseer — prevents flash of previous tafseer

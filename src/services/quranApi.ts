@@ -7,11 +7,24 @@ export const fetchSurahs = async () => {
   return data.chapters;
 };
 
+import offlineQuran from '../data/quranText.json';
+
 export const fetchAyahs = async (chapterId: number) => {
-  const { data } = await axios.get(
-    `${BASE_URL}/verses/by_chapter/${chapterId}?fields=text_uthmani&per_page=1000`
-  );
-  return data.verses;
+  try {
+    const { data } = await axios.get(
+      `${BASE_URL}/verses/by_chapter/${chapterId}?fields=text_uthmani&per_page=1000`
+    );
+    return data.verses;
+  } catch {
+    const surah = (offlineQuran as Record<string, { ayahs: Array<{ number: number; text: string }> }>)[String(chapterId)];
+    if (!surah) return [];
+    return surah.ayahs.map((a) => ({
+      id: a.number,
+      verse_number: a.number,
+      verse_key: `${chapterId}:${a.number}`,
+      text_uthmani: a.text,
+    }));
+  }
 };
 
 export const fetchTranslations = async (chapterId: number) => {

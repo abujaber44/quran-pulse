@@ -11,8 +11,10 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import axios from 'axios';
 import { fetchSurahs } from '../services/quranApi';
 import { searchVerses, type SearchResult } from '../services/aiService';
+import { getSearchHistory, addSearchHistory, clearSearchHistory, type SearchHistoryItem } from '../services/searchHistoryService';
 import { Surah } from '../types';
 import { useSettings } from '../context/SettingsContext';
 import { useThemedAlert } from '../context/ThemedAlertContext';
@@ -30,6 +32,9 @@ export default function MemorizeUnderstandScreen({ navigation }: any) {
   const [aiResults, setAiResults] = useState<SearchResult[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [searchError, setSearchError] = useState<string | null>(null);
+  const [searchHistory, setSearchHistory] = useState<SearchHistoryItem[]>([]);
+  const [browseMode, setBrowseMode] = useState<'surah' | 'juz'>('surah');
+  const [juzData, setJuzData] = useState<any[]>([]);
   const abortRef = useRef<AbortController | null>(null);
 
   const { settings } = useSettings();
@@ -43,6 +48,16 @@ export default function MemorizeUnderstandScreen({ navigation }: any) {
     fetchSurahs().then((data) => {
       setSurahs(data);
     });
+    getSearchHistory().then(setSearchHistory);
+    axios.get('https://api.quran.com/api/v4/juzs').then(({ data }) => {
+      const seen = new Set<number>();
+      const unique = (data.juzs as any[]).filter((j) => {
+        if (seen.has(j.juz_number)) return false;
+        seen.add(j.juz_number);
+        return true;
+      });
+      setJuzData(unique);
+    }).catch(() => {});
   }, []);
 
   const surahLookupById = useMemo(
@@ -71,6 +86,10 @@ export default function MemorizeUnderstandScreen({ navigation }: any) {
           if (!controller.signal.aborted) {
             setAiResults(results);
             setIsSearching(false);
+            if (results.length > 0) {
+              void addSearchHistory(query.trim(), results.length);
+              getSearchHistory().then(setSearchHistory);
+            }
           }
         } catch (error: unknown) {
           if ((error as Error).name === 'AbortError') return;
@@ -190,6 +209,25 @@ export default function MemorizeUnderstandScreen({ navigation }: any) {
           style={styles.introTile}
         />
 
+        <View style={styles.tabBar}>
+          <TouchableOpacity
+            style={[styles.tabButton, browseMode === 'surah' && styles.tabButtonActive, isDark && browseMode !== 'surah' && styles.darkCard]}
+            onPress={() => setBrowseMode('surah')}
+          >
+            <Text style={[styles.tabButtonText, browseMode === 'surah' && styles.tabButtonTextActive, isDark && browseMode !== 'surah' && styles.darkMutedText]}>
+              {t.browseBySurah}
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.tabButton, browseMode === 'juz' && styles.tabButtonActive, isDark && browseMode !== 'juz' && styles.darkCard]}
+            onPress={() => setBrowseMode('juz')}
+          >
+            <Text style={[styles.tabButtonText, browseMode === 'juz' && styles.tabButtonTextActive, isDark && browseMode !== 'juz' && styles.darkMutedText]}>
+              {t.browseByJuz}
+            </Text>
+          </TouchableOpacity>
+        </View>
+
         <View style={styles.searchContainer}>
           <View style={[styles.searchWrapper, isDark && styles.darkCard]}>
             <TextInput
@@ -250,6 +288,39 @@ export default function MemorizeUnderstandScreen({ navigation }: any) {
               ) : null
             }
           />
+        ) : browseMode === 'juz' ? (
+          <FlatList
+            data={juzData}
+            keyExtractor={(item) => `juz-${item.id ?? item.juz_number}`}
+            renderItem={({ item: juz }) => {
+              const surahIds = Object.keys(juz.verse_mapping).map(Number);
+              const firstSurahId = surahIds[0];
+              const lastSurahId = surahIds[surahIds.length - 1];
+              const firstSurah = surahLookupById.get(firstSurahId);
+              const lastSurah = surahLookupById.get(lastSurahId);
+              const firstAyahStr = juz.verse_mapping[String(firstSurahId)];
+              const firstAyah = firstAyahStr ? Number(firstAyahStr.split('-')[0]) : 1;
+              const lastAyahStr = juz.verse_mapping[String(lastSurahId)];
+              const lastAyah = lastAyahStr ? Number(lastAyahStr.split('-')[1]) : undefined;
+              const rangeText = firstSurah && lastSurah
+                ? `${firstSurah.name_simple} ${firstAyah} — ${lastSurah.name_simple} ${lastAyah ?? ''}`
+                : '';
+              return (
+                <TouchableOpacity
+                  style={[styles.juzCard, isDark && styles.darkCard]}
+                  onPress={() => firstSurah && navigateToSurah(firstSurah, firstAyah)}
+                >
+                  <View style={styles.juzHeader}>
+                    <Text style={[styles.juzNumber, isDark && styles.darkText]}>{t.juz} {juz.juz_number}</Text>
+                    <Text style={[styles.versesCount, isDark && styles.darkMutedText]}>{juz.verses_count} {t.verses}</Text>
+                  </View>
+                  <Text style={[styles.juzRange, isDark && styles.darkMutedText]}>{rangeText}</Text>
+                </TouchableOpacity>
+              );
+            }}
+            contentContainerStyle={styles.list}
+            showsVerticalScrollIndicator={false}
+          />
         ) : (
           <FlatList
             data={surahs}
@@ -257,6 +328,29 @@ export default function MemorizeUnderstandScreen({ navigation }: any) {
             renderItem={renderBrowseSurah}
             contentContainerStyle={styles.list}
             showsVerticalScrollIndicator={false}
+            ListHeaderComponent={
+              searchHistory.length > 0 ? (
+                <View style={styles.historySection}>
+                  <View style={styles.historyHeader}>
+                    <Text style={[styles.historyTitle, isDark && styles.darkText]}>{t.recentSearches}</Text>
+                    <TouchableOpacity onPress={() => clearSearchHistory().then(() => setSearchHistory([]))}>
+                      <Text style={styles.historyClear}>{t.clearHistory}</Text>
+                    </TouchableOpacity>
+                  </View>
+                  <View style={styles.historyChips}>
+                    {searchHistory.map((item, idx) => (
+                      <TouchableOpacity
+                        key={`${item.query}-${idx}`}
+                        style={[styles.historyChip, isDark && styles.darkCard]}
+                        onPress={() => setSearchQuery(item.query)}
+                      >
+                        <Text style={[styles.historyChipText, isDark && styles.darkText]}>{item.query}</Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                </View>
+              ) : null
+            }
           />
         )}
       </View>
@@ -430,6 +524,93 @@ const styles = StyleSheet.create({
     color: UI_COLORS.textMuted,
     textAlign: 'center',
     marginTop: 40,
+  },
+  tabBar: {
+    flexDirection: 'row',
+    marginHorizontal: 16,
+    marginBottom: 12,
+    borderRadius: UI_RADII.md,
+    overflow: 'hidden',
+    backgroundColor: 'rgba(255, 255, 255, 0.35)',
+  },
+  tabButton: {
+    flex: 1,
+    paddingVertical: 10,
+    alignItems: 'center',
+    borderRadius: UI_RADII.md,
+  },
+  tabButtonActive: {
+    backgroundColor: UI_COLORS.primary,
+  },
+  tabButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: UI_COLORS.textMuted,
+  },
+  tabButtonTextActive: {
+    color: UI_COLORS.white,
+  },
+  historySection: {
+    marginBottom: 12,
+  },
+  historyHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  historyTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: UI_COLORS.text,
+  },
+  historyClear: {
+    fontSize: 13,
+    color: UI_COLORS.primary,
+    fontWeight: '600',
+  },
+  historyChips: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  historyChip: {
+    backgroundColor: 'rgba(255, 255, 255, 0.65)',
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: UI_RADII.xl,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.45)',
+  },
+  historyChipText: {
+    fontSize: 13,
+    color: UI_COLORS.text,
+  },
+  juzCard: {
+    backgroundColor: 'rgba(255, 255, 255, 0.65)',
+    padding: 20,
+    marginVertical: 8,
+    borderRadius: UI_RADII.lg,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.45)',
+    borderLeftWidth: 5,
+    borderLeftColor: UI_COLORS.accent,
+    ...UI_SHADOWS.card,
+  },
+  juzHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  juzNumber: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: UI_COLORS.text,
+  },
+  juzRange: {
+    fontSize: 13,
+    color: UI_COLORS.textMuted,
+    marginTop: 6,
   },
   darkText: { color: UI_COLORS.white },
   darkMutedText: { color: '#a8b3bd' },

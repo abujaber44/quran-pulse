@@ -261,4 +261,20 @@ export default {
   medinan: 'Medinan',
   revelationOrder: 'Revelation Order',
   numberOfVerses: 'Verses',
+
+  // Search History
+  recentSearches: 'Recent Searches',
+  clearHistory: 'Clear',
+
+  // Bookmark Notes
+  addNote: 'Add note...',
+  noteSaved: 'Note saved',
+
+  // Juz Browser
+  juz: 'Juz',
+  browseBySurah: 'Surahs',
+  browseByJuz: 'Juz',
+
+  // Last Read
+  continueFrom: 'Continue from',
 } as const;

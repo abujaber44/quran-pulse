@@ -9,9 +9,12 @@ import {
   getReadingProgress,
   getReadingStreak,
   getCompletedSurahCount,
+  getLastRead,
   type ReadingProgress,
   type ReadingStreak,
+  type LastReadPosition,
 } from '../services/readingProgressService';
+import { fetchSurahs } from '../services/quranApi';
 
 type RootStackParamList = {
   MemorizeUnderstand: undefined;
@@ -42,15 +45,22 @@ export default function LandingScreen() {
   const slideAnim = useRef(new Animated.Value(20)).current;
   const [progress, setProgress] = useState<ReadingProgress | null>(null);
   const [streak, setStreak] = useState<ReadingStreak | null>(null);
+  const [lastRead, setLastRead] = useState<LastReadPosition | null>(null);
+  const [surahs, setSurahs] = useState<any[]>([]);
 
   useFocusEffect(
     useCallback(() => {
-      Promise.all([getReadingProgress(), getReadingStreak()]).then(([p, s]) => {
+      Promise.all([getReadingProgress(), getReadingStreak(), getLastRead()]).then(([p, s, lr]) => {
         setProgress(p);
         setStreak(s);
+        setLastRead(lr);
       });
     }, [])
   );
+
+  useEffect(() => {
+    fetchSurahs().then(setSurahs);
+  }, []);
 
   useEffect(() => {
     Animated.parallel([
@@ -101,6 +111,22 @@ export default function LandingScreen() {
             )}
           </View>
         ) : null}
+
+        {lastRead && surahs.length > 0 && (
+          <TouchableOpacity
+            style={styles.continueCard}
+            activeOpacity={0.8}
+            onPress={() => {
+              const surah = surahs.find((s: any) => s.id === lastRead.surahId);
+              if (surah) {
+                (navigation as any).navigate('Surah', { surah, surahs, initialAyah: lastRead.ayahNum, scrollNonce: Date.now() });
+              }
+            }}
+          >
+            <Text style={styles.continueLabel}>{t.continueFrom}</Text>
+            <Text style={styles.continueTitle}>📖 {lastRead.surahName} — {t.ayah} {lastRead.ayahNum}</Text>
+          </TouchableOpacity>
+        )}
 
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>{t.coreFeatures}</Text>
@@ -267,6 +293,25 @@ const styles = StyleSheet.create({
     color: 'rgba(215,239,225,0.6)',
     textAlign: 'center',
     marginTop: 10,
+  },
+  continueCard: {
+    backgroundColor: 'rgba(45,127,184,0.15)',
+    borderWidth: 1,
+    borderColor: 'rgba(45,127,184,0.3)',
+    borderRadius: UI_RADII.lg,
+    padding: 14,
+    marginBottom: 16,
+  },
+  continueLabel: {
+    fontSize: 12,
+    color: 'rgba(214,228,238,0.7)',
+    fontWeight: '600',
+    marginBottom: 4,
+  },
+  continueTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: UI_COLORS.white,
   },
   sectionHeader: {
     marginBottom: 14,
