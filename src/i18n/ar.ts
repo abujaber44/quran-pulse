@@ -237,11 +237,28 @@ export default {
   tapAyahForWords: 'اضغط على أي آية لعرض تحليل الكلمات',
 
   // Reading Progress
-  readingProgress: 'تقدّمك',
-  dayStreak: 'أيام متتالية',
-  ayahsRead: 'آية قُرئت',
-  surahsCompleted: 'سورة مكتملة',
-  bestStreak: 'أفضل سلسلة',
-  keepReading: 'ابدأ القراءة لبناء سلسلتك!',
+  readingProgress: 'رحلتك مع القرآن',
+  dayStreak: 'يوم متواصل',
+  ayahsRead: 'آية',
+  surahsCompleted: 'سورة',
+  bestStreak: 'أطول مداومة',
+  keepReading: 'ابدأ رحلتك مع كتاب الله!',
   continueReading: 'تابع القراءة',
+
+  // Share
+  shareAyah: '📤 مشاركة الآية',
+  shareAyahImage: 'مشاركة كصورة',
+
+  // Daily Reminder
+  dailyReminder: 'تذكير يومي بالقرآن',
+  dailyReminderDesc: 'احصل على تنبيه يومي لقراءة القرآن',
+  reminderTime: 'وقت التذكير',
+  reminderEnabled: 'التذكير مفعّل',
+  reminderDisabled: 'التذكير معطّل',
+
+  // Surah Info
+  meccan: 'مكية',
+  medinan: 'مدنية',
+  revelationOrder: 'ترتيب النزول',
+  numberOfVerses: 'الآيات',
 } as const;

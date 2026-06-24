@@ -8,8 +8,9 @@ import {
   FlatList,
 } from 'react-native';
 import { ActivityIndicator } from 'react-native';
-import { fetchAyahs, fetchTranslations, fetchTafseer, fetchWordByWord, type WordByWord } from '../services/quranApi';
+import { fetchAyahs, fetchTranslations, fetchTafseer, fetchWordByWord, fetchSurahInfo, type WordByWord, type SurahInfo } from '../services/quranApi';
 import { recordAyahRead } from '../services/readingProgressService';
+import ShareAyahCard from '../components/ShareAyahCard';
 import { useAudio, useAudioProgress } from '../context/AudioContext';
 import { useSettings } from '../context/SettingsContext';
 import { useThemedAlert } from '../context/ThemedAlertContext';
@@ -57,6 +58,7 @@ type AyahItemProps = {
   onToggleTranslation: (ayahNum: number) => void;
   onToggleTafseer: (ayahNum: number) => void;
   onAskAI: (ayah: any) => void;
+  onShare?: (data: { arabicText: string; translation: string; verseKey: string }) => void;
   isHighlighted: boolean;
   surahId: number;
 };
@@ -78,6 +80,7 @@ const AyahItem = memo(({
   onToggleTranslation,
   onToggleTafseer,
   onAskAI,
+  onShare,
   isHighlighted,
   surahId,
 }: AyahItemProps) => {
@@ -216,7 +219,16 @@ const AyahItem = memo(({
       )}
 
       {expandedTranslation === ayah.verse_number && (
-        <Text style={[styles.translationText, isDark && styles.darkText]}>{ayah.translation}</Text>
+        <View>
+          <Text style={[styles.translationText, isDark && styles.darkText]}>{ayah.translation}</Text>
+          <TouchableOpacity
+            style={styles.shareChip}
+            onPress={() => onShare?.({ arabicText: ayah.text_uthmani, translation: ayah.translation, verseKey: ayah.verse_key })}
+            activeOpacity={0.8}
+          >
+            <Text style={styles.shareChipText}>{t.shareAyah}</Text>
+          </TouchableOpacity>
+        </View>
       )}
 
       {expandedTafseer === ayah.verse_number && (
@@ -339,6 +351,8 @@ export default function SurahScreen({ route }: any) {
   // Track bookmarked ayahs
   const [bookmarkedAyahs, setBookmarkedAyahs] = useState<Set<string>>(new Set());
   const [highlightAyah, setHighlightAyah] = useState<number | null>(null);
+  const [shareAyah, setShareAyah] = useState<{ arabicText: string; translation: string; verseKey: string } | null>(null);
+  const [surahInfo, setSurahInfo] = useState<SurahInfo | null>(null);
 
   const flatListRef = useRef<FlatList<any>>(null);
   const initialAyahScrollInProgressRef = useRef(false);
@@ -390,11 +404,13 @@ export default function SurahScreen({ route }: any) {
       setExpandedTranslation(null);
 
       try {
-        const [ayahsData, translationsData, allBookmarks] = await Promise.all([
+        const [ayahsData, translationsData, allBookmarks, info] = await Promise.all([
           fetchAyahs(surah.id),
           fetchTranslations(surah.id),
           getBookmarks(),
+          fetchSurahInfo(surah.id),
         ]);
+        setSurahInfo(info);
 
         const ayahsWithTranslation = ayahsData.map((ayah: any, index: number) => ({
           ...ayah,
@@ -745,6 +761,7 @@ export default function SurahScreen({ route }: any) {
         onToggleTranslation={toggleTranslation}
         onToggleTafseer={toggleTafseer}
         onAskAI={handleAskAI}
+        onShare={setShareAyah}
         isHighlighted={highlightAyah === item.verse_number}
         surahId={surah.id}
       />
@@ -800,6 +817,23 @@ export default function SurahScreen({ route }: any) {
             isDark={isDark}
             style={styles.introTile}
           />
+        )}
+
+        {surahInfo && (
+          <View style={[styles.surahInfoRow, isDark && styles.darkSurahInfoRow]}>
+            <View style={styles.surahInfoChip}>
+              <Text style={styles.surahInfoIcon}>{surahInfo.revelationPlace === 'makkah' ? '🕋' : '🕌'}</Text>
+              <Text style={styles.surahInfoText}>{surahInfo.revelationPlace === 'makkah' ? t.meccan : t.medinan}</Text>
+            </View>
+            <View style={styles.surahInfoChip}>
+              <Text style={styles.surahInfoIcon}>📜</Text>
+              <Text style={styles.surahInfoText}>{t.revelationOrder}: {surahInfo.revelationOrder}</Text>
+            </View>
+            <View style={styles.surahInfoChip}>
+              <Text style={styles.surahInfoIcon}>📖</Text>
+              <Text style={styles.surahInfoText}>{surahInfo.versesCount} {t.numberOfVerses}</Text>
+            </View>
+          </View>
         )}
 
         {/* Controls Bar */}
@@ -923,6 +957,25 @@ export default function SurahScreen({ route }: any) {
           arabicText={askAyah?.arabicText ?? ''}
           translation={askAyah?.translation ?? ''}
         />
+
+        <Modal visible={shareAyah !== null} animationType="slide" transparent onRequestClose={() => setShareAyah(null)}>
+          <View style={styles.modalOverlay}>
+            <View style={[styles.shareModal, isDark && styles.darkShareModal]}>
+              {shareAyah && (
+                <ShareAyahCard
+                  arabicText={shareAyah.arabicText}
+                  translation={shareAyah.translation}
+                  verseKey={shareAyah.verseKey}
+                  surahName={surah.name_simple}
+                  arabicFontFamily={arabicFontFamily}
+                />
+              )}
+              <TouchableOpacity style={styles.shareCloseBtn} onPress={() => setShareAyah(null)}>
+                <Text style={styles.shareCloseBtnText}>{t.close}</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </Modal>
       </View>
     </SafeAreaView>
     </GlassBackground>
@@ -1145,6 +1198,71 @@ const styles = StyleSheet.create({
     backgroundColor: '#f0f4f8',
     padding: 10,
     borderRadius: 12,
+  },
+  surahInfoRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 8,
+    marginHorizontal: 16,
+    marginBottom: 10,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    backgroundColor: 'rgba(255,255,255,0.5)',
+    borderRadius: UI_RADII.md,
+    borderWidth: 1,
+    borderColor: 'rgba(200,217,230,0.4)',
+  },
+  darkSurahInfoRow: {
+    backgroundColor: 'rgba(26,38,52,0.5)',
+    borderColor: 'rgba(255,255,255,0.06)',
+  },
+  surahInfoChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  surahInfoIcon: {
+    fontSize: 14,
+  },
+  surahInfoText: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: UI_COLORS.textMuted,
+  },
+  shareChip: {
+    marginTop: 8,
+    alignSelf: 'flex-start',
+    backgroundColor: 'rgba(31,157,85,0.1)',
+    borderWidth: 1,
+    borderColor: UI_COLORS.primary,
+    borderRadius: UI_RADII.sm,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+  },
+  shareChipText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: UI_COLORS.primary,
+  },
+  shareModal: {
+    backgroundColor: '#fff',
+    borderRadius: UI_RADII.xl,
+    padding: 20,
+    width: '90%',
+    maxHeight: '80%',
+  },
+  darkShareModal: {
+    backgroundColor: '#1a2634',
+  },
+  shareCloseBtn: {
+    marginTop: 12,
+    alignItems: 'center',
+    paddingVertical: 10,
+  },
+  shareCloseBtnText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: UI_COLORS.textMuted,
   },
   bottomToggles: {
     flexDirection: 'row',

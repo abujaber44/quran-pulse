@@ -244,4 +244,21 @@ export default {
   bestStreak: 'best streak',
   keepReading: 'Start reading to build your streak!',
   continueReading: 'Continue Reading',
+
+  // Share
+  shareAyah: '📤 Share Ayah',
+  shareAyahImage: 'Share as Image',
+
+  // Daily Reminder
+  dailyReminder: 'Daily Quran Reminder',
+  dailyReminderDesc: 'Get a daily notification to read Quran',
+  reminderTime: 'Reminder Time',
+  reminderEnabled: 'Reminder On',
+  reminderDisabled: 'Reminder Off',
+
+  // Surah Info
+  meccan: 'Meccan',
+  medinan: 'Medinan',
+  revelationOrder: 'Revelation Order',
+  numberOfVerses: 'Verses',
 } as const;

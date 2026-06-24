@@ -1,10 +1,11 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
   TouchableOpacity,
   StyleSheet,
   ScrollView,
+  Switch,
   Linking,
 } from 'react-native';
 import { useSettings } from '../context/SettingsContext';
@@ -16,6 +17,7 @@ import { UI_GLASS } from '../theme/ui';
 import GlassBackground from '../components/GlassBackground';
 import ScreenIntroTile from '../components/ScreenIntroTile';
 import { useLanguage } from '../i18n';
+import { getReminderSettings, saveReminderSettings, type ReminderSettings } from '../services/dailyReminderService';
 
 const FONT_MIN = 24;
 const FONT_MAX = 48;
@@ -31,6 +33,28 @@ export default function SettingsScreen() {
   const { lang, t, setLanguage } = useLanguage();
   const isDark = settings.isDarkMode;
   const { arabicFontSize, memorizationPause, arabicFontFamily } = settings;
+
+  const [reminder, setReminder] = useState<ReminderSettings>({ enabled: false, hour: 20, minute: 0 });
+
+  useEffect(() => {
+    getReminderSettings().then(setReminder);
+  }, []);
+
+  const toggleReminder = async (enabled: boolean) => {
+    const updated = { ...reminder, enabled };
+    setReminder(updated);
+    await saveReminderSettings(updated);
+  };
+
+  const adjustReminderHour = async (delta: number) => {
+    const newHour = (reminder.hour + delta + 24) % 24;
+    const updated = { ...reminder, hour: newHour };
+    setReminder(updated);
+    if (updated.enabled) await saveReminderSettings(updated);
+  };
+
+  const formatTime = (h: number, m: number) =>
+    `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
   const resolvedArabicFontFamily = resolveArabicFontFamily(arabicFontFamily);
 
   const resetFontSize = () => {
@@ -94,7 +118,10 @@ export default function SettingsScreen() {
 
             <View style={styles.valuePill}>
               <Text style={styles.valueTextSmall}>
-                {ARABIC_FONT_OPTIONS.find((option) => option.id === arabicFontFamily)?.label || 'Arabic Font'}
+                {(() => {
+                  const opt = ARABIC_FONT_OPTIONS.find((option) => option.id === arabicFontFamily);
+                  return lang === 'ar' ? opt?.labelAr : opt?.label;
+                })() || 'Arabic Font'}
               </Text>
             </View>
 
@@ -194,6 +221,36 @@ export default function SettingsScreen() {
           <Text style={styles.helperText}>
             Range: {PAUSE_MIN}-{PAUSE_MAX} seconds
           </Text>
+        </View>
+
+        {/* Daily Reminder */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>{t.dailyReminder}</Text>
+          <Text style={styles.helperText}>{t.dailyReminderDesc}</Text>
+          <View style={styles.reminderRow}>
+            <Switch
+              value={reminder.enabled}
+              onValueChange={toggleReminder}
+              trackColor={{ false: '#ccc', true: '#27ae60' }}
+              thumbColor={reminder.enabled ? '#fff' : '#f4f3f4'}
+            />
+            <Text style={[styles.reminderStatus]}>
+              {reminder.enabled ? t.reminderEnabled : t.reminderDisabled}
+            </Text>
+          </View>
+          {reminder.enabled && (
+            <View style={styles.stepperRow}>
+              <TouchableOpacity style={styles.stepButton} onPress={() => adjustReminderHour(-1)}>
+                <Text style={styles.stepButtonText}>−</Text>
+              </TouchableOpacity>
+              <View style={styles.valuePill}>
+                <Text style={styles.valueText}>{formatTime(reminder.hour, reminder.minute)}</Text>
+              </View>
+              <TouchableOpacity style={styles.stepButton} onPress={() => adjustReminderHour(1)}>
+                <Text style={styles.stepButtonText}>+</Text>
+              </TouchableOpacity>
+            </View>
+          )}
         </View>
 
         {/* Language */}
@@ -318,6 +375,17 @@ const styles = StyleSheet.create({
     color: UI_COLORS.text,
     textAlign: 'center',
     writingDirection: 'rtl',
+  },
+  reminderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginTop: 10,
+  },
+  reminderStatus: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: UI_COLORS.text,
   },
   languageRow: {
     flexDirection: 'row',

@@ -49,6 +49,32 @@ export const fetchWordByWord = async (chapterId: number, verseNumber: number): P
     }));
 };
 
+export interface SurahInfo {
+  revelationPlace: 'makkah' | 'madinah';
+  revelationOrder: number;
+  nameSimple: string;
+  nameArabic: string;
+  versesCount: number;
+  translatedName: string;
+}
+
+export const fetchSurahInfo = async (chapterId: number): Promise<SurahInfo | null> => {
+  try {
+    const { data } = await axios.get(`${BASE_URL}/chapters/${chapterId}`);
+    const ch = data.chapter;
+    return {
+      revelationPlace: ch.revelation_place,
+      revelationOrder: ch.revelation_order,
+      nameSimple: ch.name_simple,
+      nameArabic: ch.name_arabic,
+      versesCount: ch.verses_count,
+      translatedName: ch.translated_name?.name ?? '',
+    };
+  } catch {
+    return null;
+  }
+};
+
 export const fetchTafseer = async (
   surahId: number,
   ayahNum: number,
