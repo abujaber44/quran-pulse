@@ -11,12 +11,15 @@ import { ActivityIndicator } from 'react-native';
 import { fetchAyahs, fetchTranslations, fetchTafseer, fetchWordByWord, fetchSurahInfo, type WordByWord, type SurahInfo } from '../services/quranApi';
 import { recordAyahRead, saveLastRead } from '../services/readingProgressService';
 import ShareAyahCard from '../components/ShareAyahCard';
+import TajweedView from '../components/TajweedView';
+import { MaterialCommunityIcons, Ionicons } from '@expo/vector-icons';
 import { useAudio, useAudioProgress } from '../context/AudioContext';
 import { useSettings } from '../context/SettingsContext';
 import { useThemedAlert } from '../context/ThemedAlertContext';
 import { getGlobalAyahNumber } from '../utils/quranUtils';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getBookmarks, addBookmark, removeBookmark, BookmarkTag } from '../services/bookmarkService';
 import { resolveArabicFontFamily } from '../theme/fonts';
 import { UI_COLORS, UI_RADII, UI_SHADOWS, UI_GLASS } from '../theme/ui';
@@ -61,6 +64,8 @@ type AyahItemProps = {
   onShare?: (data: { arabicText: string; translation: string; verseKey: string }) => void;
   isHighlighted: boolean;
   surahId: number;
+  isExpanded: boolean;
+  onToggleExpand: (ayahNum: number) => void;
 };
 
 const AyahItem = memo(({
@@ -83,34 +88,33 @@ const AyahItem = memo(({
   onShare,
   isHighlighted,
   surahId,
+  isExpanded,
+  onToggleExpand,
 }: AyahItemProps) => {
   const { t } = useLanguage();
   const [showWords, setShowWords] = useState(false);
   const [words, setWords] = useState<WordByWord[]>([]);
   const [loadingWords, setLoadingWords] = useState(false);
+  const [showTajweed, setShowTajweed] = useState(false);
 
   const toggleWordByWord = async () => {
-    if (showWords) {
-      setShowWords(false);
-      return;
-    }
-    if (words.length > 0) {
-      setShowWords(true);
-      return;
-    }
+    if (showWords) { setShowWords(false); return; }
+    if (words.length > 0) { setShowWords(true); return; }
     setLoadingWords(true);
     try {
       const data = await fetchWordByWord(surahId, ayah.verse_number);
       setWords(data);
       setShowWords(true);
-    } catch {
-      setWords([]);
-    } finally {
-      setLoadingWords(false);
-    }
+    } catch { setWords([]); }
+    finally { setLoadingWords(false); }
   };
+
+  const hasExpandedContent = expandedTranslation === ayah.verse_number || expandedTafseer === ayah.verse_number || showWords || showTajweed;
+
   return (
-    <View
+    <TouchableOpacity
+      activeOpacity={0.95}
+      onPress={() => onToggleExpand(ayah.verse_number)}
       style={[
         styles.ayahCard,
         isDark && styles.darkAyahCard,
@@ -123,11 +127,7 @@ const AyahItem = memo(({
           {ayah.verse_number}
         </Text>
         <View style={styles.topRowIcons}>
-          <TouchableOpacity
-            onPress={() => onToggleBookmark(ayah.verse_number)}
-            hitSlop={TOUCH_HIT_SLOP}
-            activeOpacity={0.7}
-          >
+          <TouchableOpacity onPress={() => onToggleBookmark(ayah.verse_number)} hitSlop={TOUCH_HIT_SLOP}>
             <Text style={[styles.topIcon, isBookmarked && styles.topIconActive]}>
               {isBookmarked ? '★' : '☆'}
             </Text>
@@ -135,11 +135,7 @@ const AyahItem = memo(({
           {isActiveAyah ? (
             <Text style={styles.topIconPlaying}>●</Text>
           ) : !isAnyAyahPlaying ? (
-            <TouchableOpacity
-              onPress={() => onPlayAyah(ayah.verse_number)}
-              hitSlop={TOUCH_HIT_SLOP}
-              activeOpacity={0.7}
-            >
+            <TouchableOpacity onPress={() => onPlayAyah(ayah.verse_number)} hitSlop={TOUCH_HIT_SLOP}>
               <Text style={styles.topIcon}>▶</Text>
             </TouchableOpacity>
           ) : null}
@@ -149,10 +145,7 @@ const AyahItem = memo(({
       <Text
         style={[
           styles.ayahText,
-          {
-            fontSize: arabicFontSize,
-            lineHeight: Math.max(arabicFontSize + 14, Math.round(arabicFontSize * 1.75)),
-          },
+          { fontSize: arabicFontSize, lineHeight: Math.max(arabicFontSize + 14, Math.round(arabicFontSize * 1.75)) },
           arabicFontFamily ? { fontFamily: arabicFontFamily } : null,
           isDark && styles.darkText,
         ]}
@@ -160,57 +153,44 @@ const AyahItem = memo(({
         {ayah.text_uthmani}
       </Text>
 
-      <View style={styles.bottomToggles}>
-        <TouchableOpacity
-          onPress={() => onToggleTranslation(ayah.verse_number)}
-          style={[styles.actionChip, isDark && styles.darkActionChip, expandedTranslation === ayah.verse_number && styles.activeActionChip]}
-          hitSlop={TOUCH_HIT_SLOP}
-          activeOpacity={0.85}
-        >
-          <Text style={[styles.actionChipText, isDark && styles.darkText, expandedTranslation === ayah.verse_number && styles.activeActionChipText]}>
-            {expandedTranslation === ayah.verse_number ? t.hideTranslation : t.showTranslation}
-          </Text>
-        </TouchableOpacity>
+      {isExpanded && (
+        <View style={styles.actionBar}>
+          <TouchableOpacity onPress={() => onToggleTranslation(ayah.verse_number)} style={[styles.actionBarBtn, expandedTranslation === ayah.verse_number && styles.actionBarBtnActive]} activeOpacity={0.7}>
+            <MaterialCommunityIcons name="translate" size={20} color={expandedTranslation === ayah.verse_number ? UI_COLORS.primary : UI_COLORS.textMuted} />
+            <Text style={[styles.actionBarLabel, expandedTranslation === ayah.verse_number && styles.actionBarLabelActive]}>Translation</Text>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => onToggleTafseer(ayah.verse_number)} style={[styles.actionBarBtn, expandedTafseer === ayah.verse_number && styles.actionBarBtnActive]} activeOpacity={0.7}>
+            <MaterialCommunityIcons name="book-open-variant" size={20} color={expandedTafseer === ayah.verse_number ? UI_COLORS.primary : UI_COLORS.textMuted} />
+            <Text style={[styles.actionBarLabel, expandedTafseer === ayah.verse_number && styles.actionBarLabelActive]}>Tafseer</Text>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={toggleWordByWord} style={[styles.actionBarBtn, showWords && styles.actionBarBtnActive]} activeOpacity={0.7}>
+            <MaterialCommunityIcons name="abjad-arabic" size={20} color={showWords ? UI_COLORS.primary : UI_COLORS.textMuted} />
+            <Text style={[styles.actionBarLabel, showWords && styles.actionBarLabelActive]}>Words</Text>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => setShowTajweed(!showTajweed)} style={[styles.actionBarBtn, showTajweed && styles.actionBarBtnActive]} activeOpacity={0.7}>
+            <Ionicons name="color-palette-outline" size={20} color={showTajweed ? UI_COLORS.primary : UI_COLORS.textMuted} />
+            <Text style={[styles.actionBarLabel, showTajweed && styles.actionBarLabelActive]}>Tajweed</Text>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => onAskAI(ayah)} style={styles.actionBarBtn} activeOpacity={0.7}>
+            <MaterialCommunityIcons name="creation" size={20} color={UI_COLORS.accent} />
+            <Text style={[styles.actionBarLabel, styles.actionBarLabelAccent]}>AI</Text>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => onShare?.({ arabicText: ayah.text_uthmani, translation: ayah.translation ?? '', verseKey: ayah.verse_key })} style={styles.actionBarBtn} activeOpacity={0.7}>
+            <Ionicons name="share-outline" size={20} color={UI_COLORS.textMuted} />
+            <Text style={styles.actionBarLabel}>Share</Text>
+          </TouchableOpacity>
+        </View>
+      )}
 
-        <TouchableOpacity
-          onPress={() => onToggleTafseer(ayah.verse_number)}
-          style={[styles.actionChip, isDark && styles.darkActionChip, expandedTafseer === ayah.verse_number && styles.activeActionChip]}
-          hitSlop={TOUCH_HIT_SLOP}
-          activeOpacity={0.85}
-        >
-          <Text style={[styles.actionChipText, isDark && styles.darkText, expandedTafseer === ayah.verse_number && styles.activeActionChipText]}>
-            {expandedTafseer === ayah.verse_number ? (loadingTafseer ? t.loading : t.hideTafseer) : t.showTafseer}
-          </Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          onPress={toggleWordByWord}
-          style={[styles.actionChip, isDark && styles.darkActionChip, showWords && styles.activeActionChip]}
-          hitSlop={TOUCH_HIT_SLOP}
-          activeOpacity={0.85}
-        >
-          <Text style={[styles.actionChipText, isDark && styles.darkText, showWords && styles.activeActionChipText]}>
-            {loadingWords ? '...' : showWords ? t.hideWordByWord : t.wordByWord}
-          </Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          onPress={() => onAskAI(ayah)}
-          style={[styles.actionChip, isDark && styles.darkActionChip, styles.aiChip]}
-          hitSlop={TOUCH_HIT_SLOP}
-          activeOpacity={0.85}
-        >
-          <Text style={styles.aiChipText}>{t.askAi}</Text>
-        </TouchableOpacity>
-      </View>
+      {!isExpanded && !hasExpandedContent && (
+        <Text style={styles.tapHint}>•••</Text>
+      )}
 
       {showWords && words.length > 0 && (
         <View style={styles.wordGrid}>
           {words.map((w) => (
             <View key={w.position} style={[styles.wordCard, isDark && styles.darkWordCard]}>
-              <Text style={[styles.wordArabic, arabicFontFamily ? { fontFamily: arabicFontFamily } : null]}>
-                {w.text_uthmani}
-              </Text>
+              <Text style={[styles.wordArabic, arabicFontFamily ? { fontFamily: arabicFontFamily } : null]}>{w.text_uthmani}</Text>
               <Text style={styles.wordTranslit}>{w.transliteration}</Text>
               <Text style={[styles.wordMeaning, isDark && styles.darkText]}>{w.translation}</Text>
             </View>
@@ -218,23 +198,22 @@ const AyahItem = memo(({
         </View>
       )}
 
+      {showTajweed && (
+        <TajweedView verseKey={ayah.verse_key} arabicFontFamily={arabicFontFamily} />
+      )}
+
       {expandedTranslation === ayah.verse_number && (
-        <View>
+        <View style={styles.expandedContent}>
           <Text style={[styles.translationText, isDark && styles.darkText]}>{ayah.translation}</Text>
-          <TouchableOpacity
-            style={styles.shareChip}
-            onPress={() => onShare?.({ arabicText: ayah.text_uthmani, translation: ayah.translation, verseKey: ayah.verse_key })}
-            activeOpacity={0.8}
-          >
-            <Text style={styles.shareChipText}>{t.shareAyah}</Text>
-          </TouchableOpacity>
         </View>
       )}
 
       {expandedTafseer === ayah.verse_number && (
-        <Text style={[styles.tafseerText, isDark && styles.darkText]}>{currentTafseer}</Text>
+        <View style={styles.expandedContent}>
+          <Text style={[styles.tafseerText, isDark && styles.darkText]}>{currentTafseer}</Text>
+        </View>
       )}
-    </View>
+    </TouchableOpacity>
   );
 });
 
@@ -353,6 +332,24 @@ export default function SurahScreen({ route }: any) {
   const [highlightAyah, setHighlightAyah] = useState<number | null>(null);
   const [shareAyah, setShareAyah] = useState<{ arabicText: string; translation: string; verseKey: string } | null>(null);
   const [surahInfo, setSurahInfo] = useState<SurahInfo | null>(null);
+  const [expandedAyahNum, setExpandedAyahNum] = useState<number | null>(null);
+  const hasAutoExpandedRef = useRef(false);
+
+  useEffect(() => {
+    if (ayahs.length > 0 && !hasAutoExpandedRef.current && expandedAyahNum === null) {
+      AsyncStorage.getItem('@quran_pulse_ayah_toolbar_seen').then((seen) => {
+        if (!seen) {
+          hasAutoExpandedRef.current = true;
+          setExpandedAyahNum(1);
+          void AsyncStorage.setItem('@quran_pulse_ayah_toolbar_seen', 'true');
+        }
+      });
+    }
+  }, [ayahs.length]);
+
+  const toggleExpandAyah = useCallback((ayahNum: number) => {
+    setExpandedAyahNum(prev => prev === ayahNum ? null : ayahNum);
+  }, []);
 
   const flatListRef = useRef<FlatList<any>>(null);
   const initialAyahScrollInProgressRef = useRef(false);
@@ -765,6 +762,8 @@ export default function SurahScreen({ route }: any) {
         onShare={setShareAyah}
         isHighlighted={highlightAyah === item.verse_number}
         surahId={surah.id}
+        isExpanded={expandedAyahNum === item.verse_number}
+        onToggleExpand={toggleExpandAyah}
       />
     );
   }, [
@@ -783,6 +782,8 @@ export default function SurahScreen({ route }: any) {
     toggleTafseer,
     handleAskAI,
     highlightAyah,
+    expandedAyahNum,
+    toggleExpandAyah,
   ]);
 
   return (
@@ -1162,14 +1163,13 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   actionChip: {
-    flex: 1,
-    minHeight: 32,
-    borderRadius: UI_RADII.md,
+    minHeight: 30,
+    borderRadius: 10,
     borderWidth: 1,
     borderColor: '#b6d2e8',
     backgroundColor: '#ecf6ff',
-    paddingHorizontal: 8,
-    paddingVertical: 3,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -1265,14 +1265,66 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: UI_COLORS.textMuted,
   },
+  actionBar: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    marginTop: 10,
+    paddingTop: 10,
+    paddingBottom: 2,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(200,217,230,0.25)',
+  },
+  actionBarBtn: {
+    alignItems: 'center',
+    paddingVertical: 6,
+    paddingHorizontal: 6,
+    borderRadius: 10,
+    minWidth: 48,
+  },
+  actionBarBtnActive: {
+    backgroundColor: 'rgba(31,157,85,0.12)',
+  },
+  actionBarLabel: {
+    fontSize: 10,
+    fontWeight: '500',
+    color: UI_COLORS.textMuted,
+    textAlign: 'center',
+  },
+  darkActionBarLabel: {
+    color: '#8aa0b0',
+  },
+  actionBarLabelActive: {
+    color: UI_COLORS.primary,
+    fontWeight: '700',
+  },
+  actionBarLabelAccent: {
+    color: UI_COLORS.accent,
+    fontWeight: '700',
+  },
+  tapHint: {
+    textAlign: 'center',
+    color: UI_COLORS.textLight,
+    fontSize: 14,
+    marginTop: 6,
+    letterSpacing: 3,
+  },
+  expandedContent: {
+    marginTop: 10,
+    paddingTop: 10,
+    paddingHorizontal: 4,
+    paddingBottom: 2,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(200,217,230,0.2)',
+  },
   bottomToggles: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    flexWrap: 'wrap',
+    justifyContent: 'flex-start',
     alignItems: 'center',
     marginTop: 10,
     paddingTop: 10,
     borderTopWidth: 1,
     borderTopColor: 'rgba(200,217,230,0.3)',
-    gap: 8,
+    gap: 6,
   },
 });

@@ -277,4 +277,13 @@ export default {
 
   // Last Read
   continueFrom: 'Continue from',
+
+  // Tajweed
+  tajweed: 'Tajweed',
+  hideTajweed: 'Hide Tajweed',
+  tajweedRules: 'Tajweed Rules',
+
+  // Daily Ayah
+  dailyAyah: 'Your Daily Ayah',
+  selectedForYou: 'Selected for you',
 } as const;
