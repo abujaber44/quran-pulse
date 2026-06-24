@@ -230,4 +230,18 @@ export default {
   surahDescription: 'وضع الحفظ يساعد على التكرار المركّز، ووضع التكرار يتيح لك تكرار آية واحدة أو نطاق مخصص.',
   quranPlayerTitle: 'استمع للقرآن',
   quranPlayerDesc: 'استمع لتلاوة القرآن الكريم بأصوات قرّائك المفضلين. دع كلمات الله تسكّن روحك وتجلب الطمأنينة لقلبك.',
+
+  // Word by Word
+  wordByWord: 'كلمة بكلمة',
+  hideWordByWord: 'إخفاء الكلمات',
+  tapAyahForWords: 'اضغط على أي آية لعرض تحليل الكلمات',
+
+  // Reading Progress
+  readingProgress: 'تقدّمك',
+  dayStreak: 'أيام متتالية',
+  ayahsRead: 'آية قُرئت',
+  surahsCompleted: 'سورة مكتملة',
+  bestStreak: 'أفضل سلسلة',
+  keepReading: 'ابدأ القراءة لبناء سلسلتك!',
+  continueReading: 'تابع القراءة',
 } as const;

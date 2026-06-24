@@ -1,10 +1,17 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Animated, ScrollView, Platform } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import type { StackNavigationProp } from '@react-navigation/stack';
 import { LinearGradient } from 'expo-linear-gradient';
 import { UI_COLORS, UI_RADII, UI_SHADOWS, UI_GRADIENTS } from '../theme/ui';
 import { useLanguage } from '../i18n';
+import {
+  getReadingProgress,
+  getReadingStreak,
+  getCompletedSurahCount,
+  type ReadingProgress,
+  type ReadingStreak,
+} from '../services/readingProgressService';
 
 type RootStackParamList = {
   MemorizeUnderstand: undefined;
@@ -33,6 +40,17 @@ export default function LandingScreen() {
   const { t } = useLanguage();
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(20)).current;
+  const [progress, setProgress] = useState<ReadingProgress | null>(null);
+  const [streak, setStreak] = useState<ReadingStreak | null>(null);
+
+  useFocusEffect(
+    useCallback(() => {
+      Promise.all([getReadingProgress(), getReadingStreak()]).then(([p, s]) => {
+        setProgress(p);
+        setStreak(s);
+      });
+    }, [])
+  );
 
   useEffect(() => {
     Animated.parallel([
@@ -60,6 +78,29 @@ export default function LandingScreen() {
         <Animated.View style={[styles.introCard, { opacity: fadeAnim }]}>
           <Text style={styles.description}>{t.appDescription}</Text>
         </Animated.View>
+
+        {progress && streak && (progress.totalAyahsRead > 0 || streak.currentStreak > 0) ? (
+          <View style={styles.progressCard}>
+            <Text style={styles.progressTitle}>{t.readingProgress}</Text>
+            <View style={styles.progressStats}>
+              <View style={styles.progressStat}>
+                <Text style={styles.progressStatValue}>🔥 {streak.currentStreak}</Text>
+                <Text style={styles.progressStatLabel}>{t.dayStreak}</Text>
+              </View>
+              <View style={styles.progressStat}>
+                <Text style={styles.progressStatValue}>📖 {progress.totalAyahsRead}</Text>
+                <Text style={styles.progressStatLabel}>{t.ayahsRead}</Text>
+              </View>
+              <View style={styles.progressStat}>
+                <Text style={styles.progressStatValue}>✅ {getCompletedSurahCount(progress)}</Text>
+                <Text style={styles.progressStatLabel}>{t.surahsCompleted}</Text>
+              </View>
+            </View>
+            {streak.longestStreak > 1 && (
+              <Text style={styles.progressBest}>🏆 {t.bestStreak}: {streak.longestStreak} {t.dayStreak}</Text>
+            )}
+          </View>
+        ) : null}
 
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>{t.coreFeatures}</Text>
@@ -189,6 +230,43 @@ const styles = StyleSheet.create({
     color: 'rgba(234,242,248,0.9)',
     textAlign: 'center',
     lineHeight: 24,
+  },
+  progressCard: {
+    backgroundColor: 'rgba(31,157,85,0.12)',
+    borderWidth: 1,
+    borderColor: 'rgba(31,157,85,0.25)',
+    borderRadius: UI_RADII.xl,
+    padding: 16,
+    marginBottom: 20,
+  },
+  progressTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: UI_COLORS.primarySoft,
+    marginBottom: 12,
+  },
+  progressStats: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+  },
+  progressStat: {
+    alignItems: 'center',
+  },
+  progressStatValue: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: UI_COLORS.white,
+    marginBottom: 2,
+  },
+  progressStatLabel: {
+    fontSize: 11,
+    color: 'rgba(215,239,225,0.7)',
+  },
+  progressBest: {
+    fontSize: 12,
+    color: 'rgba(215,239,225,0.6)',
+    textAlign: 'center',
+    marginTop: 10,
   },
   sectionHeader: {
     marginBottom: 14,
