@@ -7,7 +7,9 @@ import {
   Modal,
   FlatList,
 } from 'react-native';
-import { fetchAyahs, fetchTranslations, fetchTafseer } from '../services/quranApi';
+import { ActivityIndicator } from 'react-native';
+import { fetchAyahs, fetchTranslations, fetchTafseer, fetchWordByWord, type WordByWord } from '../services/quranApi';
+import { recordAyahRead } from '../services/readingProgressService';
 import { useAudio, useAudioProgress } from '../context/AudioContext';
 import { useSettings } from '../context/SettingsContext';
 import { useThemedAlert } from '../context/ThemedAlertContext';
@@ -56,6 +58,7 @@ type AyahItemProps = {
   onToggleTafseer: (ayahNum: number) => void;
   onAskAI: (ayah: any) => void;
   isHighlighted: boolean;
+  surahId: number;
 };
 
 const AyahItem = memo(({
@@ -76,8 +79,33 @@ const AyahItem = memo(({
   onToggleTafseer,
   onAskAI,
   isHighlighted,
+  surahId,
 }: AyahItemProps) => {
   const { t } = useLanguage();
+  const [showWords, setShowWords] = useState(false);
+  const [words, setWords] = useState<WordByWord[]>([]);
+  const [loadingWords, setLoadingWords] = useState(false);
+
+  const toggleWordByWord = async () => {
+    if (showWords) {
+      setShowWords(false);
+      return;
+    }
+    if (words.length > 0) {
+      setShowWords(true);
+      return;
+    }
+    setLoadingWords(true);
+    try {
+      const data = await fetchWordByWord(surahId, ayah.verse_number);
+      setWords(data);
+      setShowWords(true);
+    } catch {
+      setWords([]);
+    } finally {
+      setLoadingWords(false);
+    }
+  };
   return (
     <View
       style={[
@@ -153,6 +181,17 @@ const AyahItem = memo(({
         </TouchableOpacity>
 
         <TouchableOpacity
+          onPress={toggleWordByWord}
+          style={[styles.actionChip, isDark && styles.darkActionChip, showWords && styles.activeActionChip]}
+          hitSlop={TOUCH_HIT_SLOP}
+          activeOpacity={0.85}
+        >
+          <Text style={[styles.actionChipText, isDark && styles.darkText, showWords && styles.activeActionChipText]}>
+            {loadingWords ? '...' : showWords ? t.hideWordByWord : t.wordByWord}
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
           onPress={() => onAskAI(ayah)}
           style={[styles.actionChip, isDark && styles.darkActionChip, styles.aiChip]}
           hitSlop={TOUCH_HIT_SLOP}
@@ -161,6 +200,20 @@ const AyahItem = memo(({
           <Text style={styles.aiChipText}>{t.askAi}</Text>
         </TouchableOpacity>
       </View>
+
+      {showWords && words.length > 0 && (
+        <View style={styles.wordGrid}>
+          {words.map((w) => (
+            <View key={w.position} style={[styles.wordCard, isDark && styles.darkWordCard]}>
+              <Text style={[styles.wordArabic, arabicFontFamily ? { fontFamily: arabicFontFamily } : null]}>
+                {w.text_uthmani}
+              </Text>
+              <Text style={styles.wordTranslit}>{w.transliteration}</Text>
+              <Text style={[styles.wordMeaning, isDark && styles.darkText]}>{w.translation}</Text>
+            </View>
+          ))}
+        </View>
+      )}
 
       {expandedTranslation === ayah.verse_number && (
         <Text style={[styles.translationText, isDark && styles.darkText]}>{ayah.translation}</Text>
@@ -486,7 +539,8 @@ export default function SurahScreen({ route }: any) {
   const handlePlayAyah = useCallback((ayahNum: number) => {
     const global = getGlobalAyahNumber(surah.id, ayahNum, surahs);
     playAyah(surah.id, ayahNum, global);
-  }, [playAyah, surah.id, surahs]);
+    void recordAyahRead(surah.id, ayahNum, surah.verses_count);
+  }, [playAyah, surah.id, surahs, surah.verses_count]);
 
   // Fixed toggleTafseer — prevents flash of previous tafseer
   const toggleTafseer = useCallback(async (ayahNum: number) => {
@@ -692,6 +746,7 @@ export default function SurahScreen({ route }: any) {
         onToggleTafseer={toggleTafseer}
         onAskAI={handleAskAI}
         isHighlighted={highlightAyah === item.verse_number}
+        surahId={surah.id}
       />
     );
   }, [
@@ -991,6 +1046,47 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '700',
     color: UI_COLORS.accent,
+  },
+  wordGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    gap: 8,
+    marginTop: 12,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(200,217,230,0.3)',
+  },
+  wordCard: {
+    alignItems: 'center',
+    backgroundColor: 'rgba(255,255,255,0.7)',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(200,217,230,0.4)',
+    paddingVertical: 8,
+    paddingHorizontal: 10,
+    minWidth: 70,
+  },
+  darkWordCard: {
+    backgroundColor: 'rgba(26,38,52,0.6)',
+    borderColor: 'rgba(255,255,255,0.08)',
+  },
+  wordArabic: {
+    fontSize: 20,
+    color: UI_COLORS.text,
+    fontWeight: '600',
+    marginBottom: 3,
+  },
+  wordTranslit: {
+    fontSize: 10,
+    color: UI_COLORS.accent,
+    fontWeight: '600',
+    marginBottom: 2,
+  },
+  wordMeaning: {
+    fontSize: 10,
+    color: UI_COLORS.textMuted,
+    textAlign: 'center',
   },
   darkText: { color: UI_COLORS.white },
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'center', alignItems: 'center' },

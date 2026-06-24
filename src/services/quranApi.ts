@@ -24,6 +24,31 @@ export const fetchTranslations = async (chapterId: number) => {
 };
 
 
+export interface WordByWord {
+  position: number;
+  text_uthmani: string;
+  translation: string;
+  transliteration: string;
+  char_type: string;
+}
+
+export const fetchWordByWord = async (chapterId: number, verseNumber: number): Promise<WordByWord[]> => {
+  const { data } = await axios.get(
+    `${BASE_URL}/verses/by_key/${chapterId}:${verseNumber}?language=en&words=true&word_fields=text_uthmani,translation`
+  );
+  const words = data.verse?.words;
+  if (!Array.isArray(words)) return [];
+  return words
+    .filter((w: any) => w.char_type_name === 'word')
+    .map((w: any) => ({
+      position: w.position,
+      text_uthmani: w.text_uthmani ?? w.text ?? '',
+      translation: w.translation?.text ?? '',
+      transliteration: w.transliteration?.text ?? '',
+      char_type: w.char_type_name ?? 'word',
+    }));
+};
+
 export const fetchTafseer = async (
   surahId: number,
   ayahNum: number,

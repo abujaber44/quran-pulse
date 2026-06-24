@@ -230,4 +230,18 @@ export default {
   surahDescription: 'Memorize mode helps focused repetition using your memorization pause setting, and Repeat lets you loop a single ayah or custom range.',
   quranPlayerTitle: 'Listen to Quran',
   quranPlayerDesc: 'Listen to the beautiful recitation of the Quran with your favorite reciters. Let the words of Allah soothe your soul and bring tranquility to your heart.',
+
+  // Word by Word
+  wordByWord: 'Word by Word',
+  hideWordByWord: 'Hide Words',
+  tapAyahForWords: 'Tap any ayah to see word-by-word breakdown',
+
+  // Reading Progress
+  readingProgress: 'Your Progress',
+  dayStreak: 'day streak',
+  ayahsRead: 'ayahs read',
+  surahsCompleted: 'surahs done',
+  bestStreak: 'best streak',
+  keepReading: 'Start reading to build your streak!',
+  continueReading: 'Continue Reading',
 } as const;
