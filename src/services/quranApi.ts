@@ -88,6 +88,65 @@ export const fetchSurahInfo = async (chapterId: number): Promise<SurahInfo | nul
   }
 };
 
+export interface TajweedWord {
+  text: string;
+  rule: string | null;
+}
+
+export interface TajweedVerse {
+  verseKey: string;
+  words: TajweedWord[];
+}
+
+const TAJWEED_RULE_NAMES: Record<string, { en: string; ar: string; color: string }> = {
+  ghunnah: { en: 'Ghunnah (Nasalization)', ar: 'غنّة', color: '#FF7F50' },
+  ham_wasl: { en: 'Hamzat al-Wasl', ar: 'همزة الوصل', color: '#AAAAAA' },
+  idgham_ghunnah: { en: 'Idgham with Ghunnah', ar: 'إدغام بغنّة', color: '#169200' },
+  idgham_mutajanisayn: { en: 'Idgham Mutajanisayn', ar: 'إدغام متجانسين', color: '#A1A1A1' },
+  idgham_shafawi: { en: 'Idgham Shafawi', ar: 'إدغام شفوي', color: '#169200' },
+  idgham_wo_ghunnah: { en: 'Idgham without Ghunnah', ar: 'إدغام بلا غنّة', color: '#169200' },
+  ikhafa: { en: 'Ikhfa (Concealment)', ar: 'إخفاء', color: '#D500B7' },
+  ikhafa_shafawi: { en: 'Ikhfa Shafawi', ar: 'إخفاء شفوي', color: '#D500B7' },
+  iqlab: { en: 'Iqlab (Conversion)', ar: 'إقلاب', color: '#26BFFD' },
+  laam_shamsiyah: { en: 'Lam Shamsiyyah', ar: 'لام شمسية', color: '#AAAAAA' },
+  madda_normal: { en: 'Madd (Normal)', ar: 'مدّ طبيعي', color: '#537FFF' },
+  madda_necessary: { en: 'Madd Lazim (Necessary)', ar: 'مدّ لازم', color: '#000EBC' },
+  madda_obligatory: { en: 'Madd Wajib (Obligatory)', ar: 'مدّ واجب', color: '#2144C1' },
+  madda_permissible: { en: 'Madd Ja\'iz (Permissible)', ar: 'مدّ جائز', color: '#4050FF' },
+  qalaqah: { en: 'Qalqalah (Echo)', ar: 'قلقلة', color: '#DD0008' },
+  slnt: { en: 'Silent Letter', ar: 'حرف ساكن', color: '#AAAAAA' },
+};
+
+export const getTajweedRuleInfo = () => TAJWEED_RULE_NAMES;
+
+export const fetchTajweedVerse = async (verseKey: string): Promise<TajweedVerse | null> => {
+  try {
+    const { data } = await axios.get(
+      `${BASE_URL}/quran/verses/uthmani_tajweed?verse_key=${verseKey}`
+    );
+    const verse = data.verses?.[0];
+    if (!verse?.text_uthmani_tajweed) return null;
+
+    const raw = verse.text_uthmani_tajweed as string;
+    const words: TajweedWord[] = [];
+    const regex = /<tajweed class=(\w+)>(.*?)<\/tajweed>|<span class=\w+>.*?<\/span>|([^<]+)/g;
+    let match;
+
+    while ((match = regex.exec(raw)) !== null) {
+      if (match[1] && match[2]) {
+        words.push({ text: match[2], rule: match[1] });
+      } else if (match[3]) {
+        const cleaned = match[3].trim();
+        if (cleaned) words.push({ text: cleaned, rule: null });
+      }
+    }
+
+    return { verseKey, words };
+  } catch {
+    return null;
+  }
+};
+
 export const fetchTafseer = async (
   surahId: number,
   ayahNum: number,

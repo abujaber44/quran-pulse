@@ -277,4 +277,13 @@ export default {
 
   // Last Read
   continueFrom: 'تابع من',
+
+  // Tajweed
+  tajweed: 'تجويد',
+  hideTajweed: 'إخفاء التجويد',
+  tajweedRules: 'أحكام التجويد',
+
+  // Daily Ayah
+  dailyAyah: 'آيتك اليومية',
+  selectedForYou: 'مختارة لك',
 } as const;

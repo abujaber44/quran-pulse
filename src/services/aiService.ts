@@ -127,3 +127,34 @@ export async function getAiInsight(
   const data = (await response.json()) as { insight: string };
   return data.insight;
 }
+
+export interface DailyAyah {
+  surahId: number;
+  surahName: string;
+  ayahNumber: number;
+  verseKey: string;
+  arabicText: string;
+  translation: string;
+  reason: string;
+}
+
+export async function fetchDailyPersonalizedAyah(
+  recentSurahs: string[],
+  bookmarkTags: string[],
+  lang?: string,
+  signal?: AbortSignal,
+): Promise<DailyAyah | null> {
+  const today = new Date().toISOString().split('T')[0];
+
+  const response = await fetch(`${AI_API_BASE}/api/daily-ayah`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ recentSurahs, bookmarkTags, today, lang: lang ?? 'en' }),
+    signal,
+  });
+
+  if (!response.ok) return null;
+
+  const data = (await response.json()) as { ayah: DailyAyah };
+  return data.ayah ?? null;
+}

@@ -14,7 +14,11 @@ import {
   type ReadingStreak,
   type LastReadPosition,
 } from '../services/readingProgressService';
+import { ActivityIndicator } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { fetchSurahs } from '../services/quranApi';
+import { getBookmarks } from '../services/bookmarkService';
+import { fetchDailyPersonalizedAyah, type DailyAyah } from '../services/aiService';
 
 type RootStackParamList = {
   MemorizeUnderstand: undefined;
@@ -40,13 +44,15 @@ const ICONS: Record<string, string> = {
 
 export default function LandingScreen() {
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(20)).current;
   const [progress, setProgress] = useState<ReadingProgress | null>(null);
   const [streak, setStreak] = useState<ReadingStreak | null>(null);
   const [lastRead, setLastRead] = useState<LastReadPosition | null>(null);
   const [surahs, setSurahs] = useState<any[]>([]);
+  const [dailyAyah, setDailyAyah] = useState<DailyAyah | null>(null);
+  const [loadingDailyAyah, setLoadingDailyAyah] = useState(false);
 
   useFocusEffect(
     useCallback(() => {
@@ -61,6 +67,41 @@ export default function LandingScreen() {
   useEffect(() => {
     fetchSurahs().then(setSurahs);
   }, []);
+
+  useEffect(() => {
+    const loadDailyAyah = async () => {
+      const cacheKey = '@quran_pulse_daily_ayah';
+      const today = new Date().toISOString().split('T')[0];
+
+      const cached = await AsyncStorage.getItem(cacheKey);
+      if (cached) {
+        const parsed = JSON.parse(cached) as { date: string; lang?: string; ayah: DailyAyah };
+        if (parsed.date === today && parsed.lang === lang) {
+          setDailyAyah(parsed.ayah);
+          return;
+        }
+      }
+
+      setLoadingDailyAyah(true);
+      try {
+        const [progressData, bookmarks] = await Promise.all([getReadingProgress(), getBookmarks()]);
+        const recentSurahs = Object.keys(progressData.surahsRead).slice(0, 5);
+        const bookmarkTags = [...new Set(bookmarks.map(b => b.surahName))].slice(0, 5);
+
+        const ayah = await fetchDailyPersonalizedAyah(recentSurahs, bookmarkTags, lang);
+        if (ayah) {
+          setDailyAyah(ayah);
+          await AsyncStorage.setItem(cacheKey, JSON.stringify({ date: today, lang, ayah }));
+        }
+      } catch {
+        // Silent fail — daily ayah is optional
+      } finally {
+        setLoadingDailyAyah(false);
+      }
+    };
+
+    void loadDailyAyah();
+  }, [lang]);
 
   useEffect(() => {
     Animated.parallel([
@@ -111,6 +152,32 @@ export default function LandingScreen() {
             )}
           </View>
         ) : null}
+
+        {(dailyAyah || loadingDailyAyah) && (
+          <View style={styles.dailyAyahCard}>
+            <Text style={styles.dailyAyahHeader}>{t.dailyAyah}</Text>
+            {loadingDailyAyah && !dailyAyah ? (
+              <ActivityIndicator size="small" color={UI_COLORS.primarySoft} style={{ marginVertical: 12 }} />
+            ) : dailyAyah ? (
+              <TouchableOpacity
+                activeOpacity={0.85}
+                onPress={() => {
+                  const surah = surahs.find((s: any) => s.id === dailyAyah.surahId);
+                  if (surah) {
+                    (navigation as any).navigate('Surah', { surah, surahs, initialAyah: dailyAyah.ayahNumber, scrollNonce: Date.now() });
+                  }
+                }}
+              >
+                <Text style={styles.dailyAyahArabic}>{dailyAyah.arabicText}</Text>
+                <View style={styles.dailyAyahFooter}>
+                  <Text style={styles.dailyAyahRef}>{dailyAyah.surahName} — {dailyAyah.verseKey}</Text>
+                  <Text style={styles.dailyAyahBadge}>{t.selectedForYou}</Text>
+                </View>
+                <Text style={styles.dailyAyahReason}>✦ {dailyAyah.reason}</Text>
+              </TouchableOpacity>
+            ) : null}
+          </View>
+        )}
 
         {lastRead && surahs.length > 0 && (
           <TouchableOpacity
@@ -293,6 +360,63 @@ const styles = StyleSheet.create({
     color: 'rgba(215,239,225,0.6)',
     textAlign: 'center',
     marginTop: 10,
+  },
+  dailyAyahCard: {
+    backgroundColor: 'rgba(31,157,85,0.08)',
+    borderWidth: 1,
+    borderColor: 'rgba(31,157,85,0.2)',
+    borderRadius: UI_RADII.xl,
+    padding: 18,
+    marginBottom: 16,
+  },
+  dailyAyahHeader: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: UI_COLORS.primarySoft,
+    marginBottom: 12,
+  },
+  dailyAyahArabic: {
+    fontSize: 22,
+    lineHeight: 38,
+    textAlign: 'center',
+    color: UI_COLORS.white,
+    writingDirection: 'rtl',
+    marginBottom: 10,
+  },
+  dailyAyahTranslation: {
+    fontSize: 14,
+    lineHeight: 22,
+    textAlign: 'center',
+    color: 'rgba(214,228,238,0.85)',
+    fontStyle: 'italic',
+    marginBottom: 12,
+  },
+  dailyAyahFooter: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  dailyAyahRef: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: 'rgba(215,239,225,0.8)',
+  },
+  dailyAyahBadge: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: UI_COLORS.primary,
+    backgroundColor: 'rgba(31,157,85,0.2)',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 8,
+    overflow: 'hidden',
+  },
+  dailyAyahReason: {
+    fontSize: 12,
+    lineHeight: 18,
+    color: 'rgba(214,228,238,0.6)',
+    fontStyle: 'italic',
   },
   continueCard: {
     backgroundColor: 'rgba(45,127,184,0.15)',
