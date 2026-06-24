@@ -16,9 +16,12 @@ import { useSettings } from '../context/SettingsContext';
 import { useThemedAlert } from '../context/ThemedAlertContext';
 import { resolveArabicFontFamily } from '../theme/fonts';
 import { UI_COLORS, UI_RADII, UI_SHADOWS } from '../theme/ui';
+import { UI_GLASS } from '../theme/ui';
+import GlassBackground from '../components/GlassBackground';
 import ScreenIntroTile from '../components/ScreenIntroTile';
 import MemorizationQuizModal from '../components/MemorizationQuizModal';
 import type { BookmarkForQuiz } from '../services/aiService';
+import { useLanguage } from '../i18n';
 
 type RootStackParamList = {
   Surah: {
@@ -39,11 +42,12 @@ export default function BookmarksScreen() {
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
   const { settings } = useSettings();
   const { showAlert } = useThemedAlert();
+  const { t } = useLanguage();
   const isDark = settings.isDarkMode;
   const ayahFontSize = Math.max(24, settings.arabicFontSize - 6);
   const arabicFontFamily = resolveArabicFontFamily(settings.arabicFontFamily);
 
-  const getTagLabel = (tag: BookmarkTag) => (tag === 'memorize' ? 'Memorize' : 'Read/Recite');
+  const getTagLabel = (tag: BookmarkTag) => (tag === 'memorize' ? t.memorize : t.readRecite);
   const visibleBookmarks =
     selectedTag === 'all' ? bookmarks : bookmarks.filter((bookmark) => bookmark.tag === selectedTag);
 
@@ -80,8 +84,8 @@ export default function BookmarksScreen() {
     await removeBookmark(surahId, ayahNum);
     loadData(); // Refresh list
     showAlert({
-      title: 'Removed',
-      message: 'Ayah removed from bookmarks',
+      title: t.removed,
+      message: t.ayahRemovedFromBookmarks,
       variant: 'info',
     });
   };
@@ -91,7 +95,7 @@ export default function BookmarksScreen() {
     if (!fullSurah) {
       showAlert({
         title: 'Error',
-        message: 'Could not find surah data',
+        message: t.couldNotFindSurah,
         variant: 'danger',
       });
       return;
@@ -111,14 +115,14 @@ export default function BookmarksScreen() {
       <View style={styles.header}>
         <View>
           <Text style={[styles.surahName, isDark && styles.darkText]}>{item.surahName}</Text>
-          <Text style={styles.ayahNumber}>Ayah {item.ayahNum}</Text>
+          <Text style={styles.ayahNumber}>{t.ayah} {item.ayahNum}</Text>
         </View>
         <View style={styles.headerRight}>
           <View style={[styles.tagPill, item.tag === 'memorize' ? styles.tagMemorize : styles.tagRead]}>
             <Text style={styles.tagPillText}>{getTagLabel(item.tag)}</Text>
           </View>
         <TouchableOpacity onPress={() => handleRemove(item.surahId, item.ayahNum)}>
-          <Text style={styles.removeText}>Remove</Text>
+          <Text style={styles.removeText}>{t.remove}</Text>
         </TouchableOpacity>
         </View>
       </View>
@@ -139,29 +143,33 @@ export default function BookmarksScreen() {
 
   if (loading) {
     return (
-      <SafeAreaView style={[styles.container, isDark && styles.darkBg]}>
-        <ActivityIndicator size="large" color="#27ae60" />
-        <Text style={[styles.loadingText, isDark && styles.darkText]}>Loading bookmarks...</Text>
-      </SafeAreaView>
+      <GlassBackground isDark={isDark}>
+        <View style={styles.container}>
+          <ActivityIndicator size="large" color="#27ae60" />
+          <Text style={[styles.loadingText, isDark && styles.darkText]}>{t.loadingBookmarks}</Text>
+        </View>
+      </GlassBackground>
     );
   }
 
   if (bookmarks.length === 0) {
     return (
-      <SafeAreaView style={[styles.container, isDark && styles.darkBg]}>
-        <Text style={[styles.emptyText, isDark && styles.darkMutedText]}>
-          No bookmarks yet. Tap ★ on any ayah to save it here.
-        </Text>
-      </SafeAreaView>
+      <GlassBackground isDark={isDark}>
+        <View style={styles.container}>
+          <Text style={[styles.emptyText, isDark && styles.darkMutedText]}>
+            {t.noBookmarks}
+          </Text>
+        </View>
+      </GlassBackground>
     );
   }
 
   return (
-    //<SafeAreaView style={styles.container}>
-    <View style={[styles.container, isDark && styles.darkBg]}>
+    <GlassBackground isDark={isDark}>
+    <View style={styles.container}>
       <ScreenIntroTile
-        title="My Bookmarks"
-        description="Your personal collection of cherished ayahs, moments of reflection, and verses that touched your heart. Return here anytime to revisit what inspires and strengthens your connection with the Quran."
+        title={t.bookmarksTitle}
+        description={t.bookmarksDescription}
         isDark={isDark}
         style={styles.introTile}
       />
@@ -171,7 +179,7 @@ export default function BookmarksScreen() {
           onPress={() => setSelectedTag('all')}
         >
           <Text style={[styles.filterChipText, selectedTag === 'all' && styles.filterChipTextActive]}>
-            All
+            {t.all}
           </Text>
         </TouchableOpacity>
         <TouchableOpacity
@@ -179,7 +187,7 @@ export default function BookmarksScreen() {
           onPress={() => setSelectedTag('memorize')}
         >
           <Text style={[styles.filterChipText, selectedTag === 'memorize' && styles.filterChipTextActive]}>
-            Memorize
+            {t.memorize}
           </Text>
         </TouchableOpacity>
         <TouchableOpacity
@@ -187,7 +195,7 @@ export default function BookmarksScreen() {
           onPress={() => setSelectedTag('read_recite')}
         >
           <Text style={[styles.filterChipText, selectedTag === 'read_recite' && styles.filterChipTextActive]}>
-            Read/Recite
+            {t.readRecite}
           </Text>
         </TouchableOpacity>
       </View>
@@ -197,13 +205,13 @@ export default function BookmarksScreen() {
           style={styles.coachButton}
           onPress={() => setQuizModalVisible(true)}
         >
-          <Text style={styles.coachButtonText}>AI Coach ✦ — Test Your Memory</Text>
+          <Text style={styles.coachButtonText}>{t.aiCoach}</Text>
         </TouchableOpacity>
       )}
 
       {visibleBookmarks.length === 0 ? (
         <Text style={[styles.filteredEmptyText, isDark && styles.darkMutedText]}>
-          No bookmarks found for this tag.
+          {t.noBookmarksForTag}
         </Text>
       ) : null}
       <FlatList
@@ -227,13 +235,12 @@ export default function BookmarksScreen() {
           }))}
       />
       </View>
-    //</SafeAreaView>
+    </GlassBackground>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: UI_COLORS.background },
-  darkBg: { backgroundColor: UI_COLORS.darkBackground },
+  container: { flex: 1 },
   introTile: { marginBottom: 12 },
   filtersRow: {
     flexDirection: 'row',
@@ -246,8 +253,8 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     borderRadius: 999,
     borderWidth: 1,
-    borderColor: UI_COLORS.border,
-    backgroundColor: UI_COLORS.surface,
+    borderColor: 'rgba(255, 255, 255, 0.45)',
+    backgroundColor: 'rgba(255, 255, 255, 0.65)',
   },
   filterChipActive: {
     backgroundColor: UI_COLORS.primary,
@@ -269,17 +276,17 @@ const styles = StyleSheet.create({
   },
   list: { paddingHorizontal: 16, paddingBottom: 24 },
   card: {
-    backgroundColor: UI_COLORS.surface,
+    backgroundColor: 'rgba(255, 255, 255, 0.65)',
     padding: 20,
     borderRadius: UI_RADII.lg,
     marginBottom: 16,
     borderWidth: 1,
-    borderColor: UI_COLORS.border,
+    borderColor: 'rgba(255, 255, 255, 0.45)',
     ...UI_SHADOWS.card,
   },
   darkCard: {
-    backgroundColor: UI_COLORS.darkSurface,
-    borderColor: '#30353b',
+    backgroundColor: 'rgba(26, 38, 52, 0.75)',
+    borderColor: 'rgba(255, 255, 255, 0.08)',
   },
   header: {
     flexDirection: 'row',

@@ -14,6 +14,7 @@ import {
 } from 'react-native';
 import { UI_COLORS, UI_RADII, UI_SHADOWS } from '../theme/ui';
 import { askAboutAyah, type ChatMessage } from '../services/aiService';
+import { useLanguage } from '../i18n';
 
 interface AskAyahModalProps {
   visible: boolean;
@@ -25,12 +26,7 @@ interface AskAyahModalProps {
   translation: string;
 }
 
-const SUGGESTIONS = [
-  'What is the context of this ayah?\nما هو سياق هذه الآية؟',
-  'Explain the Arabic grammar\nاشرح القواعد النحوية',
-  'What do the scholars say?\nماذا قال العلماء؟',
-  'Related verses?\nآيات ذات صلة؟',
-];
+// Suggestions are now derived from t inside the component
 
 export default function AskAyahModal({
   visible,
@@ -41,6 +37,8 @@ export default function AskAyahModal({
   arabicText,
   translation,
 }: AskAyahModalProps) {
+  const { t, lang } = useLanguage();
+  const SUGGESTIONS = [t.whatIsContext, t.explainGrammar, t.whatDoScholarsSay, t.relatedVerses];
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputText, setInputText] = useState('');
   const [loading, setLoading] = useState(false);
@@ -77,6 +75,7 @@ export default function AskAyahModal({
         question: question.trim(),
         conversationHistory: messages,
         signal: controller.signal,
+        lang,
       });
 
       setMessages(prev => [...prev, { role: 'assistant', content: answer }]);
@@ -84,7 +83,7 @@ export default function AskAyahModal({
       if ((error as Error).name === 'AbortError') return;
       setMessages(prev => [
         ...prev,
-        { role: 'assistant', content: 'Sorry, I could not get a response. Please try again.' },
+        { role: 'assistant', content: t.couldNotGetResponse },
       ]);
     } finally {
       setLoading(false);
@@ -109,7 +108,7 @@ export default function AskAyahModal({
         >
           <View style={styles.header}>
             <View style={styles.headerTextWrap}>
-              <Text style={styles.headerTitle}>Ask about {verseKey}</Text>
+              <Text style={styles.headerTitle}>{t.askAboutAyah} {verseKey}</Text>
               <Text style={styles.headerSubtitle} numberOfLines={1}>
                 {surahName} — Ayah {ayahNumber}
               </Text>
@@ -121,9 +120,9 @@ export default function AskAyahModal({
 
           {messages.length === 0 ? (
             <View style={styles.emptyState}>
-              <Text style={styles.emptyTitle}>✨ Ask AI about this ayah</Text>
+              <Text style={styles.emptyTitle}>✨ {t.askAiAboutAyah}</Text>
               <Text style={styles.emptySubtitle}>
-                Get tafsir-grounded explanations, context, and insights
+                {t.tafsirGroundedExplanations}
               </Text>
               <View style={styles.suggestionsWrap}>
                 {SUGGESTIONS.map((s) => (
@@ -149,7 +148,7 @@ export default function AskAyahModal({
                 loading ? (
                   <View style={styles.loadingWrap}>
                     <ActivityIndicator size="small" color={UI_COLORS.primary} />
-                    <Text style={styles.loadingText}>Thinking...</Text>
+                    <Text style={styles.loadingText}>{t.thinking}</Text>
                   </View>
                 ) : null
               }
@@ -161,7 +160,7 @@ export default function AskAyahModal({
               style={styles.input}
               value={inputText}
               onChangeText={setInputText}
-              placeholder="Ask a question..."
+              placeholder={t.askQuestion}
               placeholderTextColor={UI_COLORS.textLight}
               multiline
               maxLength={500}

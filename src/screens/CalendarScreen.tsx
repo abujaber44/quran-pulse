@@ -12,13 +12,15 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useSettings } from '../context/SettingsContext';
 import { useThemedAlert } from '../context/ThemedAlertContext';
 import { resolveArabicFontFamily } from '../theme/fonts';
-import { UI_COLORS, UI_RADII, UI_SHADOWS } from '../theme/ui';
+import { UI_COLORS, UI_RADII, UI_SHADOWS, UI_GLASS } from '../theme/ui';
 import { fetchRandomDailyHadith, DailyHadith } from '../services/hadithService';
 import ScreenIntroTile from '../components/ScreenIntroTile';
+import GlassBackground from '../components/GlassBackground';
 import { getAiInsight } from '../services/aiService';
+import { useLanguage } from '../i18n';
 
 const API_BASE = 'https://api.aladhan.com/v1';
-const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+const WEEKDAYS_FALLBACK = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const DAILY_INSIGHT_CACHE_PREFIX = 'onThisDateInsight:';
 
 type CalendarDay = {
@@ -189,7 +191,9 @@ export default function CalendarScreen() {
   const [selectedDayApiInsight, setSelectedDayApiInsight] = useState<OnThisDateReflection | null>(null);
   const { settings } = useSettings();
   const { showAlert } = useThemedAlert();
+  const { t, lang } = useLanguage();
   const isDark = settings.isDarkMode;
+  const WEEKDAYS = [t.sun, t.mon, t.tue, t.wed, t.thu, t.fri, t.sat];
   const hadithArabicFontSize = Math.max(18, settings.arabicFontSize - 10);
   const onDateArabicFontSize = Math.max(20, settings.arabicFontSize - 12);
   const arabicFontFamily = resolveArabicFontFamily(settings.arabicFontFamily);
@@ -382,7 +386,7 @@ export default function CalendarScreen() {
 
     const firstWeekday = monthData[0].gregorian.weekday.en.toLowerCase();
     const firstWeekdayIndex = Math.max(
-      WEEKDAYS.findIndex((weekday) => firstWeekday.startsWith(weekday.toLowerCase())),
+      WEEKDAYS_FALLBACK.findIndex((weekday) => firstWeekday.startsWith(weekday.toLowerCase())),
       0
     );
 
@@ -467,10 +471,11 @@ export default function CalendarScreen() {
 
   return (
     //<SafeAreaView style={styles.safeArea}>
+    <GlassBackground isDark={isDark}>
       <View style={[styles.container, isDark && styles.darkBg]}>
         <ScreenIntroTile
-          title="Islamic Calendar"
-          description="This calendar displays the current Islamic (Hijri) month with corresponding Gregorian dates. Tap any day to view On This Date content, including Islamic events when available or a short reflection."
+          title={t.calendarTitle}
+          description={t.calendarDescription}
           isDark={isDark}
           style={styles.introTile}
         />
@@ -515,7 +520,7 @@ export default function CalendarScreen() {
 
               {selectedDay && (
                 <View style={[styles.selectedDayContainer, isDark && styles.darkSelectedDayContainer]}>
-                  <Text style={styles.selectedDayTitle}>On This Date</Text>
+                  <Text style={styles.selectedDayTitle}>{t.onThisDate}</Text>
                   <Text style={[styles.selectedDayText, isDark && styles.darkText]}>
                     Hijri: {selectedDay.hijri.day} {selectedDay.hijri.month.en} {selectedDay.hijri.year} AH
                   </Text>
@@ -560,7 +565,7 @@ export default function CalendarScreen() {
               {/* Hadith of the Day - displayed below the calendar */}
               {dailyHadith && (
                 <View style={[styles.hadithContainer, isDark && styles.darkCard]}>
-                  <Text style={[styles.hadithTitle, isDark && styles.darkText]}>Hadith of the Day</Text>
+                  <Text style={[styles.hadithTitle, isDark && styles.darkText]}>{t.hadithOfTheDay}</Text>
                   <Text
                     style={[
                       styles.hadithArabic,
@@ -576,7 +581,7 @@ export default function CalendarScreen() {
 
                   {hadithReflection ? (
                     <View style={styles.reflectionBox}>
-                      <Text style={styles.reflectionLabel}>✦ AI Reflection</Text>
+                      <Text style={styles.reflectionLabel}>{t.aiReflection}</Text>
                       <Text style={[styles.reflectionText, isDark && styles.darkMutedText]}>{hadithReflection}</Text>
                     </View>
                   ) : (
@@ -590,7 +595,7 @@ export default function CalendarScreen() {
                             arabic: dailyHadith.arabic,
                             english: dailyHadith.english,
                             source: dailyHadith.source,
-                          });
+                          }, undefined, lang);
                           setHadithReflection(reflection);
                         } catch {
                           setHadithReflection('Could not load reflection. Please try again.');
@@ -603,7 +608,7 @@ export default function CalendarScreen() {
                       {loadingReflection ? (
                         <ActivityIndicator size="small" color={UI_COLORS.accent} />
                       ) : (
-                        <Text style={styles.reflectionButtonText}>✦ AI Reflection</Text>
+                        <Text style={styles.reflectionButtonText}>{t.aiReflection}</Text>
                       )}
                     </TouchableOpacity>
                   )}
@@ -614,25 +619,26 @@ export default function CalendarScreen() {
               <View style={styles.legend}>
                 <View style={styles.legendItem}>
                   <View style={[styles.legendColor, { backgroundColor: '#27ae60' }]} />
-                  <Text style={[styles.legendText, isDark && styles.darkText]}>Today</Text>
+                  <Text style={[styles.legendText, isDark && styles.darkText]}>{t.today}</Text>
                 </View>
                 <View style={styles.legendItem}>
                   <View style={[styles.legendColor, { backgroundColor: '#b3e0f9' }]} />
-                  <Text style={[styles.legendText, isDark && styles.darkText]}>Friday (Jumu'ah)</Text>
+                  <Text style={[styles.legendText, isDark && styles.darkText]}>{t.friday}</Text>
                 </View>
               </View>
             </ScrollView>
           </>
         )}
       </View>
+    </GlassBackground>
     //</SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: UI_COLORS.text },
-  container: { flex: 1, backgroundColor: UI_COLORS.background, padding: 16 },
-  darkBg: { backgroundColor: UI_COLORS.darkBackground },
+  safeArea: { flex: 1 },
+  container: { flex: 1, padding: 16 },
+  darkBg: {},
   introTile: {
     marginHorizontal: 0,
     marginBottom: 14,
@@ -690,16 +696,16 @@ const styles = StyleSheet.create({
   },
   dayCard: {
     flex: 1,
-    backgroundColor: UI_COLORS.surface,
-    borderRadius: 10, 
-    justifyContent: 'center', 
-    alignItems: 'center', 
-    borderWidth: 1, 
-    borderColor: UI_COLORS.border,
+    backgroundColor: 'rgba(255, 255, 255, 0.65)',
+    borderRadius: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.45)',
   },
   darkCard: {
-    backgroundColor: UI_COLORS.darkSurface,
-    borderColor: '#30353b',
+    backgroundColor: 'rgba(26, 38, 52, 0.75)',
+    borderColor: 'rgba(255, 255, 255, 0.08)',
   },
   fridayCell: { backgroundColor: UI_COLORS.friday },
   todayCell: { backgroundColor: UI_COLORS.primary },
@@ -714,10 +720,10 @@ const styles = StyleSheet.create({
   hadithContainer: {
     marginTop: 24,
     padding: 16,
-    backgroundColor: UI_COLORS.surface,
+    backgroundColor: 'rgba(255, 255, 255, 0.65)',
     borderRadius: UI_RADII.sm,
     borderWidth: 1,
-    borderColor: UI_COLORS.border,
+    borderColor: 'rgba(255, 255, 255, 0.45)',
     width: '100%',
     maxWidth: 400,
     ...UI_SHADOWS.card,

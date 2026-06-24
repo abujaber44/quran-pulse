@@ -18,8 +18,11 @@ import { useSettings } from '../context/SettingsContext';
 import { useThemedAlert } from '../context/ThemedAlertContext';
 import { resolveArabicFontFamily } from '../theme/fonts';
 import { UI_COLORS, UI_RADII, UI_SHADOWS } from '../theme/ui';
+import { UI_GLASS } from '../theme/ui';
+import GlassBackground from '../components/GlassBackground';
 import ScreenIntroTile from '../components/ScreenIntroTile';
 import debounce from 'lodash.debounce';
+import { useLanguage } from '../i18n';
 
 export default function MemorizeUnderstandScreen({ navigation }: any) {
   const [surahs, setSurahs] = useState<Surah[]>([]);
@@ -31,6 +34,7 @@ export default function MemorizeUnderstandScreen({ navigation }: any) {
 
   const { settings } = useSettings();
   const { showAlert } = useThemedAlert();
+  const { t, lang } = useLanguage();
   const isDark = settings.isDarkMode;
   const arabicNameFontSize = Math.max(20, settings.arabicFontSize - 10);
   const arabicFontFamily = resolveArabicFontFamily(settings.arabicFontFamily);
@@ -63,7 +67,7 @@ export default function MemorizeUnderstandScreen({ navigation }: any) {
         setSearchError(null);
 
         try {
-          const results = await searchVerses(query.trim(), controller.signal);
+          const results = await searchVerses(query.trim(), controller.signal, lang);
           if (!controller.signal.aborted) {
             setAiResults(results);
             setIsSearching(false);
@@ -129,7 +133,7 @@ export default function MemorizeUnderstandScreen({ navigation }: any) {
           </Text>
         </View>
       </View>
-      <Text style={[styles.versesCount, isDark && styles.darkMutedText]}>{item.verses_count} verses</Text>
+      <Text style={[styles.versesCount, isDark && styles.darkMutedText]}>{item.verses_count} {t.verses}</Text>
     </TouchableOpacity>
   );
 
@@ -153,7 +157,7 @@ export default function MemorizeUnderstandScreen({ navigation }: any) {
         onPress={handlePress}
       >
         <View style={styles.resultBadgeRow}>
-          <Text style={styles.resultBadge}>AI Match</Text>
+          <Text style={styles.resultBadge}>{t.aiMatch}</Text>
           <Text style={styles.searchResultMeta}>{item.verseKey}</Text>
         </View>
         <Text style={[styles.searchResultTitle, isDark && styles.darkText]}>
@@ -175,12 +179,13 @@ export default function MemorizeUnderstandScreen({ navigation }: any) {
   const isSearchMode = searchQuery.trim().length > 0;
 
   return (
-    <SafeAreaView style={[styles.safeArea, isDark && styles.darkBg]} edges={['left', 'right', 'bottom']}>
-      <View style={[styles.container, isDark && styles.darkBg]}>
+    <GlassBackground isDark={isDark}>
+      <SafeAreaView style={styles.safeArea} edges={['left', 'right', 'bottom']}>
+      <View style={styles.container}>
         <ScreenIntroTile
-          title="Memorize & Understand"
-          subtitle="Explore the Quran to memorize and reflect"
-          description="Search by concept — try 'patience', 'gratitude', 'story of Moses', or any topic. AI finds the most relevant verses for you."
+          title={t.memorizeTitle}
+          subtitle={t.memorizeSubtitle}
+          description={t.memorizeDescription}
           isDark={isDark}
           style={styles.introTile}
         />
@@ -189,7 +194,7 @@ export default function MemorizeUnderstandScreen({ navigation }: any) {
           <View style={[styles.searchWrapper, isDark && styles.darkCard]}>
             <TextInput
               style={[styles.searchInput, isDark && styles.darkText]}
-              placeholder="Search by concept (e.g. patience, gratitude)..."
+              placeholder={t.searchPlaceholder}
               placeholderTextColor="#aaa"
               value={searchQuery}
               onChangeText={setSearchQuery}
@@ -209,14 +214,11 @@ export default function MemorizeUnderstandScreen({ navigation }: any) {
           </View>
         </View>
 
-        {isSearchMode && (
+        {isSearchMode && !isSearching && aiResults.length > 0 && (
           <View style={styles.searchMetaRow}>
             <Text style={[styles.searchMetaText, isDark && styles.darkMutedText]}>
-              {isSearching ? 'Searching...' : `${aiResults.length} verses found`}
+              {aiResults.length} {t.versesFound}
             </Text>
-            <TouchableOpacity style={styles.searchDoneButton} onPress={Keyboard.dismiss}>
-              <Text style={styles.searchDoneButtonText}>Done</Text>
-            </TouchableOpacity>
           </View>
         )}
 
@@ -224,7 +226,7 @@ export default function MemorizeUnderstandScreen({ navigation }: any) {
           <View style={styles.loadingRow}>
             <ActivityIndicator size="small" color={UI_COLORS.primary} />
             <Text style={[styles.loadingRowText, isDark && styles.darkMutedText]}>
-              AI is finding relevant verses...
+              {t.aiSearching}
             </Text>
           </View>
         )}
@@ -242,8 +244,8 @@ export default function MemorizeUnderstandScreen({ navigation }: any) {
               !isSearching ? (
                 <Text style={[styles.emptyText, isDark && styles.darkMutedText]}>
                   {searchQuery.trim().length < 2
-                    ? 'Type at least 2 characters to search...'
-                    : 'No verses found. Try a different concept.'}
+                    ? t.minCharsSearch
+                    : t.noVersesFound}
                 </Text>
               ) : null
             }
@@ -258,27 +260,26 @@ export default function MemorizeUnderstandScreen({ navigation }: any) {
           />
         )}
       </View>
-    </SafeAreaView>
+      </SafeAreaView>
+    </GlassBackground>
   );
 }
 
 const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: UI_COLORS.background },
-  container: { flex: 1, backgroundColor: UI_COLORS.background },
-  darkBg: { backgroundColor: UI_COLORS.darkBackground },
+  safeArea: { flex: 1 },
+  container: { flex: 1 },
   introTile: { marginBottom: 12 },
   searchContainer: {
     paddingHorizontal: 16,
     paddingBottom: 12,
-    backgroundColor: UI_COLORS.background,
   },
   searchWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: UI_COLORS.surface,
+    backgroundColor: 'rgba(255, 255, 255, 0.65)',
     borderRadius: UI_RADII.md,
     borderWidth: 1,
-    borderColor: UI_COLORS.border,
+    borderColor: 'rgba(255, 255, 255, 0.45)',
     ...UI_SHADOWS.input,
   },
   searchInput: {
@@ -339,7 +340,7 @@ const styles = StyleSheet.create({
   },
   list: { paddingHorizontal: 16, paddingBottom: 22 },
   surahCard: {
-    backgroundColor: UI_COLORS.surface,
+    backgroundColor: 'rgba(255, 255, 255, 0.65)',
     padding: 20,
     marginVertical: 8,
     borderRadius: UI_RADII.lg,
@@ -347,21 +348,21 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: UI_COLORS.border,
+    borderColor: 'rgba(255, 255, 255, 0.45)',
     borderLeftWidth: 5,
     borderLeftColor: UI_COLORS.primary,
     ...UI_SHADOWS.card,
   },
   searchResultCard: {
-    backgroundColor: UI_COLORS.surface,
+    backgroundColor: 'rgba(255, 255, 255, 0.65)',
     padding: 16,
     marginVertical: 6,
     borderRadius: UI_RADII.lg,
     borderWidth: 1,
-    borderColor: UI_COLORS.border,
+    borderColor: 'rgba(255, 255, 255, 0.45)',
     ...UI_SHADOWS.card,
   },
-  darkCard: { backgroundColor: UI_COLORS.darkSurface, borderColor: '#30353b' },
+  darkCard: { backgroundColor: 'rgba(26, 38, 52, 0.75)', borderColor: 'rgba(255, 255, 255, 0.08)' },
   surahInfo: { flexDirection: 'row', alignItems: 'center' },
   surahNumber: {
     fontSize: 24,

@@ -16,10 +16,12 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { getBookmarks, addBookmark, removeBookmark, BookmarkTag } from '../services/bookmarkService';
 import { resolveArabicFontFamily } from '../theme/fonts';
-import { UI_COLORS, UI_RADII, UI_SHADOWS } from '../theme/ui';
+import { UI_COLORS, UI_RADII, UI_SHADOWS, UI_GLASS } from '../theme/ui';
+import GlassBackground from '../components/GlassBackground';
 import ScreenIntroTile from '../components/ScreenIntroTile';
 import CompactPlayerCard from '../components/CompactPlayerCard';
 import AskAyahModal from '../components/AskAyahModal';
+import { useLanguage } from '../i18n';
 
 const reciters = [
   { id: 'ar.alafasy', name: 'Mishary Rashid Alafasy' },
@@ -53,6 +55,7 @@ type AyahItemProps = {
   onToggleTranslation: (ayahNum: number) => void;
   onToggleTafseer: (ayahNum: number) => void;
   onAskAI: (ayah: any) => void;
+  isHighlighted: boolean;
 };
 
 const AyahItem = memo(({
@@ -72,142 +75,100 @@ const AyahItem = memo(({
   onToggleTranslation,
   onToggleTafseer,
   onAskAI,
+  isHighlighted,
 }: AyahItemProps) => {
+  const { t } = useLanguage();
   return (
     <View
       style={[
         styles.ayahCard,
         isDark && styles.darkAyahCard,
         isActiveAyah && styles.playingCard,
+        isHighlighted && styles.highlightedCard,
       ]}
     >
       <View style={styles.ayahCardTopRow}>
-        <TouchableOpacity
-          style={styles.inlineBookmarkBtn}
-          onPress={() => onToggleBookmark(ayah.verse_number)}
-          hitSlop={TOUCH_HIT_SLOP}
-          activeOpacity={0.75}
-        >
-          <Text style={[
-            styles.bookmarkIcon,
-            isBookmarked && styles.bookmarkedIcon,
-          ]}>
-            {isBookmarked ? '★' : '☆'}
-          </Text>
-        </TouchableOpacity>
-
-        <View style={styles.topRowRightSlot}>
+        <Text style={[styles.ayahNumberBadge, isDark && styles.darkAyahNumberBadge]}>
+          {ayah.verse_number}
+        </Text>
+        <View style={styles.topRowIcons}>
+          <TouchableOpacity
+            onPress={() => onToggleBookmark(ayah.verse_number)}
+            hitSlop={TOUCH_HIT_SLOP}
+            activeOpacity={0.7}
+          >
+            <Text style={[styles.topIcon, isBookmarked && styles.topIconActive]}>
+              {isBookmarked ? '★' : '☆'}
+            </Text>
+          </TouchableOpacity>
           {isActiveAyah ? (
-            <View style={[styles.playingIndicator, isDark && styles.darkPlayingIndicator]}>
-              <Text style={styles.playingIndicatorDot}>●</Text>
-              <Text style={styles.playingIndicatorText}>Playing now</Text>
-            </View>
+            <Text style={styles.topIconPlaying}>●</Text>
           ) : !isAnyAyahPlaying ? (
             <TouchableOpacity
-              style={[styles.playAyahButton, isDark && styles.darkPlayAyahButton]}
               onPress={() => onPlayAyah(ayah.verse_number)}
               hitSlop={TOUCH_HIT_SLOP}
-              activeOpacity={0.8}
+              activeOpacity={0.7}
             >
-              <Text style={styles.playAyahIcon}>▶</Text>
-              <Text style={styles.playAyahText}>Play Ayah</Text>
+              <Text style={styles.topIcon}>▶</Text>
             </TouchableOpacity>
           ) : null}
         </View>
       </View>
 
-      <TouchableOpacity
-        style={styles.ayahBodyButton}
-        activeOpacity={1}
-        onPress={() => undefined}
+      <Text
+        style={[
+          styles.ayahText,
+          {
+            fontSize: arabicFontSize,
+            lineHeight: Math.max(arabicFontSize + 14, Math.round(arabicFontSize * 1.75)),
+          },
+          arabicFontFamily ? { fontFamily: arabicFontFamily } : null,
+          isDark && styles.darkText,
+        ]}
       >
-        <Text
-          style={[
-            styles.ayahText,
-            {
-              fontSize: arabicFontSize,
-              lineHeight: Math.max(arabicFontSize + 14, Math.round(arabicFontSize * 1.75)),
-            },
-            arabicFontFamily ? { fontFamily: arabicFontFamily } : null,
-            isDark && styles.darkText,
-          ]}
-        >
-          {ayah.text_uthmani}
-        </Text>
-      </TouchableOpacity>
+        {ayah.text_uthmani}
+      </Text>
 
       <View style={styles.bottomToggles}>
         <TouchableOpacity
           onPress={() => onToggleTranslation(ayah.verse_number)}
-          style={[
-            styles.actionChip,
-            isDark && styles.darkActionChip,
-            expandedTranslation === ayah.verse_number && styles.activeActionChip,
-          ]}
+          style={[styles.actionChip, isDark && styles.darkActionChip, expandedTranslation === ayah.verse_number && styles.activeActionChip]}
           hitSlop={TOUCH_HIT_SLOP}
           activeOpacity={0.85}
         >
-          <Text style={[
-            styles.actionChipText,
-            isDark && styles.darkText,
-            expandedTranslation === ayah.verse_number && styles.activeActionChipText,
-          ]}>
-            {expandedTranslation === ayah.verse_number ? 'Hide Translation' : 'Show Translation'}
+          <Text style={[styles.actionChipText, isDark && styles.darkText, expandedTranslation === ayah.verse_number && styles.activeActionChipText]}>
+            {expandedTranslation === ayah.verse_number ? t.hideTranslation : t.showTranslation}
           </Text>
         </TouchableOpacity>
 
         <TouchableOpacity
           onPress={() => onToggleTafseer(ayah.verse_number)}
-          style={[
-            styles.actionChip,
-            isDark && styles.darkActionChip,
-            expandedTafseer === ayah.verse_number && styles.activeActionChip,
-          ]}
+          style={[styles.actionChip, isDark && styles.darkActionChip, expandedTafseer === ayah.verse_number && styles.activeActionChip]}
           hitSlop={TOUCH_HIT_SLOP}
           activeOpacity={0.85}
         >
-          <Text style={[
-            styles.actionChipText,
-            isDark && styles.darkText,
-            expandedTafseer === ayah.verse_number && styles.activeActionChipText,
-          ]}>
-            {expandedTafseer === ayah.verse_number
-              ? (loadingTafseer ? 'Loading...' : 'Hide Tafseer')
-              : 'Show Tafseer'}
+          <Text style={[styles.actionChipText, isDark && styles.darkText, expandedTafseer === ayah.verse_number && styles.activeActionChipText]}>
+            {expandedTafseer === ayah.verse_number ? (loadingTafseer ? t.loading : t.hideTafseer) : t.showTafseer}
           </Text>
         </TouchableOpacity>
 
         <TouchableOpacity
           onPress={() => onAskAI(ayah)}
-          style={[
-            styles.actionChip,
-            isDark && styles.darkActionChip,
-            { borderColor: UI_COLORS.accent },
-          ]}
+          style={[styles.actionChip, isDark && styles.darkActionChip, styles.aiChip]}
           hitSlop={TOUCH_HIT_SLOP}
           activeOpacity={0.85}
         >
-          <Text style={[styles.actionChipText, { color: UI_COLORS.accent }]}>
-            Ask AI ✦
-          </Text>
+          <Text style={styles.aiChipText}>{t.askAi}</Text>
         </TouchableOpacity>
       </View>
 
       {expandedTranslation === ayah.verse_number && (
-        <Text style={[styles.translationText, isDark && styles.darkText]}>
-          {ayah.translation}
-        </Text>
+        <Text style={[styles.translationText, isDark && styles.darkText]}>{ayah.translation}</Text>
       )}
 
       {expandedTafseer === ayah.verse_number && (
-        <Text style={[styles.tafseerText, isDark && styles.darkText]}>
-          {currentTafseer}
-        </Text>
+        <Text style={[styles.tafseerText, isDark && styles.darkText]}>{currentTafseer}</Text>
       )}
-
-      <Text style={[styles.ayahNumberBottom, isDark && styles.darkAyahNumberBottom]}>
-        {ayah.verse_number}
-      </Text>
     </View>
   );
 });
@@ -324,6 +285,7 @@ export default function SurahScreen({ route }: any) {
 
   // Track bookmarked ayahs
   const [bookmarkedAyahs, setBookmarkedAyahs] = useState<Set<string>>(new Set());
+  const [highlightAyah, setHighlightAyah] = useState<number | null>(null);
 
   const flatListRef = useRef<FlatList<any>>(null);
   const initialAyahScrollInProgressRef = useRef(false);
@@ -353,6 +315,7 @@ export default function SurahScreen({ route }: any) {
 
   const { settings } = useSettings();
   const { showAlert } = useThemedAlert();
+  const { t } = useLanguage();
 
   useEffect(() => {
     return () => {
@@ -486,19 +449,37 @@ export default function SurahScreen({ route }: any) {
     scrollToAyah(currentAyah.ayah, true);
   }, [currentAyah, scrollToAyah, surah.id]);
 
-  // Scroll to bookmark-selected ayah once the list is ready.
+  // Scroll to bookmark-selected ayah once the list is ready, then flash highlight.
   useEffect(() => {
     const initialAyah = Number(route.params?.initialAyah);
     if (!Number.isFinite(initialAyah) || initialAyah <= 0 || ayahs.length === 0) return;
 
     initialAyahScrollInProgressRef.current = true;
-    const timer = setTimeout(() => {
+
+    // Step 1: Quick jump without animation to get close
+    const jumpTimer = setTimeout(() => {
       scrollToAyahWithRetry(initialAyah);
-    }, 350);
+    }, 300);
+
+    // Step 2: Flash highlight after scroll settles (generous delay)
+    const flashTimer = setTimeout(() => {
+      let flashCount = 0;
+      const flashInterval = setInterval(() => {
+        flashCount++;
+        if (flashCount > 6) {
+          clearInterval(flashInterval);
+          setHighlightAyah(null);
+          return;
+        }
+        setHighlightAyah(flashCount % 2 === 1 ? initialAyah : null);
+      }, 400);
+    }, 1500);
 
     return () => {
-      clearTimeout(timer);
+      clearTimeout(jumpTimer);
+      clearTimeout(flashTimer);
       initialAyahScrollInProgressRef.current = false;
+      setHighlightAyah(null);
     };
   }, [ayahs.length, route.params?.initialAyah, route.params?.scrollNonce, scrollToAyahWithRetry]);
 
@@ -583,8 +564,8 @@ export default function SurahScreen({ route }: any) {
     });
     setBookmarkedAyahs(prev => new Set(prev).add(key));
     showAlert({
-      title: 'Saved',
-      message: `Ayah added to bookmarks (${tag === 'memorize' ? 'Memorize' : 'Read/Recite'})`,
+      title: t.save,
+      message: `${t.ayah} → ${tag === 'memorize' ? t.memorize : t.readRecite}`,
       variant: 'success',
     });
   }, [ayahs, showAlert, surah.id, surah.name_simple]);
@@ -602,25 +583,25 @@ export default function SurahScreen({ route }: any) {
         return newSet;
       });
       showAlert({
-        title: 'Removed',
-        message: 'Ayah removed from bookmarks',
+        title: t.removed,
+        message: t.ayahRemovedFromBookmarks,
         variant: 'info',
       });
     } else {
       showAlert({
-        title: 'Save Bookmark',
-        message: 'Choose a bookmark folder tag:',
+        title: t.saveBookmark,
+        message: t.chooseBookmarkTag,
         variant: 'info',
         buttons: [
-          { text: 'Cancel', role: 'cancel' },
+          { text: t.cancel, role: 'cancel' },
           {
-            text: 'Memorize',
+            text: t.memorize,
             onPress: () => {
               void saveBookmarkWithTag(ayahNum, 'memorize');
             },
           },
           {
-            text: 'Read/Recite',
+            text: t.readRecite,
             onPress: () => {
               void saveBookmarkWithTag(ayahNum, 'read_recite');
             },
@@ -710,6 +691,7 @@ export default function SurahScreen({ route }: any) {
         onToggleTranslation={toggleTranslation}
         onToggleTafseer={toggleTafseer}
         onAskAI={handleAskAI}
+        isHighlighted={highlightAyah === item.verse_number}
       />
     );
   }, [
@@ -727,9 +709,11 @@ export default function SurahScreen({ route }: any) {
     toggleTranslation,
     toggleTafseer,
     handleAskAI,
+    highlightAyah,
   ]);
 
   return (
+    <GlassBackground isDark={isDark}>
     <SafeAreaView style={[styles.safeArea, isDark && styles.darkSafeArea]}>
       <View style={[styles.container, isDark && styles.darkContainer]}>
         {/* Header with Back Button */}
@@ -756,7 +740,7 @@ export default function SurahScreen({ route }: any) {
           <ScreenIntroTile
             title={surah.name_arabic}
             subtitle={`${surah.name_simple} (${surah.translated_name.name})`}
-            description="Memorize mode helps focused repetition using your memorization pause setting, and Repeat lets you loop a single ayah or custom range. For reading, audio starts only when you tap Play on an ayah card."
+            description={t.surahDescription}
             titleFontFamily={arabicFontFamily}
             isDark={isDark}
             style={styles.introTile}
@@ -766,25 +750,25 @@ export default function SurahScreen({ route }: any) {
         {/* Controls Bar */}
         <View style={[styles.controlsBar, isDark && styles.darkControlsBar]}>
           <TouchableOpacity style={styles.controlItem} onPress={() => setReciterModal(true)}>
-            <Text style={[styles.controlLabel, isDark && styles.darkText]}>Reciter</Text>
+            <Text style={[styles.controlLabel, isDark && styles.darkText]}>{t.reciter}</Text>
             <Text style={[styles.controlValue, isDark && styles.darkText]} numberOfLines={1}>
               {selectedReciter.name}
             </Text>
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.controlItem} onPress={toggleMemorizationMode}>
-            <Text style={[styles.controlLabel, isDark && styles.darkText]}>Memorize</Text>
+            <Text style={[styles.controlLabel, isDark && styles.darkText]}>{t.memorize}</Text>
             <Text style={[styles.controlValue, memorizationMode && styles.activeText, isDark && styles.darkText]}>
-              {memorizationMode ? 'ON' : 'OFF'}
+              {memorizationMode ? t.on : t.off}
             </Text>
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.controlItem} onPress={() => setRangeModal(true)}>
-            <Text style={[styles.controlLabel, isDark && styles.darkText]}>Repeat</Text>
+            <Text style={[styles.controlLabel, isDark && styles.darkText]}>{t.repeat}</Text>
             <Text style={[styles.controlValue, isDark && styles.darkText]}>
-              {repeatMode === 'range' && repeatRange 
-                ? `${repeatRange.start}-${repeatRange.end}` 
-                : repeatMode.charAt(0).toUpperCase() + repeatMode.slice(1)}
+              {repeatMode === 'range' && repeatRange
+                ? `${repeatRange.start}-${repeatRange.end}`
+                : repeatMode === 'none' ? t.noRepeat : repeatMode === 'single' ? t.repeatSingle : t.repeatRange}
             </Text>
           </TouchableOpacity>
         </View>
@@ -808,7 +792,7 @@ export default function SurahScreen({ route }: any) {
         <Modal visible={reciterModal} animationType="slide" transparent>
           <View style={styles.modalOverlay}>
             <View style={styles.modal}>
-              <Text style={styles.modalTitle}>Choose Reciter</Text>
+              <Text style={styles.modalTitle}>{t.chooseReciter}</Text>
               <FlatList
                 data={reciters}
                 keyExtractor={(item) => item.id}
@@ -858,17 +842,17 @@ export default function SurahScreen({ route }: any) {
               </View>
               <View style={styles.rangeActions}>
                 <TouchableOpacity onPress={() => { setRepeatMode('none'); setRangeModal(false); }}>
-                  <Text style={styles.rangeActionBtn}>No Repeat</Text>
+                  <Text style={styles.rangeActionBtn}>{t.noRepeat}</Text>
                 </TouchableOpacity>
                 <TouchableOpacity onPress={() => { setRepeatMode('single'); setRangeModal(false); }}>
-                  <Text style={styles.rangeActionBtn}>Repeat Single</Text>
+                  <Text style={styles.rangeActionBtn}>{t.repeatSingle}</Text>
                 </TouchableOpacity>
                 <TouchableOpacity onPress={() => {
                   setRepeatRange(tempStart, tempEnd);
                   setRepeatMode('range');
                   setRangeModal(false);
                 }}>
-                  <Text style={[styles.rangeActionBtn, { color: '#27ae60' }]}>Repeat Range</Text>
+                  <Text style={[styles.rangeActionBtn, { color: '#27ae60' }]}>{t.repeatRange}</Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -886,24 +870,25 @@ export default function SurahScreen({ route }: any) {
         />
       </View>
     </SafeAreaView>
+    </GlassBackground>
   );
 }
 
 const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: UI_COLORS.background },
-  darkSafeArea: { backgroundColor: UI_COLORS.darkBackground },
-  container: { flex: 1, backgroundColor: UI_COLORS.background },
-  darkContainer: { backgroundColor: UI_COLORS.darkBackground },
+  safeArea: { flex: 1 },
+  darkSafeArea: {},
+  container: { flex: 1 },
+  darkContainer: {},
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: UI_COLORS.surface,
+    backgroundColor: 'rgba(255, 255, 255, 0.65)',
     paddingVertical: 10,
     paddingHorizontal: 16,
     borderBottomWidth: 1,
-    borderColor: UI_COLORS.border,
+    borderColor: 'rgba(255, 255, 255, 0.45)',
   },
-  darkHeader: { backgroundColor: UI_COLORS.darkSurface, borderColor: '#30353b' },
+  darkHeader: { backgroundColor: 'rgba(26, 38, 52, 0.75)', borderColor: 'rgba(255, 255, 255, 0.08)' },
   backBtn: {
     paddingVertical: 8,
     paddingHorizontal: 12,
@@ -922,18 +907,18 @@ const styles = StyleSheet.create({
   introTile: { marginBottom: 8 },
   controlsBar: {
     flexDirection: 'row',
-    backgroundColor: UI_COLORS.surface,
+    backgroundColor: 'rgba(255, 255, 255, 0.65)',
     paddingVertical: 4,
     paddingHorizontal: 6,
     borderWidth: 1,
-    borderColor: UI_COLORS.border,
+    borderColor: 'rgba(255, 255, 255, 0.45)',
     justifyContent: 'space-between',
     borderRadius: UI_RADII.lg,
     marginHorizontal: 16,
     marginBottom: 6,
     ...UI_SHADOWS.input,
   },
-  darkControlsBar: { backgroundColor: '#1e1e1e', borderColor: '#333' },
+  darkControlsBar: { backgroundColor: 'rgba(26, 38, 52, 0.75)', borderColor: 'rgba(255, 255, 255, 0.08)' },
   controlItem: { alignItems: 'center', flex: 1, paddingHorizontal: 4, paddingVertical: 4 },
   controlLabel: { fontSize: 11, color: UI_COLORS.textMuted },
   controlValue: { fontSize: 11, fontWeight: '600', color: UI_COLORS.text, marginTop: 2, textAlign: 'center' },
@@ -942,90 +927,53 @@ const styles = StyleSheet.create({
   scrollContent: { paddingHorizontal: 16, paddingTop: 2, paddingBottom: 8 },
   listFooter: { height: 10 },
   ayahCard: {
-    backgroundColor: UI_COLORS.surface,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    marginBottom: 12,
+    backgroundColor: 'rgba(255, 255, 255, 0.65)',
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    marginBottom: 14,
     borderRadius: UI_RADII.lg,
     borderWidth: 1,
-    borderColor: UI_COLORS.border,
+    borderColor: 'rgba(255, 255, 255, 0.45)',
     ...UI_SHADOWS.card,
   },
-  darkAyahCard: { backgroundColor: '#1e1e1e' },
+  darkAyahCard: { backgroundColor: 'rgba(26, 38, 52, 0.75)', borderColor: 'rgba(255, 255, 255, 0.08)' },
   playingCard: { backgroundColor: UI_COLORS.primarySoft, borderLeftWidth: 6, borderLeftColor: UI_COLORS.primary },
+  highlightedCard: { backgroundColor: UI_COLORS.primarySoft, borderColor: UI_COLORS.primary, borderWidth: 2 },
   ayahCardTopRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 10,
+    marginBottom: 6,
   },
-  inlineBookmarkBtn: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: 'transparent',
-  },
-  playAyahButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    minHeight: 32,
-    borderWidth: 1,
-    borderColor: '#b6d2e8',
-    backgroundColor: '#ecf6ff',
-    borderRadius: UI_RADII.md,
+  ayahNumberBadge: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: UI_COLORS.accent,
+    backgroundColor: 'rgba(45,127,184,0.1)',
     paddingHorizontal: 10,
     paddingVertical: 3,
+    borderRadius: 10,
+    overflow: 'hidden',
   },
-  darkPlayAyahButton: {
-    backgroundColor: '#213241',
-    borderColor: '#4d6376',
+  darkAyahNumberBadge: {
+    backgroundColor: 'rgba(45,127,184,0.2)',
+    color: '#94c4e7',
   },
-  playAyahIcon: {
-    color: UI_COLORS.accent,
-    fontSize: 12,
-    marginRight: 5,
-    fontWeight: '700',
-  },
-  playAyahText: {
-    color: UI_COLORS.accent,
-    fontSize: 12,
-    fontWeight: '700',
-  },
-  topRowRightSlot: {
-    minHeight: 32,
-    justifyContent: 'center',
-  },
-  playingIndicator: {
-    minHeight: 32,
-    borderRadius: UI_RADII.md,
-    paddingHorizontal: 10,
-    paddingVertical: 3,
-    backgroundColor: UI_COLORS.primarySoft,
-    borderWidth: 1,
-    borderColor: '#84c2a0',
+  topRowIcons: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
+    gap: 16,
   },
-  darkPlayingIndicator: {
-    backgroundColor: '#1f3d2f',
-    borderColor: '#4c8761',
+  topIcon: {
+    fontSize: 20,
+    color: UI_COLORS.textLight,
   },
-  playingIndicatorDot: {
-    fontSize: 10,
+  topIconActive: {
+    color: '#f5a623',
+  },
+  topIconPlaying: {
+    fontSize: 14,
     color: UI_COLORS.primary,
-    marginRight: 5,
-  },
-  playingIndicatorText: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#1f6b45',
-  },
-  ayahBodyButton: {
-    width: '100%',
   },
   ayahText: {
     lineHeight: 56,
@@ -1035,26 +983,20 @@ const styles = StyleSheet.create({
     fontSize: 24,
     flexShrink: 1,
   },
-  ayahNumberBottom: {
-    alignSelf: 'flex-start',
-    marginTop: 8,
-    fontSize: 12,
-    color: UI_COLORS.accent,
-    backgroundColor: '#ecf6ff',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: UI_RADII.sm,
-    fontWeight: 'bold',
+  aiChip: {
+    borderColor: UI_COLORS.accent,
+    backgroundColor: 'rgba(45,127,184,0.08)',
   },
-  darkAyahNumberBottom: {
-    backgroundColor: '#213241',
-    color: '#94c4e7',
+  aiChipText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: UI_COLORS.accent,
   },
   darkText: { color: UI_COLORS.white },
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'center', alignItems: 'center' },
-  modal: { backgroundColor: UI_COLORS.surface, padding: 20, borderRadius: UI_RADII.md, width: '90%', maxHeight: '80%' },
+  modal: { backgroundColor: 'rgba(255, 255, 255, 0.65)', padding: 20, borderRadius: UI_RADII.md, width: '90%', maxHeight: '80%', borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.45)' },
   modalTitle: { fontSize: 20, fontWeight: 'bold', textAlign: 'center', marginBottom: 16, color: UI_COLORS.text },
-  modalItem: { padding: 14, borderBottomWidth: 1, borderColor: UI_COLORS.border },
+  modalItem: { padding: 14, borderBottomWidth: 1, borderColor: 'rgba(255, 255, 255, 0.45)' },
   modalItemText: { fontSize: 16, color: UI_COLORS.text },
   modalClose: { textAlign: 'center', padding: 14, color: UI_COLORS.danger, fontWeight: 'bold' },
   rangePicker: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginVertical: 12 },
@@ -1108,19 +1050,14 @@ const styles = StyleSheet.create({
     padding: 10,
     borderRadius: 12,
   },
-  bookmarkIcon: {
-    fontSize: 21,
-    color: UI_COLORS.textLight, 
-  },
-  bookmarkedIcon: {
-    color: UI_COLORS.warning,
-  },
-  // New: Bottom toggles container for alignment
   bottomToggles: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginTop: 8,
+    marginTop: 10,
+    paddingTop: 10,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(200,217,230,0.3)',
     gap: 8,
   },
 });

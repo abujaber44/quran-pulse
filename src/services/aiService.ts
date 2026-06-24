@@ -44,6 +44,7 @@ export async function askAboutAyah(params: {
   question: string;
   conversationHistory: ChatMessage[];
   signal?: AbortSignal;
+  lang?: string;
 }): Promise<string> {
   const { signal, ...body } = params;
 
@@ -66,11 +67,12 @@ export async function askAboutAyah(params: {
 export async function searchVerses(
   query: string,
   signal?: AbortSignal,
+  lang?: string,
 ): Promise<SearchResult[]> {
   const response = await fetch(`${AI_API_BASE}/api/search-verses`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ query }),
+    body: JSON.stringify({ query, lang: lang ?? 'en' }),
     signal,
   });
 
@@ -108,11 +110,12 @@ export async function getAiInsight(
   type: 'miracle' | 'hadith' | 'athkar',
   context: Record<string, unknown>,
   signal?: AbortSignal,
+  lang?: string,
 ): Promise<string> {
   const response = await fetch(`${AI_API_BASE}/api/ai-insight`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ type, context }),
+    body: JSON.stringify({ type, context, lang: lang ?? 'en' }),
     signal,
   });
 

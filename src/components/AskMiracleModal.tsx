@@ -14,6 +14,7 @@ import {
 } from 'react-native';
 import { UI_COLORS, UI_RADII, UI_SHADOWS } from '../theme/ui';
 import { getAiInsight, type ChatMessage } from '../services/aiService';
+import { useLanguage } from '../i18n';
 
 interface MiracleContext {
   title: string;
@@ -29,13 +30,11 @@ interface AskMiracleModalProps {
   miracle: MiracleContext | null;
 }
 
-const FOLLOW_UPS = [
-  'What do scholars say about this?\nماذا قال العلماء عن هذا؟',
-  'Is this claim disputed?\nهل هذا الادعاء مُختلَف عليه؟',
-  'How was this discovered?\nكيف تم اكتشاف هذا؟',
-];
+// Follow-ups are now derived from t inside the component
 
 export default function AskMiracleModal({ visible, onClose, miracle }: AskMiracleModalProps) {
+  const { t, lang } = useLanguage();
+  const FOLLOW_UPS = [t.whatDoScholarsSayAbout, t.isClaimDisputed, t.howDiscovered];
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputText, setInputText] = useState('');
   const [loading, setLoading] = useState(false);
@@ -63,7 +62,7 @@ export default function AskMiracleModal({ visible, onClose, miracle }: AskMiracl
     abortRef.current = controller;
 
     try {
-      const insight = await getAiInsight('miracle', miracle as unknown as Record<string, unknown>, controller.signal);
+      const insight = await getAiInsight('miracle', miracle as unknown as Record<string, unknown>, controller.signal, lang);
       setMessages([{ role: 'assistant', content: insight }]);
     } catch (error: unknown) {
       if ((error as Error).name === 'AbortError') return;
@@ -94,7 +93,7 @@ export default function AskMiracleModal({ visible, onClose, miracle }: AskMiracl
         ...miracle,
         followUpQuestion: question.trim(),
         priorMessages: messages,
-      }, controller.signal);
+      }, controller.signal, lang);
       setMessages(prev => [...prev, { role: 'assistant', content: insight }]);
     } catch (error: unknown) {
       if ((error as Error).name === 'AbortError') return;
@@ -121,7 +120,7 @@ export default function AskMiracleModal({ visible, onClose, miracle }: AskMiracl
         >
           <View style={styles.header}>
             <View style={styles.headerTextWrap}>
-              <Text style={styles.headerTitle}>AI Miracle Insight</Text>
+              <Text style={styles.headerTitle}>{t.aiMiracleInsight}</Text>
               <Text style={styles.headerSubtitle} numberOfLines={1}>
                 {miracle?.title ?? ''}
               </Text>
@@ -134,7 +133,7 @@ export default function AskMiracleModal({ visible, onClose, miracle }: AskMiracl
           {messages.length === 0 && loading ? (
             <View style={styles.loadingCenter}>
               <ActivityIndicator size="large" color={UI_COLORS.primary} />
-              <Text style={styles.loadingText}>Analyzing this miracle...</Text>
+              <Text style={styles.loadingText}>{t.analyzingMiracle}</Text>
             </View>
           ) : (
             <FlatList
@@ -149,7 +148,7 @@ export default function AskMiracleModal({ visible, onClose, miracle }: AskMiracl
                   {loading && (
                     <View style={styles.loadingWrap}>
                       <ActivityIndicator size="small" color={UI_COLORS.primary} />
-                      <Text style={styles.thinkingText}>Thinking...</Text>
+                      <Text style={styles.thinkingText}>{t.thinking}</Text>
                     </View>
                   )}
                   {!loading && messages.length > 0 && messages.length < 3 && (
@@ -171,7 +170,7 @@ export default function AskMiracleModal({ visible, onClose, miracle }: AskMiracl
               style={styles.input}
               value={inputText}
               onChangeText={setInputText}
-              placeholder="Ask a follow-up question..."
+              placeholder={t.askFollowUp}
               placeholderTextColor={UI_COLORS.textLight}
               multiline
               maxLength={500}

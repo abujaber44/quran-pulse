@@ -18,7 +18,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useSettings } from '../context/SettingsContext';
 import { useThemedAlert } from '../context/ThemedAlertContext';
 import debounce from 'lodash.debounce';
-import { UI_COLORS, UI_RADII, UI_SHADOWS } from '../theme/ui';
+import { UI_COLORS, UI_RADII, UI_SHADOWS, UI_GLASS } from '../theme/ui';
+import GlassBackground from '../components/GlassBackground';
 import ScreenIntroTile from '../components/ScreenIntroTile';
 import { canScheduleExactAlarms, openExactAlarmSettings } from '../services/exactAlarmService';
 import {
@@ -31,6 +32,7 @@ import {
   buildAthanNotificationId,
 } from '../utils/athanNotifications';
 import { calculateDistanceToKaabaKm, calculateQiblaBearing, Coordinates } from '../utils/qiblaUtils';
+import { useLanguage } from '../i18n';
 
 interface Prayer {
   name: string;
@@ -273,6 +275,7 @@ export default function PrayerTimesScreen({ navigation }: any) {
 
   const { settings } = useSettings();
   const { showAlert } = useThemedAlert();
+  const { t } = useLanguage();
   const isDark = settings.isDarkMode;
 
   // Debounced city search for autocomplete using Nominatim
@@ -762,6 +765,7 @@ export default function PrayerTimesScreen({ navigation }: any) {
   const nextPrayer = useMemo(() => getNextPrayerInfo(prayers, new Date(countdownNow)), [prayers, countdownNow]);
 
   const PRAYER_ICONS: Record<string, string> = { Fajr: '🌅', Dhuhr: '☀️', Asr: '🌤️', Maghrib: '🌇', Isha: '🌙' };
+  const PRAYER_LABELS: Record<string, string> = { Fajr: t.fajr, Dhuhr: t.dhuhr, Asr: t.asr, Maghrib: t.maghrib, Isha: t.isha };
 
   const isPrayerPast = (prayerTime: string): boolean => {
     const parsed = parsePrayerTime(prayerTime);
@@ -774,22 +778,25 @@ export default function PrayerTimesScreen({ navigation }: any) {
 
   if (loading) {
     return (
-      <View style={[styles.center, isDark && styles.darkBg]}>
-        <ActivityIndicator size="large" color="#27ae60" />
-        <Text style={[styles.loadingText, isDark && styles.darkText]}>
-          Loading prayer times for {city}...
-        </Text>
-      </View>
+      <GlassBackground isDark={isDark}>
+        <View style={[styles.center]}>
+          <ActivityIndicator size="large" color="#27ae60" />
+          <Text style={[styles.loadingText, isDark && styles.darkText]}>
+            Loading prayer times for {city}...
+          </Text>
+        </View>
+      </GlassBackground>
     );
   }
 
   return (
-    <KeyboardAvoidingView 
-      style={[styles.container, isDark && styles.darkBg]}
+    <GlassBackground isDark={isDark}>
+    <KeyboardAvoidingView
+      style={[styles.container]}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
-      <ScrollView 
-        style={[styles.container, isDark && styles.darkBg]}
+      <ScrollView
+        style={[styles.container]}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
@@ -797,8 +804,8 @@ export default function PrayerTimesScreen({ navigation }: any) {
         {/* Intro */}
         <View style={styles.headerContainer}>
           <ScreenIntroTile
-            title="Prayer Times & Qibla"
-            description="Stay connected to your daily prayers with accurate athan times, reminders, and live Qibla compass guidance. Calibrate your heading, align toward the Kaaba with turn-by-turn direction, and feel a gentle vibration when Qibla is reached."
+            title={t.prayerTimesTitle}
+            description={t.prayerTimesDescription}
             isDark={isDark}
             style={styles.introTile}
           />
@@ -806,13 +813,13 @@ export default function PrayerTimesScreen({ navigation }: any) {
 
         {/* Next Prayer summary */}
         <View style={[styles.nextPrayerCard, isDark && styles.darkCard]}>
-          <Text style={[styles.nextPrayerLabel, isDark && styles.darkMutedText]}>Next Prayer</Text>
+          <Text style={[styles.nextPrayerLabel, isDark && styles.darkMutedText]}>{t.nextPrayer}</Text>
           <Text style={styles.nextPrayerCountdown}>
             {nextPrayer
               ? nextPrayer.isTomorrow
-                ? `${nextPrayer.name} tomorrow in ${formatCountdown(nextPrayer.remainingMs)}`
-                : `${nextPrayer.name} in ${formatCountdown(nextPrayer.remainingMs)}`
-              : 'Prayer schedule unavailable'}
+                ? `${PRAYER_LABELS[nextPrayer.name] ?? nextPrayer.name} — ${formatCountdown(nextPrayer.remainingMs)}`
+                : `${PRAYER_LABELS[nextPrayer.name] ?? nextPrayer.name} — ${formatCountdown(nextPrayer.remainingMs)}`
+              : t.prayerScheduleUnavailable}
           </Text>
         </View>
 
@@ -820,7 +827,7 @@ export default function PrayerTimesScreen({ navigation }: any) {
         <View style={[styles.cityPanel, isDark && styles.darkCard]}>
           <View style={styles.cityHeaderRow}>
             <View>
-              <Text style={[styles.headerTitle, isDark && styles.darkMutedText]}>📍 Athan Times for</Text>
+              <Text style={[styles.headerTitle, isDark && styles.darkMutedText]}>📍 {t.athanTimesFor}</Text>
               <Text style={[styles.cityName, isDark && styles.darkText]}>{city}</Text>
             </View>
             <TouchableOpacity
@@ -832,7 +839,7 @@ export default function PrayerTimesScreen({ navigation }: any) {
               {fetchingLocation ? (
                 <ActivityIndicator size="small" color={UI_COLORS.primary} />
               ) : (
-                <Text style={styles.locationButtonText}>📌 Locate</Text>
+                <Text style={styles.locationButtonText}>{t.locate}</Text>
               )}
             </TouchableOpacity>
           </View>
@@ -842,7 +849,7 @@ export default function PrayerTimesScreen({ navigation }: any) {
               <Text style={styles.searchIcon}>🔍</Text>
               <TextInput
                 style={[styles.cityInput, isDark && styles.darkText]}
-                placeholder="Search city..."
+                placeholder={t.searchCity}
                 placeholderTextColor="#aaa"
                 value={searchInput}
                 onChangeText={(text) => {
@@ -910,12 +917,12 @@ export default function PrayerTimesScreen({ navigation }: any) {
               style={styles.qiblaOpenButton}
               onPress={() => navigation.navigate('QiblaCompass', { city, coordinates: currentCoordinates })}
             >
-              <Text style={styles.qiblaOpenButtonText}>Open Full Qibla Compass →</Text>
+              <Text style={styles.qiblaOpenButtonText}>{t.openFullQiblaCompass}</Text>
             </TouchableOpacity>
           </View>
         )}
 
-        <Text style={[styles.sectionTitle, isDark && styles.darkText]}>Today&apos;s Prayer Schedule</Text>
+        <Text style={[styles.sectionTitle, isDark && styles.darkText]}>{t.todaysPrayerSchedule}</Text>
 
         {/* Prayer Times Cards */}
         {prayers.map((prayer, i) => {
@@ -935,7 +942,7 @@ export default function PrayerTimesScreen({ navigation }: any) {
                 <Text style={styles.prayerIcon}>{PRAYER_ICONS[prayer.name] ?? '🕌'}</Text>
                 <View>
                   <Text style={[styles.prayerName, isDark && styles.darkText, past && styles.prayerNamePast]}>
-                    {prayer.name}
+                    {PRAYER_LABELS[prayer.name] ?? prayer.name}
                   </Text>
                   <Text style={[styles.prayerTime, isDark && styles.darkText, past && styles.prayerTimePast]}>
                     {prayer.time}
@@ -957,18 +964,18 @@ export default function PrayerTimesScreen({ navigation }: any) {
           );
         })}
 
-        <Text style={[styles.sectionTitle, isDark && styles.darkText]}>Tools</Text>
+        <Text style={[styles.sectionTitle, isDark && styles.darkText]}>{t.tools}</Text>
 
         <View style={[styles.diagnosticsCard, isDark && styles.darkCard]}>
-          <Text style={[styles.diagnosticsTitle, isDark && styles.darkText]}>Athan Diagnostics</Text>
+          <Text style={[styles.diagnosticsTitle, isDark && styles.darkText]}>{t.athanDiagnostics}</Text>
           <Text style={[styles.diagnosticsText, isDark && styles.darkText]}>
-            Verify exact scheduled trigger timestamps, notification IDs, and channel settings on this device.
+            {t.athanDiagnosticsDesc}
           </Text>
           <TouchableOpacity
             style={styles.diagnosticsButton}
             onPress={() => navigation.navigate('AthanDiagnostics', { city, prayers })}
           >
-            <Text style={styles.diagnosticsButtonText}>Open Diagnostics</Text>
+            <Text style={styles.diagnosticsButtonText}>{t.openDiagnostics}</Text>
           </TouchableOpacity>
         </View>
 
@@ -990,22 +997,23 @@ export default function PrayerTimesScreen({ navigation }: any) {
         <View style={{ height: 40 }} />
       </ScrollView>
     </KeyboardAvoidingView>
+    </GlassBackground>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: UI_COLORS.background },
-  darkBg: { backgroundColor: UI_COLORS.darkBackground },
+  container: { flex: 1 },
+  darkBg: {},
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   loadingText: { marginTop: 16, fontSize: 16, color: UI_COLORS.text },
   scrollContent: { padding: 16, paddingBottom: 40 },
   headerContainer: { alignItems: 'center', marginBottom: 8, width: '100%' },
   introTile: { width: '100%', marginHorizontal: 0, marginBottom: 12 },
   nextPrayerCard: {
-    backgroundColor: UI_COLORS.surface,
+    backgroundColor: 'rgba(255, 255, 255, 0.65)',
     borderRadius: UI_RADII.lg,
     borderWidth: 1,
-    borderColor: UI_COLORS.border,
+    borderColor: 'rgba(255, 255, 255, 0.45)',
     paddingHorizontal: 14,
     paddingVertical: 10,
     marginBottom: 12,
@@ -1028,10 +1036,10 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   cityPanel: {
-    backgroundColor: UI_COLORS.surface,
+    backgroundColor: 'rgba(255, 255, 255, 0.65)',
     borderRadius: UI_RADII.lg,
     borderWidth: 1,
-    borderColor: UI_COLORS.border,
+    borderColor: 'rgba(255, 255, 255, 0.45)',
     padding: 16,
     marginBottom: 16,
     ...UI_SHADOWS.card,
@@ -1072,18 +1080,18 @@ const styles = StyleSheet.create({
     flexDirection: 'row', 
     justifyContent: 'space-between', 
     alignItems: 'center', 
-    backgroundColor: UI_COLORS.surface,
+    backgroundColor: 'rgba(255, 255, 255, 0.65)',
     paddingHorizontal: 18,
     paddingVertical: 14,
     borderRadius: UI_RADII.lg,
-    marginBottom: 12, 
+    marginBottom: 12,
     borderWidth: 1,
-    borderColor: UI_COLORS.border,
+    borderColor: 'rgba(255, 255, 255, 0.45)',
     borderLeftWidth: 4,
     borderLeftColor: UI_COLORS.primary,
     ...UI_SHADOWS.card,
   },
-  darkCard: { backgroundColor: UI_COLORS.darkSurface, borderColor: '#30353b' },
+  darkCard: { backgroundColor: 'rgba(26, 38, 52, 0.75)', borderColor: 'rgba(255, 255, 255, 0.08)' },
   prayerCardNext: {
     borderLeftColor: UI_COLORS.accent,
     borderLeftWidth: 5,
@@ -1171,10 +1179,10 @@ const styles = StyleSheet.create({
     paddingLeft: 8,
   },
   suggestionsContainer: {
-    backgroundColor: UI_COLORS.surface,
+    backgroundColor: 'rgba(255, 255, 255, 0.65)',
     borderRadius: UI_RADII.sm,
     borderWidth: 1,
-    borderColor: UI_COLORS.border,
+    borderColor: 'rgba(255, 255, 255, 0.45)',
     ...UI_SHADOWS.card,
     zIndex: 20,
     maxHeight: 240,
@@ -1222,10 +1230,10 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
 qiblaCard: {
-  backgroundColor: UI_COLORS.surface,
+  backgroundColor: 'rgba(255, 255, 255, 0.65)',
   borderRadius: UI_RADII.lg,
   borderWidth: 1,
-  borderColor: UI_COLORS.border,
+  borderColor: 'rgba(255, 255, 255, 0.45)',
   padding: 16,
   marginBottom: 24,
   ...UI_SHADOWS.card,
@@ -1488,10 +1496,10 @@ qiblaCalibration: {
   marginTop: 4,
 },
 diagnosticsCard: {
-  backgroundColor: UI_COLORS.surface,
+  backgroundColor: 'rgba(255, 255, 255, 0.65)',
   borderRadius: UI_RADII.lg,
   borderWidth: 1,
-  borderColor: UI_COLORS.border,
+  borderColor: 'rgba(255, 255, 255, 0.45)',
   padding: 16,
   marginBottom: 24,
   ...UI_SHADOWS.card,

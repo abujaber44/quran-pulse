@@ -14,7 +14,8 @@
     "preview": {
       "distribution": "internal",
       "env": {
-        "EXPO_PUBLIC_APP_ENV": "preview"
+        "EXPO_PUBLIC_APP_ENV": "preview",
+        "EXPO_PUBLIC_AI_API_URL": "https://quran-pulse-app-umber.vercel.app"
       },
       "android": {
         "buildType": "apk"  
@@ -26,7 +27,8 @@
     "production": {
       "autoIncrement": true,
       "env": {
-        "EXPO_PUBLIC_APP_ENV": "production"
+        "EXPO_PUBLIC_APP_ENV": "production",
+        "EXPO_PUBLIC_AI_API_URL": "https://quran-pulse-app-umber.vercel.app"
       },
       "android": {
         "buildType": "app-bundle"  

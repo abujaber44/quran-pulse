@@ -13,10 +13,12 @@ import {
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useSettings } from '../context/SettingsContext';
 import { resolveArabicFontFamily } from '../theme/fonts';
-import { UI_COLORS, UI_RADII, UI_SHADOWS } from '../theme/ui';
+import { UI_COLORS, UI_GLASS, UI_RADII, UI_SHADOWS } from '../theme/ui';
 import { fetchAthkarContentOnline, AthkarItem } from '../services/athkarService';
+import GlassBackground from '../components/GlassBackground';
 import ScreenIntroTile from '../components/ScreenIntroTile';
 import { getAiInsight } from '../services/aiService';
+import { useLanguage } from '../i18n';
 
 interface AllahName {
   number: number;
@@ -181,6 +183,7 @@ export default function AthkarScreen() {
   const [tasbeehStateReady, setTasbeehStateReady] = useState(false);
 
   const { settings } = useSettings();
+  const { t, lang } = useLanguage();
   const isDark = settings.isDarkMode;
   const arabicFontFamily = resolveArabicFontFamily(settings.arabicFontFamily);
   const athkarArabicFontSize = Math.max(24, settings.arabicFontSize - 2);
@@ -383,7 +386,7 @@ export default function AthkarScreen() {
             style={styles.fadlButton}
             onPress={() => setExpandedFadlId((prev) => (prev === item.id ? null : item.id))}
           >
-            <Text style={styles.fadlButtonText}>{expandedFadlId === item.id ? 'Hide Fadl' : 'Show Fadl'}</Text>
+            <Text style={styles.fadlButtonText}>{expandedFadlId === item.id ? t.hideFadl : t.showFadl}</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.aiExplainButton}
@@ -406,7 +409,7 @@ export default function AthkarScreen() {
                   text: item.text,
                   repetitions: item.repetitions,
                   fadl: item.fadl,
-                });
+                }, undefined, lang);
                 aiCacheRef.current.set(item.id, insight);
                 setAiExplainText(insight);
               } catch {
@@ -417,7 +420,7 @@ export default function AthkarScreen() {
             }}
           >
             <Text style={styles.aiExplainButtonText}>
-              {aiExplainId === item.id ? 'Hide AI' : 'AI ✦'}
+              {aiExplainId === item.id ? t.hideAi : t.aiExplain}
             </Text>
           </TouchableOpacity>
         </View>
@@ -434,7 +437,7 @@ export default function AthkarScreen() {
       </Text>
       {expandedFadlId === item.id ? (
         <View style={styles.fadlBox}>
-          <Text style={styles.fadlTitle}>Fadl</Text>
+          <Text style={styles.fadlTitle}>{t.fadl}</Text>
           <Text style={[styles.fadlText, isDark && styles.darkText]}>
             {item.fadl && item.fadl.trim().length > 0
               ? item.fadl
@@ -450,7 +453,7 @@ export default function AthkarScreen() {
 
       {aiExplainId === item.id ? (
         <View style={styles.aiExplainBox}>
-          <Text style={styles.aiExplainLabel}>✦ AI Explanation</Text>
+          <Text style={styles.aiExplainLabel}>{t.aiExplanation}</Text>
           {aiExplainLoading ? (
             <ActivityIndicator size="small" color={UI_COLORS.accent} style={{ marginTop: 8 }} />
           ) : (
@@ -465,7 +468,7 @@ export default function AthkarScreen() {
     <>
       <View style={styles.athkarMetaRow}>
         <Text style={styles.athkarMetaText}>
-          Source: {athkarSource === 'online' ? 'Online' : 'Fallback'}
+          Source: {athkarSource === 'online' ? t.online : t.fallback}
         </Text>
         {athkarSourceLabel ? <Text style={styles.athkarMetaText}>{athkarSourceLabel}</Text> : null}
       </View>
@@ -476,7 +479,7 @@ export default function AthkarScreen() {
           onPress={() => setAthkarPeriod('morning')}
         >
           <Text style={[styles.periodTabText, athkarPeriod === 'morning' && styles.periodTabTextActive]}>
-            Morning Athkar
+            {t.morningAthkar}
           </Text>
         </TouchableOpacity>
         <TouchableOpacity
@@ -484,7 +487,7 @@ export default function AthkarScreen() {
           onPress={() => setAthkarPeriod('evening')}
         >
           <Text style={[styles.periodTabText, athkarPeriod === 'evening' && styles.periodTabTextActive]}>
-            Evening Athkar
+            {t.eveningAthkar}
           </Text>
         </TouchableOpacity>
       </View>
@@ -511,16 +514,16 @@ export default function AthkarScreen() {
     <ScrollView contentContainerStyle={styles.tasbeehScroll} showsVerticalScrollIndicator={false}>
       <View style={[styles.tasbeehCard, isDark && styles.darkCard]}>
         <View style={styles.tasbeehContent}>
-          <Text style={styles.tasbeehTitle}>Tasbeeh 33x</Text>
+          <Text style={styles.tasbeehTitle}>{t.tasbeeh33}</Text>
 
           <View style={styles.counterRow}>
             <View style={styles.counterBlock}>
               <Text style={styles.counterValue}>{tasbeehCount}</Text>
-              <Text style={styles.counterLabel}>Count</Text>
+              <Text style={styles.counterLabel}>{t.count}</Text>
             </View>
             <View style={styles.counterBlock}>
               <Text style={styles.counterValue}>{tasbeehRoundIndex + 1}</Text>
-              <Text style={styles.counterLabel}>Round</Text>
+              <Text style={styles.counterLabel}>{t.round}</Text>
             </View>
           </View>
 
@@ -543,7 +546,7 @@ export default function AthkarScreen() {
           </Text>
 
           <TouchableOpacity style={styles.resetButton} onPress={resetTasbeeh}>
-            <Text style={styles.resetButtonText}>Reset Tasbeeh</Text>
+            <Text style={styles.resetButtonText}>{t.reset} {t.tasbeeh}</Text>
           </TouchableOpacity>
         </View>
 
@@ -577,7 +580,7 @@ export default function AthkarScreen() {
         <View style={[styles.searchWrapper, isDark && styles.darkSearchWrapper]}>
           <TextInput
             style={[styles.searchInput, isDark && styles.darkText]}
-            placeholder="Search by name, transliteration or meaning..."
+            placeholder={t.searchNames}
             placeholderTextColor="#aaa"
             value={searchQuery}
             onChangeText={setSearchQuery}
@@ -617,10 +620,11 @@ export default function AthkarScreen() {
   );
 
   return (
+    <GlassBackground isDark={isDark}>
     <View style={[styles.container, isDark && styles.darkContainer]}>
       <ScreenIntroTile
-        title="Athkar Screen"
-        description="Morning and evening athkar are primary, with built-in Tasbeeh 33x and the full 99 Names of Allah in one place."
+        title={t.athkarScreenTitle}
+        description={t.athkarScreenDesc}
         isDark={isDark}
         style={styles.introTile}
       />
@@ -631,7 +635,7 @@ export default function AthkarScreen() {
           onPress={() => setActiveFeature('athkar')}
         >
           <Text style={[styles.featureTabText, activeFeature === 'athkar' && styles.featureTabTextActive]}>
-            Athkar
+            {t.athkar}
           </Text>
         </TouchableOpacity>
         <TouchableOpacity
@@ -639,7 +643,7 @@ export default function AthkarScreen() {
           onPress={() => setActiveFeature('tasbeeh')}
         >
           <Text style={[styles.featureTabText, activeFeature === 'tasbeeh' && styles.featureTabTextActive]}>
-            Tasbeeh
+            {t.tasbeeh}
           </Text>
         </TouchableOpacity>
         <TouchableOpacity
@@ -647,7 +651,7 @@ export default function AthkarScreen() {
           onPress={() => setActiveFeature('asma')}
         >
           <Text style={[styles.featureTabText, activeFeature === 'asma' && styles.featureTabTextActive]}>
-            Asma Al-Husna
+            {t.asmaAlHusna}
           </Text>
         </TouchableOpacity>
       </View>
@@ -656,16 +660,15 @@ export default function AthkarScreen() {
       {activeFeature === 'tasbeeh' && renderTasbeehSection()}
       {activeFeature === 'asma' && renderAsmaSection()}
     </View>
+    </GlassBackground>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: UI_COLORS.background,
   },
   darkContainer: {
-    backgroundColor: UI_COLORS.darkBackground,
   },
   introTile: {
     marginBottom: 8,
@@ -675,9 +678,9 @@ const styles = StyleSheet.create({
     marginHorizontal: 16,
     marginBottom: 10,
     borderRadius: UI_RADII.lg,
-    backgroundColor: '#e9f4ed',
+    backgroundColor: 'rgba(255, 255, 255, 0.65)',
     borderWidth: 1,
-    borderColor: '#cde9d5',
+    borderColor: 'rgba(255, 255, 255, 0.45)',
     overflow: 'hidden',
   },
   featureTab: {
@@ -701,17 +704,17 @@ const styles = StyleSheet.create({
     marginHorizontal: 16,
     marginBottom: 10,
     borderRadius: UI_RADII.lg,
-    backgroundColor: UI_COLORS.surface,
+    backgroundColor: 'rgba(255, 255, 255, 0.65)',
     borderWidth: 1,
-    borderColor: UI_COLORS.border,
+    borderColor: 'rgba(255, 255, 255, 0.45)',
     overflow: 'hidden',
   },
   athkarMetaRow: {
     marginHorizontal: 16,
     marginBottom: 8,
-    backgroundColor: UI_COLORS.surface,
+    backgroundColor: 'rgba(255, 255, 255, 0.65)',
     borderWidth: 1,
-    borderColor: UI_COLORS.border,
+    borderColor: 'rgba(255, 255, 255, 0.45)',
     borderRadius: UI_RADII.md,
     paddingHorizontal: 10,
     paddingVertical: 8,
@@ -752,10 +755,10 @@ const styles = StyleSheet.create({
     paddingBottom: 24,
   },
   athkarCard: {
-    backgroundColor: UI_COLORS.surface,
+    backgroundColor: 'rgba(255, 255, 255, 0.65)',
     borderRadius: UI_RADII.lg,
     borderWidth: 1,
-    borderColor: '#9ec46f',
+    borderColor: 'rgba(255, 255, 255, 0.45)',
     padding: 14,
     marginBottom: 10,
     ...UI_SHADOWS.card,
@@ -877,9 +880,9 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     padding: 14,
     borderRadius: UI_RADII.lg,
-    backgroundColor: UI_COLORS.surface,
+    backgroundColor: 'rgba(255, 255, 255, 0.65)',
     borderWidth: 1,
-    borderColor: UI_COLORS.border,
+    borderColor: 'rgba(255, 255, 255, 0.45)',
     flexDirection: 'row',
     ...UI_SHADOWS.card,
   },
@@ -982,16 +985,16 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
   },
   darkSearchWrapper: {
-    backgroundColor: '#1e1e1e',
-    borderColor: '#30353b',
+    backgroundColor: 'rgba(26, 38, 52, 0.75)',
+    borderColor: 'rgba(255, 255, 255, 0.08)',
   },
   searchWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: UI_COLORS.surface,
+    backgroundColor: 'rgba(255, 255, 255, 0.65)',
     borderRadius: UI_RADII.md,
     borderWidth: 1,
-    borderColor: UI_COLORS.border,
+    borderColor: 'rgba(255, 255, 255, 0.45)',
     ...UI_SHADOWS.input,
   },
   searchInput: {
@@ -1014,24 +1017,24 @@ const styles = StyleSheet.create({
     paddingVertical: 20,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: UI_COLORS.surface,
+    backgroundColor: 'rgba(255, 255, 255, 0.65)',
     borderRadius: UI_RADII.lg,
     borderWidth: 1,
-    borderColor: UI_COLORS.border,
+    borderColor: 'rgba(255, 255, 255, 0.45)',
   },
   card: {
     flexDirection: 'row',
-    backgroundColor: UI_COLORS.surface,
+    backgroundColor: 'rgba(255, 255, 255, 0.65)',
     borderRadius: UI_RADII.lg,
     padding: 18,
     marginBottom: 10,
     borderWidth: 1,
-    borderColor: UI_COLORS.border,
+    borderColor: 'rgba(255, 255, 255, 0.45)',
     ...UI_SHADOWS.card,
   },
   darkCard: {
-    backgroundColor: '#1e1e1e',
-    borderColor: '#30353b',
+    backgroundColor: 'rgba(26, 38, 52, 0.75)',
+    borderColor: 'rgba(255, 255, 255, 0.08)',
   },
   numberCircle: {
     width: 40,
