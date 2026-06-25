@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, Platform } from 'react-native';
 import { fetchTajweedVerse, getTajweedRuleInfo, type TajweedVerse } from '../services/quranApi';
 import { getAiInsight } from '../services/aiService';
 import { UI_COLORS, UI_RADII } from '../theme/ui';
@@ -77,30 +77,38 @@ export default function TajweedView({ verseKey, arabicFontFamily }: TajweedViewP
       <Text style={styles.sectionTitle}>{t.tajweedRules}</Text>
 
       <View style={styles.tajweedText}>
-        <View style={styles.tajweedWordsRow}>
-          {tajweed.words.map((w, i) => {
-            const color = w.rule ? (ruleInfo[w.rule]?.color ?? null) : null;
-            return (
-              <TouchableOpacity
-                key={i}
-                activeOpacity={0.7}
-                disabled={!w.rule}
-                onPress={() => w.rule && handleRuleTap(w.rule)}
-                style={[
-                  styles.tajweedWordWrap,
-                  color ? { borderBottomWidth: 3, borderBottomColor: color } : null,
-                ]}
-              >
-                <Text style={[
-                  styles.arabicBase,
-                  arabicFontFamily ? { fontFamily: arabicFontFamily } : null,
-                ]}>
+        {Platform.OS === 'ios' ? (
+          <Text style={[styles.arabicBase, arabicFontFamily ? { fontFamily: arabicFontFamily } : null]}>
+            {tajweed.words.map((w, i) => {
+              if (!w.rule) return <Text key={i}>{w.text}</Text>;
+              const color = ruleInfo[w.rule]?.color ?? UI_COLORS.text;
+              return (
+                <Text key={i} style={{ color, fontWeight: '700' }} onPress={() => handleRuleTap(w.rule!)}>
                   {w.text}
                 </Text>
-              </TouchableOpacity>
-            );
-          })}
-        </View>
+              );
+            })}
+          </Text>
+        ) : (
+          <View style={styles.tajweedWordsRow}>
+            {tajweed.words.map((w, i) => {
+              const color = w.rule ? (ruleInfo[w.rule]?.color ?? null) : null;
+              return (
+                <TouchableOpacity
+                  key={i}
+                  activeOpacity={0.7}
+                  disabled={!w.rule}
+                  onPress={() => w.rule && handleRuleTap(w.rule)}
+                  style={[styles.tajweedWordWrap, color ? { borderBottomWidth: 3, borderBottomColor: color } : null]}
+                >
+                  <Text style={[styles.arabicBase, arabicFontFamily ? { fontFamily: arabicFontFamily } : null]}>
+                    {w.text}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        )}
       </View>
 
       <View style={styles.legendGrid}>
