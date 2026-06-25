@@ -33,6 +33,7 @@ import {
 } from '../utils/athanNotifications';
 import { calculateDistanceToKaabaKm, calculateQiblaBearing, Coordinates } from '../utils/qiblaUtils';
 import { useLanguage } from '../i18n';
+import { schedulePrePrayerReminders } from '../services/prayerCountdownService';
 
 interface Prayer {
   name: string;
@@ -540,6 +541,7 @@ export default function PrayerTimesScreen({ navigation }: any) {
         setPrayerScheduleWindow(scheduleWindow);
         setPrayers(prayerList);
         await scheduleAthanNotifications(prayerList, scheduleWindow);
+        void schedulePrePrayerReminders(prayerList);
         setCity(cityName);
         saveCity(cityName);
 
@@ -738,6 +740,7 @@ export default function PrayerTimesScreen({ navigation }: any) {
     savePrayerPrefs(prefs);
 
     void scheduleAthanNotifications(updated, prayerScheduleWindow);
+    void schedulePrePrayerReminders(updated);
   };
 
   const handleSelectSuggestion = (suggestedCity: string) => {
