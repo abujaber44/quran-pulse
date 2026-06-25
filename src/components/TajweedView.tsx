@@ -77,21 +77,30 @@ export default function TajweedView({ verseKey, arabicFontFamily }: TajweedViewP
       <Text style={styles.sectionTitle}>{t.tajweedRules}</Text>
 
       <View style={styles.tajweedText}>
-        <Text style={[styles.arabicBase, arabicFontFamily ? { fontFamily: arabicFontFamily } : null]}>
+        <View style={styles.tajweedWordsRow}>
           {tajweed.words.map((w, i) => {
-            if (!w.rule) return <Text key={i}>{w.text}</Text>;
-            const color = ruleInfo[w.rule]?.color ?? UI_COLORS.text;
+            const color = w.rule ? (ruleInfo[w.rule]?.color ?? null) : null;
             return (
-              <Text
+              <TouchableOpacity
                 key={i}
-                style={{ color, fontWeight: '700' }}
-                onPress={() => handleRuleTap(w.rule!)}
+                activeOpacity={0.7}
+                disabled={!w.rule}
+                onPress={() => w.rule && handleRuleTap(w.rule)}
+                style={[
+                  styles.tajweedWordWrap,
+                  color ? { borderBottomWidth: 3, borderBottomColor: color } : null,
+                ]}
               >
-                {w.text}
-              </Text>
+                <Text style={[
+                  styles.arabicBase,
+                  arabicFontFamily ? { fontFamily: arabicFontFamily } : null,
+                ]}>
+                  {w.text}
+                </Text>
+              </TouchableOpacity>
             );
           })}
-        </Text>
+        </View>
       </View>
 
       <View style={styles.legendGrid}>
@@ -152,11 +161,19 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(200,217,230,0.4)',
   },
+  tajweedWordsRow: {
+    flexDirection: 'row-reverse',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    gap: 4,
+  },
+  tajweedWordWrap: {
+    paddingBottom: 2,
+    marginBottom: 4,
+  },
   arabicBase: {
-    fontSize: 24,
-    lineHeight: 42,
-    textAlign: 'right',
-    writingDirection: 'rtl',
+    fontSize: 22,
+    lineHeight: 38,
     color: UI_COLORS.text,
   },
   legendGrid: {
