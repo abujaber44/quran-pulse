@@ -56,15 +56,15 @@ All AI responses follow the app's selected language. Responses for search and in
 ### 📱 Screenshots
 
 <div align="center">
-  <img src="https://github.com/abujaber44/quran-pulse/blob/main/screenshots/Landing.png" width="30%" alt="Landing Screen" />
-  <img src="https://github.com/abujaber44/quran-pulse/blob/main/screenshots/Memorize%26Understand.png" width="30%" alt="Learn & Read" style="margin: 0 10px;" />
-  <img src="https://github.com/abujaber44/quran-pulse/blob/main/screenshots/IslamicCalendar.png" width="30%" alt="Islamic Calendar" />
+  <img src="https://raw.githubusercontent.com/abujaber44/quran-pulse/main/screenshots/Landing.png" width="30%" alt="Landing Screen" />
+  <img src="https://raw.githubusercontent.com/abujaber44/quran-pulse/main/screenshots/Memorize%26Understand.png" width="30%" alt="Learn & Read" style="margin: 0 10px;" />
+  <img src="https://raw.githubusercontent.com/abujaber44/quran-pulse/main/screenshots/IslamicCalendar.png" width="30%" alt="Islamic Calendar" />
 </div>
 
 <div align="center" style="margin-top: 16px;">
-  <img src="https://github.com/abujaber44/quran-pulse/blob/main/screenshots/PrayerTimes.png" width="30%" alt="Prayer Times & Qibla" />
-  <img src="https://github.com/abujaber44/quran-pulse/blob/main/screenshots/Athkar.png" width="30%" alt="Athkar & Remembrance" style="margin: 0 10px;" />
-  <img src="https://github.com/abujaber44/quran-pulse/blob/main/screenshots/Miracles.png" width="30%" alt="Quran Miracles" style="margin: 0 10px;" />
+  <img src="https://raw.githubusercontent.com/abujaber44/quran-pulse/main/screenshots/PrayerTimes.png" width="30%" alt="Prayer Times & Qibla" />
+  <img src="https://raw.githubusercontent.com/abujaber44/quran-pulse/main/screenshots/Athkar.png" width="30%" alt="Athkar & Remembrance" style="margin: 0 10px;" />
+  <img src="https://raw.githubusercontent.com/abujaber44/quran-pulse/main/screenshots/Miracles.png" width="30%" alt="Quran Miracles" style="margin: 0 10px;" />
 </div>
 
 <p align="center">
