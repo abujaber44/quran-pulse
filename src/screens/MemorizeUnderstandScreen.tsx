@@ -14,6 +14,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import axios from 'axios';
 import { fetchSurahs } from '../services/quranApi';
 import { searchVerses, type SearchResult } from '../services/aiService';
+import { getPageBookmark, type PageBookmark } from './MushafReaderScreen';
+import { Ionicons } from '@expo/vector-icons';
 import { getSearchHistory, addSearchHistory, clearSearchHistory, type SearchHistoryItem } from '../services/searchHistoryService';
 import { Surah } from '../types';
 import { useSettings } from '../context/SettingsContext';
@@ -35,6 +37,7 @@ export default function MemorizeUnderstandScreen({ navigation }: any) {
   const [searchHistory, setSearchHistory] = useState<SearchHistoryItem[]>([]);
   const [browseMode, setBrowseMode] = useState<'surah' | 'juz'>('surah');
   const [juzData, setJuzData] = useState<any[]>([]);
+  const [savedBookmark, setSavedBookmark] = useState<PageBookmark | null>(null);
   const abortRef = useRef<AbortController | null>(null);
 
   const { settings } = useSettings();
@@ -43,6 +46,13 @@ export default function MemorizeUnderstandScreen({ navigation }: any) {
   const isDark = settings.isDarkMode;
   const arabicNameFontSize = Math.max(20, settings.arabicFontSize - 10);
   const arabicFontFamily = resolveArabicFontFamily(settings.arabicFontFamily);
+
+  useEffect(() => {
+    const unsub = navigation.addListener('focus', () => {
+      getPageBookmark().then(setSavedBookmark);
+    });
+    return unsub;
+  }, [navigation]);
 
   useEffect(() => {
     fetchSurahs().then((data) => {
@@ -227,29 +237,47 @@ export default function MemorizeUnderstandScreen({ navigation }: any) {
           </TouchableOpacity>
         </View>
 
-        <View style={styles.searchContainer}>
-          <View style={styles.searchWrapper}>
-            <TextInput
-              style={styles.searchInput}
-              placeholder={t.searchPlaceholder}
-              placeholderTextColor="rgba(255,255,255,0.35)"
-              value={searchQuery}
-              onChangeText={setSearchQuery}
-              autoCapitalize="none"
-              autoCorrect={false}
-              returnKeyType="search"
-              onSubmitEditing={Keyboard.dismiss}
-            />
+        {browseMode === 'surah' ? (
+          <View style={styles.searchContainer}>
+            <View style={styles.searchWrapper}>
+              <TextInput
+                style={styles.searchInput}
+                placeholder={t.searchPlaceholder}
+                placeholderTextColor="rgba(255,255,255,0.35)"
+                value={searchQuery}
+                onChangeText={setSearchQuery}
+                autoCapitalize="none"
+                autoCorrect={false}
+                returnKeyType="search"
+                onSubmitEditing={Keyboard.dismiss}
+              />
 
-            {searchQuery.length > 0 && (
-              <TouchableWithoutFeedback onPress={clearSearch}>
-                <View style={styles.clearButton}>
-                  <Text style={styles.clearIcon}>×</Text>
-                </View>
-              </TouchableWithoutFeedback>
-            )}
+              {searchQuery.length > 0 && (
+                <TouchableWithoutFeedback onPress={clearSearch}>
+                  <View style={styles.clearButton}>
+                    <Text style={styles.clearIcon}>×</Text>
+                  </View>
+                </TouchableWithoutFeedback>
+              )}
+            </View>
           </View>
-        </View>
+        ) : savedBookmark ? (
+          <TouchableOpacity
+            style={styles.continueReadingCard}
+            activeOpacity={0.8}
+            onPress={() => navigation.navigate('MushafReader', { juzNumber: 1, initialPage: savedBookmark.page })}
+          >
+            <Ionicons name="bookmark" size={20} color="#f5a623" />
+            <View style={styles.continueReadingContent}>
+              <Text style={styles.continueReadingLabel}>{t.continueFrom}</Text>
+              <Text style={styles.continueReadingTitle}>
+                {t.page} {savedBookmark.page}
+                {savedBookmark.ayahNumber ? ` · ${t.ayah} ${savedBookmark.ayahNumber}` : ''}
+              </Text>
+            </View>
+            <Ionicons name="chevron-forward" size={18} color="rgba(255,255,255,0.3)" />
+          </TouchableOpacity>
+        ) : null}
 
         {isSearchMode && !isSearching && aiResults.length > 0 && (
           <View style={styles.searchMetaRow}>
@@ -307,7 +335,7 @@ export default function MemorizeUnderstandScreen({ navigation }: any) {
               return (
                 <TouchableOpacity
                   style={styles.juzCard}
-                  onPress={() => firstSurah && navigateToSurah(firstSurah, firstAyah)}
+                  onPress={() => navigation.navigate('MushafReader', { juzNumber: juz.juz_number })}
                 >
                   <View style={styles.juzHeader}>
                     <Text style={styles.juzNumber}>{t.juz} {juz.juz_number}</Text>
@@ -610,6 +638,32 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: UI_COLORS.textMuted,
     marginTop: 6,
+  },
+  continueReadingCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginHorizontal: 16,
+    marginBottom: 12,
+    padding: 14,
+    backgroundColor: 'rgba(45,127,184,0.12)',
+    borderWidth: 1,
+    borderColor: 'rgba(45,127,184,0.25)',
+    borderRadius: UI_RADII.lg,
+    gap: 12,
+  },
+  continueReadingContent: {
+    flex: 1,
+  },
+  continueReadingLabel: {
+    fontSize: 11,
+    color: 'rgba(255,255,255,0.5)',
+    fontWeight: '600',
+  },
+  continueReadingTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: UI_COLORS.white,
+    marginTop: 2,
   },
   darkText: { color: UI_COLORS.white },
   darkMutedText: { color: '#a8b3bd' },

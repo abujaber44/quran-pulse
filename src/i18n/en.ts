@@ -18,8 +18,8 @@ export default {
   appDescription: 'Your peaceful companion to connect deeply with the Word of Allah — read, listen, reflect, and grow closer to Him from one serene space.',
   coreFeatures: 'Core Features',
   dailyJourney: 'Your daily journey',
-  memorizeUnderstand: 'Memorize & Understand',
-  memorizeUnderstandDesc: 'AI-powered search, tafsir Q&A, and ayah-by-ayah learning',
+  memorizeUnderstand: 'Learn & Read',
+  memorizeUnderstandDesc: 'Study ayah-by-ayah or read the full Mushaf',
   listenToQuran: 'Listen to Quran',
   listenToQuranDesc: 'Smooth recitation with lock-screen controls',
   prayerTimes: 'Prayer Times',
@@ -35,8 +35,8 @@ export default {
   settings: 'Settings',
 
   // Memorize & Understand
-  memorizeTitle: 'Memorize & Understand',
-  memorizeSubtitle: 'Explore the Quran to memorize and reflect',
+  memorizeTitle: 'Learn & Read',
+  memorizeSubtitle: 'Study, memorize, and read the Quran',
   memorizeDescription: 'Search by concept — try \'patience\', \'gratitude\', \'story of Moses\', or any topic. AI finds the most relevant verses for you.',
   searchPlaceholder: 'Search by concept (e.g. patience, gratitude)...',
   versesFound: 'verses found',
@@ -62,7 +62,10 @@ export default {
   repeatSingle: 'Repeat Single',
   repeatRange: 'Repeat Range',
   saveBookmark: 'Save Bookmark',
+  confirmBookmarkMemorize: 'Save this ayah to your memorization list?',
   chooseBookmarkTag: 'Choose a bookmark folder tag:',
+  enterAyahNumber: 'Enter ayah number from this page',
+  savePageBookmark: 'Save',
   readRecite: 'Read/Recite',
   removed: 'Removed',
   ayahRemovedFromBookmarks: 'Ayah removed from bookmarks',
@@ -272,11 +275,13 @@ export default {
 
   // Juz Browser
   juz: 'Juz',
-  browseBySurah: 'Surahs',
-  browseByJuz: 'Juz',
+  browseBySurah: 'Learn',
+  browseByJuz: 'Mushaf',
 
   // Last Read
-  continueFrom: 'Continue from',
+  continueFrom: 'Continue reading',
+  continueLearning: 'Continue learning',
+  page: 'Page',
 
   // Tajweed
   tajweed: 'Tajweed',

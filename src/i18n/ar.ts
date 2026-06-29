@@ -18,8 +18,8 @@ export default {
   appDescription: 'رفيقك الهادئ للتواصل العميق مع كلام الله — اقرأ واستمع وتدبّر وازدد قرباً منه في مكان واحد.',
   coreFeatures: 'الميزات الرئيسية',
   dailyJourney: 'رحلتك اليومية',
-  memorizeUnderstand: 'احفظ وافهم',
-  memorizeUnderstandDesc: 'بحث ذكي بالذكاء الاصطناعي وتفسير وتعلم آية بآية',
+  memorizeUnderstand: 'تعلّم واقرأ',
+  memorizeUnderstandDesc: 'ادرس آية بآية أو اقرأ المصحف كاملاً',
   listenToQuran: 'استمع للقرآن',
   listenToQuranDesc: 'تلاوة سلسة مع أدوات التحكم من شاشة القفل',
   prayerTimes: 'مواقيت الصلاة',
@@ -35,8 +35,8 @@ export default {
   settings: 'الإعدادات',
 
   // Memorize & Understand
-  memorizeTitle: 'احفظ وافهم',
-  memorizeSubtitle: 'استكشف القرآن للحفظ والتدبر',
+  memorizeTitle: 'تعلّم واقرأ',
+  memorizeSubtitle: 'ادرس واحفظ واقرأ القرآن',
   memorizeDescription: 'ابحث بالمفهوم — جرّب "الصبر" أو "الشكر" أو "قصة موسى". الذكاء الاصطناعي يجد لك أكثر الآيات صلة.',
   searchPlaceholder: 'ابحث بالمفهوم (مثلاً: الصبر، الشكر)...',
   versesFound: 'آيات وُجدت',
@@ -62,7 +62,10 @@ export default {
   repeatSingle: 'تكرار آية واحدة',
   repeatRange: 'تكرار نطاق',
   saveBookmark: 'حفظ الآية',
+  confirmBookmarkMemorize: 'حفظ هذه الآية في قائمة الحفظ؟',
   chooseBookmarkTag: 'اختر التصنيف:',
+  enterAyahNumber: 'أدخل رقم الآية من هذه الصفحة',
+  savePageBookmark: 'حفظ',
   readRecite: 'تلاوة',
   removed: 'تمت الإزالة',
   ayahRemovedFromBookmarks: 'أُزيلت الآية من المحفوظات',
@@ -272,11 +275,13 @@ export default {
 
   // Juz Browser
   juz: 'جزء',
-  browseBySurah: 'السور',
-  browseByJuz: 'الأجزاء',
+  browseBySurah: 'تعلّم',
+  browseByJuz: 'المصحف',
 
   // Last Read
-  continueFrom: 'تابع من',
+  continueFrom: 'تابع القراءة',
+  continueLearning: 'تابع التعلّم',
+  page: 'صفحة',
 
   // Tajweed
   tajweed: 'تجويد',

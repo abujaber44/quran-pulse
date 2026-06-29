@@ -30,6 +30,7 @@ import CalendarScreen from './src/screens/CalendarScreen';
 import AthanDiagnosticsScreen from './src/screens/AthanDiagnosticsScreen';
 import QiblaCompassScreen from './src/screens/QiblaCompassScreen';
 import QuranMiraclesScreen from './src/screens/QuranMiraclesScreen';
+import MushafReaderScreen from './src/screens/MushafReaderScreen';
 
 const Stack = createNativeStackNavigator();
 const isExpoGo = Constants.appOwnership === 'expo';
@@ -227,6 +228,14 @@ export default function App() {
               name="QuranMiracles"
               component={QuranMiraclesScreen}
               options={({ navigation }) => getSharedHeaderOptions(navigation)}
+            />
+            <Stack.Screen
+              name="MushafReader"
+              component={MushafReaderScreen}
+              options={({ navigation }) => ({
+                ...getSharedHeaderOptions(navigation),
+                headerLeft: () => <GoBackButton navigation={navigation} />,
+              })}
             />
             </Stack.Navigator>
           </NavigationContainer>

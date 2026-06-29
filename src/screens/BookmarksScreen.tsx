@@ -23,6 +23,8 @@ import ScreenIntroTile from '../components/ScreenIntroTile';
 import MemorizationQuizModal from '../components/MemorizationQuizModal';
 import type { BookmarkForQuiz } from '../services/aiService';
 import { useLanguage } from '../i18n';
+import { getPageBookmark, savePageBookmark, type PageBookmark } from './MushafReaderScreen';
+import { Ionicons } from '@expo/vector-icons';
 
 type RootStackParamList = {
   Surah: {
@@ -39,6 +41,7 @@ export default function BookmarksScreen() {
   const [surahs, setSurahs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedTag, setSelectedTag] = useState<'all' | BookmarkTag>('all');
+  const [pageBookmark, setPageBookmarkState] = useState<PageBookmark | null>(null);
   const [quizModalVisible, setQuizModalVisible] = useState(false);
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
   const { settings } = useSettings();
@@ -60,15 +63,16 @@ export default function BookmarksScreen() {
 
   const loadData = async () => {
     try {
-      const [bookmarkData, surahData] = await Promise.all([
+      const [bookmarkData, surahData, pageBm] = await Promise.all([
         getBookmarks(),
         fetchSurahs(),
+        getPageBookmark(),
       ]);
 
-      // Sort bookmarks by most recent
       bookmarkData.sort((a, b) => b.timestamp - a.timestamp);
       setBookmarks(bookmarkData);
       setSurahs(surahData);
+      setPageBookmarkState(pageBm);
     } catch (error) {
       console.error('Failed to load bookmarks or surahs', error);
       showAlert({
@@ -220,7 +224,35 @@ export default function BookmarksScreen() {
         </TouchableOpacity>
       )}
 
-      {visibleBookmarks.length === 0 ? (
+      {(selectedTag === 'all' || selectedTag === 'read_recite') && pageBookmark && (
+        <View style={styles.pageBookmarkCard}>
+          <View style={styles.pageBookmarkHeader}>
+            <Ionicons name="bookmark" size={18} color="#f5a623" />
+            <Text style={styles.pageBookmarkTitle}>
+              {t.readRecite} — {t.page} {pageBookmark.page}
+              {pageBookmark.ayahNumber ? ` · ${t.ayah} ${pageBookmark.ayahNumber}` : ''}
+            </Text>
+          </View>
+          <View style={styles.pageBookmarkActions}>
+            <TouchableOpacity
+              style={styles.pageBookmarkOpen}
+              onPress={() => navigation.navigate('MushafReader' as any, { juzNumber: 1, initialPage: pageBookmark.page })}
+            >
+              <Text style={styles.pageBookmarkOpenText}>{t.continueFrom}</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={async () => {
+                await savePageBookmark(null);
+                setPageBookmarkState(null);
+              }}
+            >
+              <Text style={styles.pageBookmarkRemove}>{t.remove}</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      )}
+
+      {visibleBookmarks.length === 0 && !pageBookmark ? (
         <Text style={styles.filteredEmptyText}>
           {t.noBookmarksForTag}
         </Text>
@@ -400,4 +432,45 @@ const styles = StyleSheet.create({
   },
   darkText: { color: UI_COLORS.white },
   darkMutedText: { color: '#a8b3bd' },
+  pageBookmarkCard: {
+    marginHorizontal: 16,
+    marginBottom: 12,
+    padding: 14,
+    backgroundColor: 'rgba(245,166,35,0.08)',
+    borderWidth: 1,
+    borderColor: 'rgba(245,166,35,0.25)',
+    borderRadius: UI_RADII.lg,
+  },
+  pageBookmarkHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 10,
+  },
+  pageBookmarkTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: UI_COLORS.white,
+  },
+  pageBookmarkActions: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  pageBookmarkOpen: {
+    backgroundColor: 'rgba(45,127,184,0.2)',
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: UI_RADII.sm,
+  },
+  pageBookmarkOpenText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: UI_COLORS.accent,
+  },
+  pageBookmarkRemove: {
+    fontSize: 13,
+    color: UI_COLORS.danger,
+    fontWeight: '600',
+  },
 });
