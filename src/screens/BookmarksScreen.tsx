@@ -112,10 +112,10 @@ export default function BookmarksScreen() {
   };
 
   const renderItem = ({ item }: { item: Bookmark }) => (
-    <TouchableOpacity style={[styles.card, isDark && styles.darkCard]} onPress={() => handlePress(item)}>
+    <TouchableOpacity style={styles.card} onPress={() => handlePress(item)}>
       <View style={styles.header}>
         <View>
-          <Text style={[styles.surahName, isDark && styles.darkText]}>{item.surahName}</Text>
+          <Text style={styles.surahName}>{item.surahName}</Text>
           <Text style={styles.ayahNumber}>{t.ayah} {item.ayahNum}</Text>
         </View>
         <View style={styles.headerRight}>
@@ -133,14 +133,12 @@ export default function BookmarksScreen() {
           styles.ayahText,
           { fontSize: ayahFontSize, lineHeight: Math.round(ayahFontSize * 1.6) },
           arabicFontFamily ? { fontFamily: arabicFontFamily } : null,
-          isDark && styles.darkText,
         ]}
       >
         {item.ayahText}
       </Text>
-      <Text style={[styles.translation, isDark && styles.darkText]}>{item.translation}</Text>
       <TextInput
-        style={[styles.noteInput, isDark && styles.darkNoteInput]}
+        style={styles.noteInput}
         placeholder={t.addNote}
         placeholderTextColor={UI_COLORS.textLight}
         defaultValue={item.note ?? ''}
@@ -159,7 +157,7 @@ export default function BookmarksScreen() {
       <GlassBackground isDark={isDark}>
         <View style={styles.container}>
           <ActivityIndicator size="large" color="#27ae60" />
-          <Text style={[styles.loadingText, isDark && styles.darkText]}>{t.loadingBookmarks}</Text>
+          <Text style={styles.loadingText}>{t.loadingBookmarks}</Text>
         </View>
       </GlassBackground>
     );
@@ -169,7 +167,7 @@ export default function BookmarksScreen() {
     return (
       <GlassBackground isDark={isDark}>
         <View style={styles.container}>
-          <Text style={[styles.emptyText, isDark && styles.darkMutedText]}>
+          <Text style={styles.emptyText}>
             {t.noBookmarks}
           </Text>
         </View>
@@ -223,7 +221,7 @@ export default function BookmarksScreen() {
       )}
 
       {visibleBookmarks.length === 0 ? (
-        <Text style={[styles.filteredEmptyText, isDark && styles.darkMutedText]}>
+        <Text style={styles.filteredEmptyText}>
           {t.noBookmarksForTag}
         </Text>
       ) : null}
@@ -266,8 +264,8 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     borderRadius: 999,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.45)',
-    backgroundColor: 'rgba(255, 255, 255, 0.65)',
+    borderColor: 'rgba(255,255,255,0.15)',
+    backgroundColor: 'rgba(255,255,255,0.08)',
   },
   filterChipActive: {
     backgroundColor: UI_COLORS.primary,
@@ -289,12 +287,12 @@ const styles = StyleSheet.create({
   },
   list: { paddingHorizontal: 16, paddingBottom: 24 },
   card: {
-    backgroundColor: 'rgba(255, 255, 255, 0.65)',
+    backgroundColor: 'rgba(255,255,255,0.08)',
     padding: 20,
     borderRadius: UI_RADII.lg,
     marginBottom: 16,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.45)',
+    borderColor: 'rgba(255,255,255,0.15)',
     ...UI_SHADOWS.card,
   },
   darkCard: {
@@ -317,15 +315,15 @@ const styles = StyleSheet.create({
     borderRadius: 999,
   },
   tagMemorize: {
-    backgroundColor: '#d7efe1',
+    backgroundColor: 'rgba(31,157,85,0.2)',
   },
   tagRead: {
-    backgroundColor: '#d6ecfb',
+    backgroundColor: 'rgba(45,127,184,0.2)',
   },
   tagPillText: {
     fontSize: 11,
     fontWeight: '700',
-    color: UI_COLORS.primaryDeep,
+    color: 'rgba(255,255,255,0.8)',
   },
   surahName: {
     fontSize: 18,
@@ -362,8 +360,8 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: 'rgba(200,217,230,0.4)',
-    backgroundColor: 'rgba(255,255,255,0.5)',
+    borderColor: 'rgba(255,255,255,0.15)',
+    backgroundColor: 'rgba(255,255,255,0.1)',
     fontSize: 13,
     color: UI_COLORS.text,
     fontStyle: 'italic',

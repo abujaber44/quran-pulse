@@ -16,7 +16,7 @@ export type ArabicFontOption = {
   fontFamily?: string;
 };
 
-export const DEFAULT_ARABIC_FONT_OPTION: ArabicFontOptionId = 'amiri_quran_dedicated';
+export const DEFAULT_ARABIC_FONT_OPTION: ArabicFontOptionId = 'scheherazade_new';
 
 export const ARABIC_FONT_OPTIONS: ArabicFontOption[] = [
   { id: 'amiri_quran', label: 'Amiri', labelAr: 'أميري', fontFamily: 'AmiriQuran' },

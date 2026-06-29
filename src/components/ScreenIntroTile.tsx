@@ -1,43 +1,50 @@
 import React from 'react';
 import { StyleProp, StyleSheet, Text, View, ViewStyle } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { UI_COLORS, UI_RADII, UI_SHADOWS, UI_GLASS } from '../theme/ui';
+import { UI_RADII } from '../theme/ui';
 
 type ScreenIntroTileProps = {
   title: string;
-  description: string;
+  description?: string;
   subtitle?: string;
   isDark?: boolean;
   titleFontFamily?: string;
   style?: StyleProp<ViewStyle>;
+  children?: React.ReactNode;
 };
 
 export default function ScreenIntroTile({
   title,
-  description,
   subtitle,
   isDark = false,
   titleFontFamily,
   style,
+  children,
 }: ScreenIntroTileProps) {
   return (
-    <View style={[styles.tile, isDark && styles.darkTile, style]}>
-      <LinearGradient
-        colors={isDark ? ['rgba(31,157,85,0.15)', 'rgba(31,157,85,0.05)'] : ['rgba(31,157,85,0.12)', 'rgba(215,239,225,0.3)']}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={styles.gradientBg}
-      />
-      <View style={styles.accentRow}>
-        <View style={styles.accentLine} />
-        <View style={styles.accentDot} />
-        <View style={styles.accentLine} />
+    <View style={[styles.tile, style]}>
+      <View style={styles.accentLine}>
+        <LinearGradient
+          colors={['transparent', 'rgba(123,196,240,0.5)', 'transparent']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 0 }}
+          style={styles.accentGradient}
+        />
       </View>
-      <Text style={[styles.title, titleFontFamily ? { fontFamily: titleFontFamily } : null, isDark && styles.darkTitle]}>
+      <Text style={styles.decorStar}>✦</Text>
+      <Text style={[styles.title, titleFontFamily ? { fontFamily: titleFontFamily } : null]}>
         {title}
       </Text>
-      {subtitle ? <Text style={[styles.subtitle, isDark && styles.darkMutedText]}>{subtitle}</Text> : null}
-      <Text style={[styles.description, isDark && styles.darkText]}>{description}</Text>
+      {subtitle ? <Text style={styles.subtitle}>{subtitle}</Text> : null}
+      {children}
+      <View style={styles.accentLineBottom}>
+        <LinearGradient
+          colors={['transparent', 'rgba(123,196,240,0.3)', 'transparent']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 0 }}
+          style={styles.accentGradient}
+        />
+      </View>
     </View>
   );
 }
@@ -45,72 +52,49 @@ export default function ScreenIntroTile({
 const styles = StyleSheet.create({
   tile: {
     marginHorizontal: 16,
-    marginTop: 10,
-    marginBottom: 16,
+    marginTop: 4,
+    marginBottom: 14,
     paddingHorizontal: 20,
-    paddingVertical: 18,
+    paddingTop: 14,
+    paddingBottom: 10,
     borderRadius: UI_RADII.xl,
-    ...UI_GLASS.frosted,
-    overflow: 'hidden',
-    ...UI_SHADOWS.card,
-  },
-  darkTile: {
-    ...UI_GLASS.frostedDark,
-  },
-  gradientBg: {
-    ...StyleSheet.absoluteFillObject,
-    borderRadius: UI_RADII.xl,
-  },
-  accentRow: {
-    flexDirection: 'row',
+    backgroundColor: 'rgba(255,255,255,0.06)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.10)',
     alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 12,
-    gap: 6,
   },
   accentLine: {
-    width: 24,
-    height: 2,
-    borderRadius: 999,
-    backgroundColor: UI_COLORS.primary,
-    opacity: 0.5,
+    width: '60%',
+    height: 1,
+    marginBottom: 8,
   },
-  accentDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: UI_COLORS.primary,
+  accentLineBottom: {
+    width: '40%',
+    height: 1,
+    marginTop: 6,
+  },
+  accentGradient: {
+    flex: 1,
+  },
+  decorStar: {
+    fontSize: 12,
+    color: 'rgba(123,196,240,0.5)',
+    marginBottom: 4,
   },
   title: {
-    fontSize: 30,
+    fontSize: 24,
     textAlign: 'center',
-    color: UI_COLORS.primaryDeep,
+    color: '#FFFFFF',
     fontWeight: '700',
     fontFamily: 'AmiriQuran',
-    letterSpacing: 0.3,
-  },
-  darkTitle: {
-    color: '#e0f0e8',
+    letterSpacing: 0.5,
   },
   subtitle: {
     marginTop: 4,
-    fontSize: 15,
+    fontSize: 13,
     textAlign: 'center',
-    color: UI_COLORS.textMuted,
+    color: 'rgba(255,255,255,0.55)',
     fontStyle: 'italic',
-  },
-  description: {
-    marginTop: 10,
-    fontSize: 14,
-    lineHeight: 22,
-    textAlign: 'center',
-    color: UI_COLORS.text,
-    opacity: 0.85,
-  },
-  darkText: {
-    color: 'rgba(255,255,255,0.85)',
-  },
-  darkMutedText: {
-    color: '#a8b3bd',
+    lineHeight: 18,
   },
 });

@@ -1,4 +1,32 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
 const AI_API_BASE = process.env.EXPO_PUBLIC_AI_API_URL ?? 'http://localhost:3000';
+
+const CACHE_PREFIX = '@qp_ai_cache:';
+const CACHE_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
+
+function cacheKey(parts: unknown[]): string {
+  return CACHE_PREFIX + parts.map(p => typeof p === 'string' ? p : JSON.stringify(p)).join('|');
+}
+
+async function getCached<T>(key: string): Promise<T | null> {
+  try {
+    const raw = await AsyncStorage.getItem(key);
+    if (!raw) return null;
+    const { ts, data } = JSON.parse(raw) as { ts: number; data: T };
+    if (Date.now() - ts > CACHE_TTL_MS) {
+      void AsyncStorage.removeItem(key);
+      return null;
+    }
+    return data;
+  } catch {
+    return null;
+  }
+}
+
+function setCache(key: string, data: unknown): void {
+  void AsyncStorage.setItem(key, JSON.stringify({ ts: Date.now(), data })).catch(() => {});
+}
 
 export type ChatMessage = { role: 'user' | 'assistant'; content: string };
 
@@ -69,6 +97,11 @@ export async function searchVerses(
   signal?: AbortSignal,
   lang?: string,
 ): Promise<SearchResult[]> {
+  const normalizedQuery = query.trim().toLowerCase();
+  const key = cacheKey(['search', normalizedQuery, lang ?? 'en']);
+  const cached = await getCached<SearchResult[]>(key);
+  if (cached) return cached;
+
   const response = await fetch(`${AI_API_BASE}/api/search-verses`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -82,6 +115,7 @@ export async function searchVerses(
   }
 
   const data = (await response.json()) as { results: SearchResult[] };
+  setCache(key, data.results);
   return data.results;
 }
 
@@ -89,11 +123,12 @@ export async function getMemorizationQuiz(
   bookmarks: BookmarkForQuiz[],
   history: QuizHistoryEntry[],
   signal?: AbortSignal,
+  lang?: string,
 ): Promise<QuizQuestion[]> {
   const response = await fetch(`${AI_API_BASE}/api/memorization-coach`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ bookmarks, history }),
+    body: JSON.stringify({ bookmarks, history, lang: lang ?? 'en' }),
     signal,
   });
 
@@ -112,6 +147,10 @@ export async function getAiInsight(
   signal?: AbortSignal,
   lang?: string,
 ): Promise<string> {
+  const key = cacheKey(['insight', type, context, lang ?? 'en']);
+  const cached = await getCached<string>(key);
+  if (cached) return cached;
+
   const response = await fetch(`${AI_API_BASE}/api/ai-insight`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -125,6 +164,7 @@ export async function getAiInsight(
   }
 
   const data = (await response.json()) as { insight: string };
+  setCache(key, data.insight);
   return data.insight;
 }
 

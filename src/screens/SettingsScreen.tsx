@@ -313,10 +313,10 @@ const styles = StyleSheet.create({
   },
   section: {
     marginBottom: 16,
-    backgroundColor: 'rgba(255, 255, 255, 0.65)',
+    backgroundColor: 'rgba(255,255,255,0.08)',
     borderRadius: UI_RADII.lg,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.45)',
+    borderColor: 'rgba(255,255,255,0.15)',
     padding: 16,
     ...UI_SHADOWS.card,
   },
@@ -352,9 +352,9 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     paddingHorizontal: 10,
     borderRadius: UI_RADII.md,
-    backgroundColor: UI_COLORS.primarySoft,
+    backgroundColor: 'rgba(31,157,85,0.2)',
     borderWidth: 1,
-    borderColor: '#cde9d5',
+    borderColor: 'rgba(31,157,85,0.3)',
   },
   previewBox: {
     marginTop: 12,
@@ -398,12 +398,12 @@ const styles = StyleSheet.create({
     borderRadius: UI_RADII.sm,
     borderWidth: 1.5,
     borderColor: UI_COLORS.border,
-    backgroundColor: 'rgba(255,255,255,0.5)',
+    backgroundColor: 'rgba(255,255,255,0.08)',
     alignItems: 'center',
   },
   languageOptionActive: {
     borderColor: UI_COLORS.primary,
-    backgroundColor: UI_COLORS.primarySoft,
+    backgroundColor: 'rgba(31,157,85,0.2)',
   },
   languageOptionText: {
     fontSize: 15,
@@ -411,7 +411,7 @@ const styles = StyleSheet.create({
     color: UI_COLORS.textMuted,
   },
   languageOptionTextActive: {
-    color: UI_COLORS.primaryDeep,
+    color: '#5ddb92',
     fontWeight: '700',
   },
   actionButton: {

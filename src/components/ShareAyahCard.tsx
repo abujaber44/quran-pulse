@@ -72,12 +72,12 @@ export default function ShareAyahCard({
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: '#fafcfe',
+    backgroundColor: '#17384d',
     borderRadius: 20,
     padding: 28,
     margin: 4,
     borderWidth: 1,
-    borderColor: '#e0eaf2',
+    borderColor: 'rgba(255,255,255,0.15)',
   },
   topAccent: {
     width: 50,
@@ -115,7 +115,7 @@ const styles = StyleSheet.create({
     marginTop: 20,
     paddingTop: 14,
     borderTopWidth: 1,
-    borderTopColor: '#eef3f8',
+    borderTopColor: 'rgba(255,255,255,0.12)',
   },
   reference: {
     fontSize: 12,

@@ -784,7 +784,7 @@ export default function PrayerTimesScreen({ navigation }: any) {
       <GlassBackground isDark={isDark}>
         <View style={[styles.center]}>
           <ActivityIndicator size="large" color="#27ae60" />
-          <Text style={[styles.loadingText, isDark && styles.darkText]}>
+          <Text style={[styles.loadingText]}>
             Loading prayer times for {city}...
           </Text>
         </View>
@@ -815,8 +815,8 @@ export default function PrayerTimesScreen({ navigation }: any) {
         </View>
 
         {/* Next Prayer summary */}
-        <View style={[styles.nextPrayerCard, isDark && styles.darkCard]}>
-          <Text style={[styles.nextPrayerLabel, isDark && styles.darkMutedText]}>{t.nextPrayer}</Text>
+        <View style={[styles.nextPrayerCard]}>
+          <Text style={[styles.nextPrayerLabel]}>{t.nextPrayer}</Text>
           <Text style={styles.nextPrayerCountdown}>
             {nextPrayer
               ? nextPrayer.isTomorrow
@@ -827,14 +827,14 @@ export default function PrayerTimesScreen({ navigation }: any) {
         </View>
 
         {/* City and search controls */}
-        <View style={[styles.cityPanel, isDark && styles.darkCard]}>
+        <View style={[styles.cityPanel]}>
           <View style={styles.cityHeaderRow}>
             <View>
-              <Text style={[styles.headerTitle, isDark && styles.darkMutedText]}>📍 {t.athanTimesFor}</Text>
-              <Text style={[styles.cityName, isDark && styles.darkText]}>{city}</Text>
+              <Text style={[styles.headerTitle]}>📍 {t.athanTimesFor}</Text>
+              <Text style={[styles.cityName]}>{city}</Text>
             </View>
             <TouchableOpacity
-              style={[styles.locationButton, isDark && styles.darkLocationButton]}
+              style={[styles.locationButton]}
               onPress={getLocationAndCity}
               disabled={fetchingLocation}
               activeOpacity={0.7}
@@ -848,12 +848,12 @@ export default function PrayerTimesScreen({ navigation }: any) {
           </View>
 
           <View style={styles.searchContainer}>
-            <View style={[styles.searchRow, isDark && styles.darkSearchRow]}>
+            <View style={[styles.searchRow]}>
               <Text style={styles.searchIcon}>🔍</Text>
               <TextInput
-                style={[styles.cityInput, isDark && styles.darkText]}
+                style={[styles.cityInput]}
                 placeholder={t.searchCity}
-                placeholderTextColor="#aaa"
+                placeholderTextColor="rgba(255,255,255,0.35)"
                 value={searchInput}
                 onChangeText={(text) => {
                   setSearchInput(text);
@@ -870,7 +870,7 @@ export default function PrayerTimesScreen({ navigation }: any) {
             </View>
 
             {(suggestionsLoading || suggestions.length > 0) && (
-              <View style={[styles.suggestionsContainer, isDark && styles.darkCard]}>
+              <View style={[styles.suggestionsContainer]}>
                 {suggestionsLoading ? (
                   <View style={styles.suggestionsLoadingRow}>
                     <ActivityIndicator size="small" color={UI_COLORS.primary} />
@@ -884,7 +884,7 @@ export default function PrayerTimesScreen({ navigation }: any) {
                       onPress={() => handleSelectSuggestion(item)}
                     >
                       <Text style={styles.suggestionIcon}>📍</Text>
-                      <Text style={[styles.suggestionText, isDark && styles.darkText]}>{item}</Text>
+                      <Text style={[styles.suggestionText]}>{item}</Text>
                     </TouchableOpacity>
                   ))
                 )}
@@ -901,17 +901,17 @@ export default function PrayerTimesScreen({ navigation }: any) {
 
         {/* Qibla Summary — above prayers for visibility */}
         {qiblaBearing !== null && (
-          <View style={[styles.qiblaCard, isDark && styles.darkCard, { marginBottom: 14 }]}>
+          <View style={[styles.qiblaCard, { marginBottom: 14 }]}>
             <View style={styles.qiblaSummaryRow}>
-              <View style={[styles.qiblaSummaryPill, isDark && styles.darkQiblaSummaryPill]}>
-                <Text style={[styles.qiblaSummaryLabel, isDark && styles.darkMutedText]}>🧭 Qibla</Text>
-                <Text style={[styles.qiblaSummaryValue, isDark && styles.darkText]}>
+              <View style={[styles.qiblaSummaryPill]}>
+                <Text style={[styles.qiblaSummaryLabel]}>🧭 Qibla</Text>
+                <Text style={[styles.qiblaSummaryValue]}>
                   {Math.round(qiblaBearing)}°
                 </Text>
               </View>
-              <View style={[styles.qiblaSummaryPill, isDark && styles.darkQiblaSummaryPill]}>
-                <Text style={[styles.qiblaSummaryLabel, isDark && styles.darkMutedText]}>🕋 Distance</Text>
-                <Text style={[styles.qiblaSummaryValue, isDark && styles.darkText]}>
+              <View style={[styles.qiblaSummaryPill]}>
+                <Text style={[styles.qiblaSummaryLabel]}>🕋 Distance</Text>
+                <Text style={[styles.qiblaSummaryValue]}>
                   {distanceToKaabaKm !== null ? `${distanceToKaabaKm.toFixed(0)} km` : '--'}
                 </Text>
               </View>
@@ -925,7 +925,7 @@ export default function PrayerTimesScreen({ navigation }: any) {
           </View>
         )}
 
-        <Text style={[styles.sectionTitle, isDark && styles.darkText]}>{t.todaysPrayerSchedule}</Text>
+        <Text style={[styles.sectionTitle]}>{t.todaysPrayerSchedule}</Text>
 
         {/* Prayer Times Cards */}
         {prayers.map((prayer, i) => {
@@ -936,7 +936,6 @@ export default function PrayerTimesScreen({ navigation }: any) {
               key={i}
               style={[
                 styles.prayerCard,
-                isDark && styles.darkCard,
                 isNext && styles.prayerCardNext,
                 past && styles.prayerCardPast,
               ]}
@@ -944,10 +943,10 @@ export default function PrayerTimesScreen({ navigation }: any) {
               <View style={styles.prayerCardLeft}>
                 <Text style={styles.prayerIcon}>{PRAYER_ICONS[prayer.name] ?? '🕌'}</Text>
                 <View>
-                  <Text style={[styles.prayerName, isDark && styles.darkText, past && styles.prayerNamePast]}>
+                  <Text style={[styles.prayerName, past && styles.prayerNamePast]}>
                     {PRAYER_LABELS[prayer.name] ?? prayer.name}
                   </Text>
-                  <Text style={[styles.prayerTime, isDark && styles.darkText, past && styles.prayerTimePast]}>
+                  <Text style={[styles.prayerTime, past && styles.prayerTimePast]}>
                     {prayer.time}
                   </Text>
                   {isNext && nextPrayer && (
@@ -967,11 +966,11 @@ export default function PrayerTimesScreen({ navigation }: any) {
           );
         })}
 
-        <Text style={[styles.sectionTitle, isDark && styles.darkText]}>{t.tools}</Text>
+        <Text style={[styles.sectionTitle]}>{t.tools}</Text>
 
-        <View style={[styles.diagnosticsCard, isDark && styles.darkCard]}>
-          <Text style={[styles.diagnosticsTitle, isDark && styles.darkText]}>{t.athanDiagnostics}</Text>
-          <Text style={[styles.diagnosticsText, isDark && styles.darkText]}>
+        <View style={[styles.diagnosticsCard]}>
+          <Text style={[styles.diagnosticsTitle]}>{t.athanDiagnostics}</Text>
+          <Text style={[styles.diagnosticsText]}>
             {t.athanDiagnosticsDesc}
           </Text>
           <TouchableOpacity
@@ -983,7 +982,7 @@ export default function PrayerTimesScreen({ navigation }: any) {
         </View>
 
         {/* Note */}
-        <Text style={[styles.note, isDark && styles.darkText]}>
+        <Text style={[styles.note]}>
           Athan is scheduled for the next 7 days, with a reminder to reopen Prayer Times before expiry. After a
           phone restart, open Prayer Times once to refresh schedules.
         </Text>
@@ -1013,10 +1012,10 @@ const styles = StyleSheet.create({
   headerContainer: { alignItems: 'center', marginBottom: 8, width: '100%' },
   introTile: { width: '100%', marginHorizontal: 0, marginBottom: 12 },
   nextPrayerCard: {
-    backgroundColor: 'rgba(255, 255, 255, 0.65)',
+    backgroundColor: 'rgba(255,255,255,0.08)',
     borderRadius: UI_RADII.lg,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.45)',
+    borderColor: 'rgba(255,255,255,0.15)',
     paddingHorizontal: 14,
     paddingVertical: 10,
     marginBottom: 12,
@@ -1039,10 +1038,10 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   cityPanel: {
-    backgroundColor: 'rgba(255, 255, 255, 0.65)',
+    backgroundColor: 'rgba(255,255,255,0.08)',
     borderRadius: UI_RADII.lg,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.45)',
+    borderColor: 'rgba(255,255,255,0.15)',
     padding: 16,
     marginBottom: 16,
     ...UI_SHADOWS.card,
@@ -1056,7 +1055,7 @@ const styles = StyleSheet.create({
   headerTitle: { fontSize: 13, color: UI_COLORS.textMuted, fontWeight: '600' },
   cityName: { fontSize: 24, fontWeight: '800', color: UI_COLORS.text, marginTop: 2 },
   locationButton: {
-    backgroundColor: '#f0f7ff',
+    backgroundColor: 'rgba(45,127,184,0.15)',
     borderWidth: 1,
     borderColor: UI_COLORS.accent,
     borderRadius: UI_RADII.sm,
@@ -1083,13 +1082,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row', 
     justifyContent: 'space-between', 
     alignItems: 'center', 
-    backgroundColor: 'rgba(255, 255, 255, 0.65)',
+    backgroundColor: 'rgba(255,255,255,0.08)',
     paddingHorizontal: 18,
     paddingVertical: 14,
     borderRadius: UI_RADII.lg,
     marginBottom: 12,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.45)',
+    borderColor: 'rgba(255,255,255,0.15)',
     borderLeftWidth: 4,
     borderLeftColor: UI_COLORS.primary,
     ...UI_SHADOWS.card,
@@ -1098,7 +1097,7 @@ const styles = StyleSheet.create({
   prayerCardNext: {
     borderLeftColor: UI_COLORS.accent,
     borderLeftWidth: 5,
-    backgroundColor: '#f0f7ff',
+    backgroundColor: 'rgba(45,127,184,0.15)',
   },
   prayerCardPast: {
     opacity: 0.5,
@@ -1124,8 +1123,8 @@ const styles = StyleSheet.create({
   note: { fontSize: 14, color: UI_COLORS.textMuted, textAlign: 'center', marginTop: 24, fontStyle: 'italic' },
   exactAlarmWarningCard: {
     marginTop: 12,
-    backgroundColor: '#fff7de',
-    borderColor: '#e3c760',
+    backgroundColor: 'rgba(224,185,0,0.15)',
+    borderColor: 'rgba(224,185,0,0.3)',
     borderWidth: 1,
     borderRadius: UI_RADII.md,
     paddingVertical: 10,
@@ -1134,13 +1133,13 @@ const styles = StyleSheet.create({
   exactAlarmWarningTitle: {
     fontSize: 14,
     fontWeight: '700',
-    color: '#8a6a00',
+    color: '#e0b900',
     marginBottom: 2,
     textAlign: 'center',
   },
   exactAlarmWarningText: {
     fontSize: 12,
-    color: '#8a6a00',
+    color: 'rgba(255,255,255,0.6)',
     textAlign: 'center',
     lineHeight: 18,
   },
@@ -1182,10 +1181,10 @@ const styles = StyleSheet.create({
     paddingLeft: 8,
   },
   suggestionsContainer: {
-    backgroundColor: 'rgba(255, 255, 255, 0.65)',
+    backgroundColor: 'rgba(255,255,255,0.08)',
     borderRadius: UI_RADII.sm,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.45)',
+    borderColor: 'rgba(255,255,255,0.15)',
     ...UI_SHADOWS.card,
     zIndex: 20,
     maxHeight: 240,
@@ -1233,10 +1232,10 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
 qiblaCard: {
-  backgroundColor: 'rgba(255, 255, 255, 0.65)',
+  backgroundColor: 'rgba(255,255,255,0.08)',
   borderRadius: UI_RADII.lg,
   borderWidth: 1,
-  borderColor: 'rgba(255, 255, 255, 0.45)',
+  borderColor: 'rgba(255,255,255,0.15)',
   padding: 16,
   marginBottom: 24,
   ...UI_SHADOWS.card,
@@ -1288,8 +1287,8 @@ qiblaSummaryPill: {
   flex: 1,
   borderRadius: UI_RADII.md,
   borderWidth: 1,
-  borderColor: '#d2e1ec',
-  backgroundColor: '#f7fbff',
+  borderColor: 'rgba(255,255,255,0.15)',
+  backgroundColor: 'rgba(255,255,255,0.06)',
   paddingVertical: 10,
   paddingHorizontal: 12,
 },
@@ -1459,8 +1458,8 @@ qiblaMetricPill: {
   flex: 1,
   borderRadius: UI_RADII.md,
   borderWidth: 1,
-  borderColor: '#d2e1ec',
-  backgroundColor: '#f7fbff',
+  borderColor: 'rgba(255,255,255,0.15)',
+  backgroundColor: 'rgba(255,255,255,0.06)',
   paddingVertical: 9,
   paddingHorizontal: 12,
 },
@@ -1499,10 +1498,10 @@ qiblaCalibration: {
   marginTop: 4,
 },
 diagnosticsCard: {
-  backgroundColor: 'rgba(255, 255, 255, 0.65)',
+  backgroundColor: 'rgba(255,255,255,0.08)',
   borderRadius: UI_RADII.lg,
   borderWidth: 1,
-  borderColor: 'rgba(255, 255, 255, 0.45)',
+  borderColor: 'rgba(255,255,255,0.15)',
   padding: 16,
   marginBottom: 24,
   ...UI_SHADOWS.card,

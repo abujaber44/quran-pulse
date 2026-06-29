@@ -1,5 +1,5 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Animated, ScrollView, Platform } from 'react-native';
+import React, { useCallback, useEffect, useRef, useState, useMemo } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, Animated, ScrollView, Platform, Easing } from 'react-native';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import type { StackNavigationProp } from '@react-navigation/stack';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -14,7 +14,6 @@ import {
   type ReadingStreak,
   type LastReadPosition,
 } from '../services/readingProgressService';
-import { ActivityIndicator } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { fetchSurahs } from '../services/quranApi';
 import { getBookmarks } from '../services/bookmarkService';
@@ -54,6 +53,40 @@ export default function LandingScreen() {
   const [dailyAyah, setDailyAyah] = useState<DailyAyah | null>(null);
   const [loadingDailyAyah, setLoadingDailyAyah] = useState(false);
 
+  const shimmerAnim = useRef(new Animated.Value(0)).current;
+  const phraseFade = useRef(new Animated.Value(0)).current;
+  const [loadingPhraseIndex, setLoadingPhraseIndex] = useState(0);
+
+  const loadingPhrases = useMemo(() => lang === 'ar' ? [
+    'نبحث لك عن آية تلامس قلبك...',
+    'نتأمل في كتاب الله...',
+    'نختار لك ما يناسب يومك...',
+    'نستلهم من نور القرآن...',
+  ] : [
+    'Finding an ayah that speaks to your heart...',
+    'Reflecting on the words of Allah...',
+    'Selecting something meaningful for your day...',
+    'Drawing inspiration from the Quran...',
+  ], [lang]);
+
+  useEffect(() => {
+    if (!loadingDailyAyah || dailyAyah) return;
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(shimmerAnim, { toValue: 1, duration: 1500, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
+        Animated.timing(shimmerAnim, { toValue: 0, duration: 1500, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
+      ])
+    ).start();
+    Animated.timing(phraseFade, { toValue: 1, duration: 400, useNativeDriver: true }).start();
+    const interval = setInterval(() => {
+      Animated.timing(phraseFade, { toValue: 0, duration: 300, useNativeDriver: true }).start(() => {
+        setLoadingPhraseIndex(prev => (prev + 1) % loadingPhrases.length);
+        Animated.timing(phraseFade, { toValue: 1, duration: 300, useNativeDriver: true }).start();
+      });
+    }, 3000);
+    return () => { clearInterval(interval); shimmerAnim.stopAnimation(); };
+  }, [loadingDailyAyah, dailyAyah, shimmerAnim, phraseFade, loadingPhrases]);
+
   useFocusEffect(
     useCallback(() => {
       Promise.all([getReadingProgress(), getReadingStreak(), getLastRead()]).then(([p, s, lr]) => {
@@ -76,9 +109,9 @@ export default function LandingScreen() {
       const cached = await AsyncStorage.getItem(cacheKey);
       if (cached) {
         const parsed = JSON.parse(cached) as { date: string; lang?: string; ayah: DailyAyah };
-        if (parsed.date === today && parsed.lang === lang) {
+        if (parsed.date === today) {
           setDailyAyah(parsed.ayah);
-          return;
+          if (parsed.lang === lang) return;
         }
       }
 
@@ -112,8 +145,6 @@ export default function LandingScreen() {
 
   return (
     <LinearGradient colors={UI_GRADIENTS.heroLight} style={styles.container}>
-      <View style={styles.bgOrbTop} />
-      <View style={styles.bgOrbBottom} />
 
       <ScrollView
         contentContainerStyle={styles.scrollContent}
@@ -126,9 +157,6 @@ export default function LandingScreen() {
           <Text style={styles.subtitle}>{t.appTagline}</Text>
         </Animated.View>
 
-        <Animated.View style={[styles.introCard, { opacity: fadeAnim }]}>
-          <Text style={styles.description}>{t.appDescription}</Text>
-        </Animated.View>
 
         {progress && streak && (progress.totalAyahsRead > 0 || streak.currentStreak > 0) ? (
           <View style={styles.progressCard}>
@@ -157,7 +185,17 @@ export default function LandingScreen() {
           <View style={styles.dailyAyahCard}>
             <Text style={styles.dailyAyahHeader}>{t.dailyAyah}</Text>
             {loadingDailyAyah && !dailyAyah ? (
-              <ActivityIndicator size="small" color={UI_COLORS.primarySoft} style={{ marginVertical: 12 }} />
+              <View style={styles.dailyAyahLoading}>
+                <Animated.View style={[styles.dailyAyahGlow, {
+                  opacity: shimmerAnim.interpolate({ inputRange: [0, 1], outputRange: [0.3, 0.8] }),
+                  transform: [{ scale: shimmerAnim.interpolate({ inputRange: [0, 1], outputRange: [0.95, 1.05] }) }],
+                }]}>
+                  <Text style={styles.dailyAyahLoadingIcon}>✦</Text>
+                </Animated.View>
+                <Animated.Text style={[styles.dailyAyahLoadingText, { opacity: phraseFade }]}>
+                  {loadingPhrases[loadingPhraseIndex]}
+                </Animated.Text>
+              </View>
             ) : dailyAyah ? (
               <TouchableOpacity
                 activeOpacity={0.85}
@@ -260,24 +298,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  bgOrbTop: {
-    position: 'absolute',
-    top: -100,
-    right: -70,
-    width: 300,
-    height: 300,
-    borderRadius: 150,
-    backgroundColor: 'rgba(31,157,85,0.18)',
-  },
-  bgOrbBottom: {
-    position: 'absolute',
-    bottom: -120,
-    left: -80,
-    width: 320,
-    height: 320,
-    borderRadius: 160,
-    backgroundColor: 'rgba(45,127,184,0.15)',
-  },
   scrollContent: {
     paddingHorizontal: 22,
     paddingTop: 60,
@@ -337,6 +357,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: UI_COLORS.primarySoft,
     marginBottom: 12,
+    textAlign: 'center',
   },
   progressStats: {
     flexDirection: 'row',
@@ -374,6 +395,30 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: UI_COLORS.primarySoft,
     marginBottom: 12,
+    textAlign: 'center',
+  },
+  dailyAyahLoading: {
+    alignItems: 'center',
+    paddingVertical: 20,
+    gap: 14,
+  },
+  dailyAyahGlow: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: 'rgba(31,157,85,0.15)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  dailyAyahLoadingIcon: {
+    fontSize: 22,
+    color: UI_COLORS.primarySoft,
+  },
+  dailyAyahLoadingText: {
+    fontSize: 14,
+    color: 'rgba(214,228,238,0.7)',
+    fontStyle: 'italic',
+    textAlign: 'center',
   },
   dailyAyahArabic: {
     fontSize: 22,
@@ -393,9 +438,10 @@ const styles = StyleSheet.create({
   },
   dailyAyahFooter: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 8,
+    gap: 10,
   },
   dailyAyahRef: {
     fontSize: 12,
@@ -417,6 +463,7 @@ const styles = StyleSheet.create({
     lineHeight: 18,
     color: 'rgba(214,228,238,0.6)',
     fontStyle: 'italic',
+    textAlign: 'center',
   },
   continueCard: {
     backgroundColor: 'rgba(45,127,184,0.15)',
@@ -431,25 +478,30 @@ const styles = StyleSheet.create({
     color: 'rgba(214,228,238,0.7)',
     fontWeight: '600',
     marginBottom: 4,
+    textAlign: 'center',
   },
   continueTitle: {
     fontSize: 16,
     fontWeight: '700',
     color: UI_COLORS.white,
+    textAlign: 'center',
   },
   sectionHeader: {
     marginBottom: 14,
+    alignItems: 'center',
   },
   sectionTitle: {
     fontSize: 20,
     fontWeight: '700',
     color: UI_COLORS.white,
     letterSpacing: 0.3,
+    textAlign: 'center',
   },
   sectionSubtitle: {
     marginTop: 3,
     fontSize: 13,
     color: 'rgba(198,211,222,0.8)',
+    textAlign: 'center',
   },
   primaryStack: {
     marginBottom: 16,
@@ -466,28 +518,28 @@ const styles = StyleSheet.create({
       : UI_SHADOWS.card),
   },
   primaryCardGradient: {
-    flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: 18,
     paddingHorizontal: 16,
-    gap: 14,
+    gap: 6,
   },
   cardIcon: {
     fontSize: 28,
+    marginBottom: 2,
   },
-  cardContent: {
-    flex: 1,
-  },
+  cardContent: {},
   primaryCardTitle: {
     fontSize: 17,
     fontWeight: '700',
     color: UI_COLORS.white,
+    textAlign: 'center',
   },
   primaryCardSubtitle: {
     marginTop: 4,
     fontSize: 13,
     color: 'rgba(208,221,232,0.85)',
     lineHeight: 18,
+    textAlign: 'center',
   },
   secondaryGrid: {
     flexDirection: 'row',
@@ -504,6 +556,7 @@ const styles = StyleSheet.create({
     borderRadius: UI_RADII.lg,
     paddingVertical: 16,
     paddingHorizontal: 14,
+    alignItems: 'center',
     ...(Platform.OS === 'android'
       ? { elevation: 0 }
       : UI_SHADOWS.input),
@@ -516,12 +569,14 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '700',
     color: UI_COLORS.white,
+    textAlign: 'center',
   },
   secondaryCardSubtitle: {
     marginTop: 4,
     fontSize: 12,
     color: 'rgba(208,221,232,0.75)',
     lineHeight: 17,
+    textAlign: 'center',
   },
   utilitySection: {
     backgroundColor: 'rgba(18,59,54,0.55)',
@@ -538,6 +593,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: UI_COLORS.primarySoft,
     marginBottom: 12,
+    textAlign: 'center',
   },
   utilityRow: {
     flexDirection: 'row',
