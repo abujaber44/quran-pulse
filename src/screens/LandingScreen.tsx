@@ -228,7 +228,7 @@ export default function LandingScreen() {
               }
             }}
           >
-            <Text style={styles.continueLabel}>{t.continueFrom}</Text>
+            <Text style={styles.continueLabel}>{t.continueLearning}</Text>
             <Text style={styles.continueTitle}>📖 {lastRead.surahName} — {t.ayah} {lastRead.ayahNum}</Text>
           </TouchableOpacity>
         )}

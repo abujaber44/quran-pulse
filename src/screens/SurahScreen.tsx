@@ -379,6 +379,7 @@ export default function SurahScreen({ route }: any) {
     setRepeatRange,
     memorizationMode,
     toggleMemorizationMode,
+    stopListening,
     sound,
   } = useAudio();
 
@@ -386,14 +387,11 @@ export default function SurahScreen({ route }: any) {
   const { showAlert } = useThemedAlert();
   const { t, lang } = useLanguage();
 
+  const stopListeningRef = useRef(stopListening);
+  stopListeningRef.current = stopListening;
   useEffect(() => {
-    return () => {
-      if (sound) {
-        sound.stopAsync();
-        sound.unloadAsync();
-      }
-    };
-  }, [sound]);
+    return () => { void stopListeningRef.current(); };
+  }, []);
 
   // Load Arabic ayahs + English translations
   useEffect(() => {
@@ -663,19 +661,13 @@ export default function SurahScreen({ route }: any) {
     } else {
       showAlert({
         title: t.saveBookmark,
-        message: t.chooseBookmarkTag,
-        variant: 'info',
+        message: t.confirmBookmarkMemorize,
+        variant: 'success',
         buttons: [
           {
             text: t.memorize,
             onPress: () => {
               void saveBookmarkWithTag(ayahNum, 'memorize');
-            },
-          },
-          {
-            text: t.readRecite,
-            onPress: () => {
-              void saveBookmarkWithTag(ayahNum, 'read_recite');
             },
           },
           { text: t.cancel, role: 'cancel' },
