@@ -169,10 +169,10 @@ const styles = StyleSheet.create({
   card: {
     width: '100%',
     maxWidth: 420,
-    backgroundColor: UI_COLORS.surface,
+    backgroundColor: 'rgba(18,46,63,0.97)',
     borderRadius: UI_RADII.lg,
     borderWidth: 1,
-    borderColor: UI_COLORS.border,
+    borderColor: 'rgba(255,255,255,0.15)',
     paddingHorizontal: 16,
     paddingTop: 14,
     paddingBottom: 14,
@@ -216,8 +216,8 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   buttonCancel: {
-    backgroundColor: UI_COLORS.surface,
-    borderColor: UI_COLORS.border,
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    borderColor: 'rgba(255,255,255,0.2)',
   },
   buttonDanger: {
     backgroundColor: UI_COLORS.danger,

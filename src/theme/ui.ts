@@ -1,21 +1,22 @@
 import { Platform } from 'react-native';
 
 export const UI_COLORS = {
-  background: '#eaf2f8',
-  surface: '#ffffff',
+  background: '#17384d',
+  surface: 'rgba(255,255,255,0.08)',
   darkBackground: '#0f1923',
-  darkSurface: '#1a2634',
+  darkSurface: 'rgba(255,255,255,0.06)',
   primary: '#1f9d55',
   primarySoft: '#d7efe1',
   primaryDeep: '#123b36',
   accent: '#2d7fb8',
-  text: '#17384d',
-  textMuted: '#5f7384',
-  textLight: '#a8b7c3',
-  border: '#c8d9e6',
+  text: '#FFFFFF',
+  textMuted: 'rgba(255,255,255,0.6)',
+  textLight: 'rgba(255,255,255,0.35)',
+  border: 'rgba(255,255,255,0.15)',
+  borderLight: 'rgba(255,255,255,0.08)',
   danger: '#e74c3c',
   warning: '#e0b900',
-  friday: '#d6ecfb',
+  friday: 'rgba(31,157,85,0.15)',
   white: '#ffffff',
 } as const;
 
@@ -33,42 +34,42 @@ const iosShadow = (color: string, offsetY: number, opacity: number, radius: numb
 
 export const UI_SHADOWS = {
   card: {
-    ...iosShadow('#1a3a5c', 4, 0.08, 16),
+    ...iosShadow('#000', 4, 0.15, 12),
   },
   input: {
-    ...iosShadow('#1a3a5c', 2, 0.06, 10),
+    ...iosShadow('#000', 2, 0.1, 8),
   },
   floating: {
-    ...iosShadow('#0d1f30', -4, 0.15, 20),
+    ...iosShadow('#000', -4, 0.2, 16),
   },
 } as const;
 
 export const UI_GLASS = {
   light: {
-    backgroundColor: 'rgba(255, 255, 255, 0.62)',
-    borderColor: 'rgba(255, 255, 255, 0.45)',
+    backgroundColor: 'rgba(255,255,255,0.08)',
+    borderColor: 'rgba(255,255,255,0.15)',
     borderWidth: 1,
   },
   dark: {
-    backgroundColor: 'rgba(26, 38, 52, 0.75)',
-    borderColor: 'rgba(255, 255, 255, 0.08)',
+    backgroundColor: 'rgba(255,255,255,0.06)',
+    borderColor: 'rgba(255,255,255,0.12)',
     borderWidth: 1,
   },
   frosted: {
-    backgroundColor: 'rgba(255, 255, 255, 0.80)',
-    borderColor: 'rgba(200, 217, 230, 0.5)',
+    backgroundColor: 'rgba(255,255,255,0.08)',
+    borderColor: 'rgba(255,255,255,0.15)',
     borderWidth: 1,
   },
   frostedDark: {
-    backgroundColor: 'rgba(26, 38, 52, 0.85)',
-    borderColor: 'rgba(255, 255, 255, 0.06)',
+    backgroundColor: 'rgba(255,255,255,0.06)',
+    borderColor: 'rgba(255,255,255,0.12)',
     borderWidth: 1,
   },
   blurIntensity: 40,
 } as const;
 
 export const UI_GRADIENTS = {
-  screenLight: ['#e8f4fd', '#dfedf7', '#eaf2f8'] as const,
+  screenLight: ['#123b36', '#17384d', '#1a4a60'] as const,
   screenDark: ['#0a1520', '#0f1923', '#152030'] as const,
   heroLight: ['#123b36', '#17384d', '#1a4a60'] as const,
   heroDark: ['#080e14', '#0f1923', '#0a1520'] as const,

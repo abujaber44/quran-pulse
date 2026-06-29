@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, Platform } from 'react-native';
+import { WebView } from 'react-native-webview';
 import { fetchTajweedVerse, getTajweedRuleInfo, type TajweedVerse } from '../services/quranApi';
-import { getAiInsight } from '../services/aiService';
 import { UI_COLORS, UI_RADII } from '../theme/ui';
 import { useLanguage } from '../i18n';
 
@@ -15,8 +15,7 @@ export default function TajweedView({ verseKey, arabicFontFamily }: TajweedViewP
   const [tajweed, setTajweed] = useState<TajweedVerse | null>(null);
   const [loading, setLoading] = useState(true);
   const [selectedRule, setSelectedRule] = useState<string | null>(null);
-  const [ruleExplanation, setRuleExplanation] = useState<string | null>(null);
-  const [loadingExplanation, setLoadingExplanation] = useState(false);
+  const [webViewHeight, setWebViewHeight] = useState(120);
 
   const ruleInfo = getTajweedRuleInfo();
 
@@ -28,31 +27,36 @@ export default function TajweedView({ verseKey, arabicFontFamily }: TajweedViewP
     });
   }, [verseKey]);
 
-  const handleRuleTap = async (rule: string) => {
-    if (selectedRule === rule) {
-      setSelectedRule(null);
-      setRuleExplanation(null);
-      return;
-    }
-    setSelectedRule(rule);
-    setRuleExplanation(null);
-    setLoadingExplanation(true);
-
-    const info = ruleInfo[rule];
-    try {
-      const explanation = await getAiInsight('athkar', {
-        title: `Tajweed Rule: ${info?.en ?? rule}`,
-        text: `${info?.en ?? rule} (${info?.ar ?? ''})`,
-        repetitions: 0,
-        fadl: `This is a Quran recitation (tajweed) rule called ${info?.en}. Explain what this tajweed rule is, when it applies, and how to pronounce it correctly. Give a brief example. Keep it educational and concise (2 paragraphs).`,
-      }, undefined, lang);
-      setRuleExplanation(explanation);
-    } catch {
-      setRuleExplanation(lang === 'ar' ? 'لم نتمكن من تحميل الشرح.' : 'Could not load explanation.');
-    } finally {
-      setLoadingExplanation(false);
-    }
+  const handleRuleTap = (rule: string) => {
+    setSelectedRule(prev => prev === rule ? null : rule);
   };
+
+  const onWebViewMessage = useCallback((event: { nativeEvent: { data: string } }) => {
+    const data = event.nativeEvent.data;
+    if (data.startsWith('height:')) {
+      setWebViewHeight(Math.ceil(Number(data.split(':')[1])) + 4);
+    } else if (data.startsWith('rule:')) {
+      handleRuleTap(data.split(':')[1]);
+    }
+  }, []);
+
+  const buildTajweedHtml = useCallback(() => {
+    if (!tajweed) return '';
+    const spans = tajweed.words.map(w => {
+      if (!w.rule) return w.text;
+      const color = ruleInfo[w.rule]?.color ?? '#FFFFFF';
+      return `<span style="color:${color};font-weight:700;cursor:pointer" onclick="window.ReactNativeWebView.postMessage('rule:${w.rule}')">${w.text}</span>`;
+    }).join('');
+    return `<!DOCTYPE html><html><head><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+<style>*{margin:0;padding:0;box-sizing:border-box}body{background:transparent;direction:rtl;text-align:right;padding:2px 0;overflow:hidden;-webkit-text-size-adjust:100%}
+.t{font-size:22px;line-height:38px;color:#FFFFFF;font-family:serif}</style></head>
+<body><p class="t">${spans}</p>
+<script>
+function send(){window.ReactNativeWebView.postMessage('height:'+document.body.scrollHeight)}
+new MutationObserver(send).observe(document.body,{childList:true,subtree:true});
+window.onload=send;setTimeout(send,100);
+</script></body></html>`;
+  }, [tajweed, ruleInfo]);
 
   if (loading) {
     return (
@@ -90,24 +94,15 @@ export default function TajweedView({ verseKey, arabicFontFamily }: TajweedViewP
             })}
           </Text>
         ) : (
-          <View style={styles.tajweedWordsRow}>
-            {tajweed.words.map((w, i) => {
-              const color = w.rule ? (ruleInfo[w.rule]?.color ?? null) : null;
-              return (
-                <TouchableOpacity
-                  key={i}
-                  activeOpacity={0.7}
-                  disabled={!w.rule}
-                  onPress={() => w.rule && handleRuleTap(w.rule)}
-                  style={[styles.tajweedWordWrap, color ? { borderBottomWidth: 3, borderBottomColor: color } : null]}
-                >
-                  <Text style={[styles.arabicBase, arabicFontFamily ? { fontFamily: arabicFontFamily } : null]}>
-                    {w.text}
-                  </Text>
-                </TouchableOpacity>
-              );
-            })}
-          </View>
+          <WebView
+            originWhitelist={['*']}
+            source={{ html: buildTajweedHtml() }}
+            style={{ height: webViewHeight, backgroundColor: 'transparent' }}
+            scrollEnabled={false}
+            onMessage={onWebViewMessage}
+            javaScriptEnabled
+            showsVerticalScrollIndicator={false}
+          />
         )}
       </View>
 
@@ -132,16 +127,14 @@ export default function TajweedView({ verseKey, arabicFontFamily }: TajweedViewP
         })}
       </View>
 
-      {selectedRule && (
+      {selectedRule && ruleInfo[selectedRule] && (
         <View style={styles.explanationBox}>
           <Text style={styles.explanationTitle}>
-            {lang === 'ar' ? ruleInfo[selectedRule]?.ar : ruleInfo[selectedRule]?.en}
+            {lang === 'ar' ? ruleInfo[selectedRule].ar : ruleInfo[selectedRule].en}
           </Text>
-          {loadingExplanation ? (
-            <ActivityIndicator size="small" color={UI_COLORS.accent} style={{ marginTop: 8 }} />
-          ) : ruleExplanation ? (
-            <Text style={styles.explanationText}>{ruleExplanation}</Text>
-          ) : null}
+          <Text style={styles.explanationText}>
+            {lang === 'ar' ? ruleInfo[selectedRule].descAr : ruleInfo[selectedRule].descEn}
+          </Text>
         </View>
       )}
     </View>
@@ -153,7 +146,7 @@ const styles = StyleSheet.create({
     marginTop: 12,
     paddingTop: 12,
     borderTopWidth: 1,
-    borderTopColor: 'rgba(200,217,230,0.3)',
+    borderTopColor: 'rgba(255,255,255,0.1)',
   },
   sectionTitle: {
     fontSize: 13,
@@ -162,27 +155,19 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   tajweedText: {
-    backgroundColor: 'rgba(255,255,255,0.7)',
+    backgroundColor: 'rgba(255,255,255,0.06)',
     borderRadius: UI_RADII.sm,
     padding: 14,
     marginBottom: 10,
     borderWidth: 1,
-    borderColor: 'rgba(200,217,230,0.4)',
-  },
-  tajweedWordsRow: {
-    flexDirection: 'row-reverse',
-    flexWrap: 'wrap',
-    justifyContent: 'center',
-    gap: 4,
-  },
-  tajweedWordWrap: {
-    paddingBottom: 2,
-    marginBottom: 4,
+    borderColor: 'rgba(255,255,255,0.12)',
   },
   arabicBase: {
     fontSize: 22,
     lineHeight: 38,
     color: UI_COLORS.text,
+    writingDirection: 'rtl',
+    textAlign: 'right',
   },
   legendGrid: {
     flexDirection: 'row',
@@ -193,17 +178,17 @@ const styles = StyleSheet.create({
   legendItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(255,255,255,0.5)',
+    backgroundColor: 'rgba(255,255,255,0.08)',
     borderRadius: 8,
     paddingHorizontal: 8,
     paddingVertical: 5,
     borderWidth: 1,
-    borderColor: 'rgba(200,217,230,0.3)',
+    borderColor: 'rgba(255,255,255,0.12)',
     gap: 5,
   },
   legendItemActive: {
     borderColor: UI_COLORS.accent,
-    backgroundColor: 'rgba(45,127,184,0.08)',
+    backgroundColor: 'rgba(45,127,184,0.15)',
   },
   legendDot: {
     width: 8,

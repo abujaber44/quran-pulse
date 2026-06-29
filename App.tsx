@@ -80,17 +80,44 @@ const CustomBackButton = ({ navigation }: { navigation: NavigationProp<ParamList
   </TouchableOpacity>
 );
 
+const GoBackButton = ({ navigation }: { navigation: NavigationProp<ParamListBase> }) => (
+  <TouchableOpacity
+    style={{
+      minWidth: 82,
+      height: 36,
+      borderRadius: UI_RADII.lg,
+      paddingHorizontal: 10,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+    }}
+    onPress={() => navigation.goBack()}
+  >
+    <View
+      style={{
+        width: 20,
+        height: 20,
+        borderRadius: 10,
+        backgroundColor: UI_COLORS.accent,
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginRight: 6,
+      }}
+    >
+      <Text style={{ fontSize: 14, color: UI_COLORS.white, fontWeight: '700' }}>←</Text>
+    </View>
+    <Text style={{ fontSize: 16, color: UI_COLORS.accent, fontWeight: '700' }}>Back</Text>
+  </TouchableOpacity>
+);
+
 const getSharedHeaderOptions = (navigation: NavigationProp<ParamListBase>) => ({
-  title: 'Quran Pulse',
-  headerTitleAlign: 'center' as const,
+  title: '',
   headerShadowVisible: false,
-  headerStyle: { backgroundColor: 'rgba(234, 242, 248, 0.85)' },
-  headerTitleStyle: { color: UI_COLORS.text, fontWeight: '700' as const },
+  headerStyle: { backgroundColor: '#17384d' },
   ...(isExpoGo ? {} : { statusBarStyle: 'dark' as const }),
   headerBackVisible: false,
   headerTintColor: UI_COLORS.accent,
   headerLeftContainerStyle: { paddingLeft: 8, paddingRight: 0 },
-  headerTitleContainerStyle: { paddingHorizontal: 8 },
   headerLeft: () => <CustomBackButton navigation={navigation} />,
 });
 
@@ -135,7 +162,10 @@ export default function App() {
             <Stack.Screen
               name="Surah"
               component={SurahScreen}
-              options={{ headerShown: false } as any}
+              options={({ navigation }) => ({
+                ...getSharedHeaderOptions(navigation),
+                headerLeft: () => <GoBackButton navigation={navigation} />,
+              })}
             />
             <Stack.Screen
               name="Settings"
@@ -156,11 +186,9 @@ export default function App() {
               name="AthanDiagnostics"
               component={AthanDiagnosticsScreen}
               options={{
-                title: 'Quran Pulse',
-                headerTitleAlign: 'center' as const,
+                title: '',
                 headerShadowVisible: false,
-                headerStyle: { backgroundColor: 'rgba(234, 242, 248, 0.85)' },
-                headerTitleStyle: { color: UI_COLORS.text, fontWeight: '700' as const },
+                headerStyle: { backgroundColor: '#17384d' },
                 ...(isExpoGo ? {} : { statusBarStyle: 'dark' as const }),
                 headerBackVisible: true,
                 headerBackTitle: 'Prayer Times',
@@ -171,11 +199,9 @@ export default function App() {
               name="QiblaCompass"
               component={QiblaCompassScreen}
               options={{
-                title: 'Quran Pulse',
-                headerTitleAlign: 'center' as const,
+                title: '',
                 headerShadowVisible: false,
-                headerStyle: { backgroundColor: 'rgba(234, 242, 248, 0.85)' },
-                headerTitleStyle: { color: UI_COLORS.text, fontWeight: '700' as const },
+                headerStyle: { backgroundColor: '#17384d' },
                 ...(isExpoGo ? {} : { statusBarStyle: 'dark' as const }),
                 headerBackVisible: true,
                 headerBackTitle: 'Prayer Times',

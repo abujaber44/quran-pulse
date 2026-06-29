@@ -133,26 +133,25 @@ export default function MemorizeUnderstandScreen({ navigation }: any) {
 
   const renderBrowseSurah = ({ item }: { item: Surah }) => (
     <TouchableOpacity
-      style={[styles.surahCard, isDark && styles.darkCard]}
+      style={styles.surahCard}
       onPress={() => navigateToSurah(item)}
     >
       <View style={styles.surahInfo}>
         <Text style={styles.surahNumber}>{item.id}</Text>
         <View>
-          <Text style={[styles.surahNameEnglish, isDark && styles.darkText]}>{item.name_simple}</Text>
+          <Text style={styles.surahNameEnglish}>{item.name_simple}</Text>
           <Text
             style={[
               styles.surahNameArabic,
               { fontSize: arabicNameFontSize },
               arabicFontFamily ? { fontFamily: arabicFontFamily } : null,
-              isDark && styles.darkText,
             ]}
           >
             {item.name_arabic}
           </Text>
         </View>
       </View>
-      <Text style={[styles.versesCount, isDark && styles.darkMutedText]}>{item.verses_count} {t.verses}</Text>
+      <Text style={styles.versesCount}>{item.verses_count} {t.verses}</Text>
     </TouchableOpacity>
   );
 
@@ -172,22 +171,22 @@ export default function MemorizeUnderstandScreen({ navigation }: any) {
 
     return (
       <TouchableOpacity
-        style={[styles.searchResultCard, isDark && styles.darkCard]}
+        style={styles.searchResultCard}
         onPress={handlePress}
       >
         <View style={styles.resultBadgeRow}>
           <Text style={styles.resultBadge}>{t.aiMatch}</Text>
           <Text style={styles.searchResultMeta}>{item.verseKey}</Text>
         </View>
-        <Text style={[styles.searchResultTitle, isDark && styles.darkText]}>
+        <Text style={styles.searchResultTitle}>
           {item.surahName}
         </Text>
-        <Text style={[styles.translationText, isDark && styles.darkMutedText]} numberOfLines={3}>
+        <Text style={styles.translationText} numberOfLines={3}>
           {item.translation}
         </Text>
         <View style={styles.relevanceWrap}>
           <Text style={styles.relevanceLabel}>✦ </Text>
-          <Text style={[styles.relevanceText, isDark && styles.darkMutedText]}>
+          <Text style={styles.relevanceText}>
             {item.relevance}
           </Text>
         </View>
@@ -211,29 +210,29 @@ export default function MemorizeUnderstandScreen({ navigation }: any) {
 
         <View style={styles.tabBar}>
           <TouchableOpacity
-            style={[styles.tabButton, browseMode === 'surah' && styles.tabButtonActive, isDark && browseMode !== 'surah' && styles.darkCard]}
+            style={[styles.tabButton, browseMode === 'surah' && styles.tabButtonActive]}
             onPress={() => setBrowseMode('surah')}
           >
-            <Text style={[styles.tabButtonText, browseMode === 'surah' && styles.tabButtonTextActive, isDark && browseMode !== 'surah' && styles.darkMutedText]}>
+            <Text style={[styles.tabButtonText, browseMode === 'surah' && styles.tabButtonTextActive]}>
               {t.browseBySurah}
             </Text>
           </TouchableOpacity>
           <TouchableOpacity
-            style={[styles.tabButton, browseMode === 'juz' && styles.tabButtonActive, isDark && browseMode !== 'juz' && styles.darkCard]}
+            style={[styles.tabButton, browseMode === 'juz' && styles.tabButtonActive]}
             onPress={() => setBrowseMode('juz')}
           >
-            <Text style={[styles.tabButtonText, browseMode === 'juz' && styles.tabButtonTextActive, isDark && browseMode !== 'juz' && styles.darkMutedText]}>
+            <Text style={[styles.tabButtonText, browseMode === 'juz' && styles.tabButtonTextActive]}>
               {t.browseByJuz}
             </Text>
           </TouchableOpacity>
         </View>
 
         <View style={styles.searchContainer}>
-          <View style={[styles.searchWrapper, isDark && styles.darkCard]}>
+          <View style={styles.searchWrapper}>
             <TextInput
-              style={[styles.searchInput, isDark && styles.darkText]}
+              style={styles.searchInput}
               placeholder={t.searchPlaceholder}
-              placeholderTextColor="#aaa"
+              placeholderTextColor="rgba(255,255,255,0.35)"
               value={searchQuery}
               onChangeText={setSearchQuery}
               autoCapitalize="none"
@@ -245,7 +244,7 @@ export default function MemorizeUnderstandScreen({ navigation }: any) {
             {searchQuery.length > 0 && (
               <TouchableWithoutFeedback onPress={clearSearch}>
                 <View style={styles.clearButton}>
-                  <Text style={[styles.clearIcon, isDark && styles.darkMutedText]}>×</Text>
+                  <Text style={styles.clearIcon}>×</Text>
                 </View>
               </TouchableWithoutFeedback>
             )}
@@ -254,7 +253,7 @@ export default function MemorizeUnderstandScreen({ navigation }: any) {
 
         {isSearchMode && !isSearching && aiResults.length > 0 && (
           <View style={styles.searchMetaRow}>
-            <Text style={[styles.searchMetaText, isDark && styles.darkMutedText]}>
+            <Text style={styles.searchMetaText}>
               {aiResults.length} {t.versesFound}
             </Text>
           </View>
@@ -263,7 +262,7 @@ export default function MemorizeUnderstandScreen({ navigation }: any) {
         {isSearching && (
           <View style={styles.loadingRow}>
             <ActivityIndicator size="small" color={UI_COLORS.primary} />
-            <Text style={[styles.loadingRowText, isDark && styles.darkMutedText]}>
+            <Text style={styles.loadingRowText}>
               {t.aiSearching}
             </Text>
           </View>
@@ -280,7 +279,7 @@ export default function MemorizeUnderstandScreen({ navigation }: any) {
             showsVerticalScrollIndicator={false}
             ListEmptyComponent={
               !isSearching ? (
-                <Text style={[styles.emptyText, isDark && styles.darkMutedText]}>
+                <Text style={styles.emptyText}>
                   {searchQuery.trim().length < 2
                     ? t.minCharsSearch
                     : t.noVersesFound}
@@ -307,14 +306,14 @@ export default function MemorizeUnderstandScreen({ navigation }: any) {
                 : '';
               return (
                 <TouchableOpacity
-                  style={[styles.juzCard, isDark && styles.darkCard]}
+                  style={styles.juzCard}
                   onPress={() => firstSurah && navigateToSurah(firstSurah, firstAyah)}
                 >
                   <View style={styles.juzHeader}>
-                    <Text style={[styles.juzNumber, isDark && styles.darkText]}>{t.juz} {juz.juz_number}</Text>
-                    <Text style={[styles.versesCount, isDark && styles.darkMutedText]}>{juz.verses_count} {t.verses}</Text>
+                    <Text style={styles.juzNumber}>{t.juz} {juz.juz_number}</Text>
+                    <Text style={styles.versesCount}>{juz.verses_count} {t.verses}</Text>
                   </View>
-                  <Text style={[styles.juzRange, isDark && styles.darkMutedText]}>{rangeText}</Text>
+                  <Text style={styles.juzRange}>{rangeText}</Text>
                 </TouchableOpacity>
               );
             }}
@@ -332,7 +331,7 @@ export default function MemorizeUnderstandScreen({ navigation }: any) {
               searchHistory.length > 0 ? (
                 <View style={styles.historySection}>
                   <View style={styles.historyHeader}>
-                    <Text style={[styles.historyTitle, isDark && styles.darkText]}>{t.recentSearches}</Text>
+                    <Text style={styles.historyTitle}>{t.recentSearches}</Text>
                     <TouchableOpacity onPress={() => clearSearchHistory().then(() => setSearchHistory([]))}>
                       <Text style={styles.historyClear}>{t.clearHistory}</Text>
                     </TouchableOpacity>
@@ -341,10 +340,10 @@ export default function MemorizeUnderstandScreen({ navigation }: any) {
                     {searchHistory.map((item, idx) => (
                       <TouchableOpacity
                         key={`${item.query}-${idx}`}
-                        style={[styles.historyChip, isDark && styles.darkCard]}
+                        style={styles.historyChip}
                         onPress={() => setSearchQuery(item.query)}
                       >
-                        <Text style={[styles.historyChipText, isDark && styles.darkText]}>{item.query}</Text>
+                        <Text style={styles.historyChipText}>{item.query}</Text>
                       </TouchableOpacity>
                     ))}
                   </View>
@@ -370,10 +369,10 @@ const styles = StyleSheet.create({
   searchWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.65)',
+    backgroundColor: 'rgba(255,255,255,0.08)',
     borderRadius: UI_RADII.md,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.45)',
+    borderColor: 'rgba(255,255,255,0.15)',
     ...UI_SHADOWS.input,
   },
   searchInput: {
@@ -434,7 +433,7 @@ const styles = StyleSheet.create({
   },
   list: { paddingHorizontal: 16, paddingBottom: 22 },
   surahCard: {
-    backgroundColor: 'rgba(255, 255, 255, 0.65)',
+    backgroundColor: 'rgba(255,255,255,0.08)',
     padding: 20,
     marginVertical: 8,
     borderRadius: UI_RADII.lg,
@@ -442,18 +441,18 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.45)',
+    borderColor: 'rgba(255,255,255,0.15)',
     borderLeftWidth: 5,
     borderLeftColor: UI_COLORS.primary,
     ...UI_SHADOWS.card,
   },
   searchResultCard: {
-    backgroundColor: 'rgba(255, 255, 255, 0.65)',
+    backgroundColor: 'rgba(255,255,255,0.08)',
     padding: 16,
     marginVertical: 6,
     borderRadius: UI_RADII.lg,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.45)',
+    borderColor: 'rgba(255,255,255,0.15)',
     ...UI_SHADOWS.card,
   },
   darkCard: { backgroundColor: 'rgba(26, 38, 52, 0.75)', borderColor: 'rgba(255, 255, 255, 0.08)' },
@@ -531,7 +530,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     borderRadius: UI_RADII.md,
     overflow: 'hidden',
-    backgroundColor: 'rgba(255, 255, 255, 0.35)',
+    backgroundColor: 'rgba(255,255,255,0.08)',
   },
   tabButton: {
     flex: 1,
@@ -575,24 +574,24 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   historyChip: {
-    backgroundColor: 'rgba(255, 255, 255, 0.65)',
+    backgroundColor: 'rgba(255,255,255,0.08)',
     paddingHorizontal: 14,
     paddingVertical: 8,
     borderRadius: UI_RADII.xl,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.45)',
+    borderColor: 'rgba(255,255,255,0.15)',
   },
   historyChipText: {
     fontSize: 13,
     color: UI_COLORS.text,
   },
   juzCard: {
-    backgroundColor: 'rgba(255, 255, 255, 0.65)',
+    backgroundColor: 'rgba(255,255,255,0.08)',
     padding: 20,
     marginVertical: 8,
     borderRadius: UI_RADII.lg,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.45)',
+    borderColor: 'rgba(255,255,255,0.15)',
     borderLeftWidth: 5,
     borderLeftColor: UI_COLORS.accent,
     ...UI_SHADOWS.card,

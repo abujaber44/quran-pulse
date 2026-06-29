@@ -349,7 +349,7 @@ export default function AthkarScreen() {
   };
 
   const renderAsmaItem = ({ item }: { item: AllahName }) => (
-    <View style={[styles.card, isDark && styles.darkCard]}>
+    <View style={[styles.card]}>
       <View style={styles.numberCircle}>
         <Text style={styles.number}>{item.number}</Text>
       </View>
@@ -364,10 +364,10 @@ export default function AthkarScreen() {
         >
           {item.name}
         </Text>
-        <Text style={[styles.transliteration, isDark && styles.darkText]}>
+        <Text style={[styles.transliteration]}>
           {item.transliteration}
         </Text>
-        <Text style={[styles.meaning, isDark && styles.darkText]}>
+        <Text style={[styles.meaning]}>
           {item.en.meaning}
         </Text>
       </View>
@@ -375,7 +375,7 @@ export default function AthkarScreen() {
   );
 
   const renderAthkarItem = ({ item }: { item: AthkarItem }) => (
-    <View style={[styles.athkarCard, isDark && styles.darkCard]}>
+    <View style={[styles.athkarCard]}>
       <View style={styles.athkarHeader}>
         <Text style={styles.athkarTitle}>{item.title}</Text>
         <View style={styles.athkarHeaderRight}>
@@ -430,7 +430,6 @@ export default function AthkarScreen() {
           styles.athkarText,
           { fontSize: athkarArabicFontSize, lineHeight: Math.round(athkarArabicFontSize * 1.45) },
           arabicFontFamily ? { fontFamily: arabicFontFamily } : null,
-          isDark && styles.darkText,
         ]}
       >
         {item.text}
@@ -438,7 +437,7 @@ export default function AthkarScreen() {
       {expandedFadlId === item.id ? (
         <View style={styles.fadlBox}>
           <Text style={styles.fadlTitle}>{t.fadl}</Text>
-          <Text style={[styles.fadlText, isDark && styles.darkText]}>
+          <Text style={[styles.fadlText]}>
             {item.fadl && item.fadl.trim().length > 0
               ? item.fadl
               : item.hadithText && item.hadithText.trim().length > 0
@@ -457,7 +456,7 @@ export default function AthkarScreen() {
           {aiExplainLoading ? (
             <ActivityIndicator size="small" color={UI_COLORS.accent} style={{ marginTop: 8 }} />
           ) : (
-            <Text style={[styles.aiExplainContent, isDark && styles.darkText]}>{aiExplainText}</Text>
+            <Text style={[styles.aiExplainContent]}>{aiExplainText}</Text>
           )}
         </View>
       ) : null}
@@ -512,7 +511,7 @@ export default function AthkarScreen() {
 
   const renderTasbeehSection = () => (
     <ScrollView contentContainerStyle={styles.tasbeehScroll} showsVerticalScrollIndicator={false}>
-      <View style={[styles.tasbeehCard, isDark && styles.darkCard]}>
+      <View style={[styles.tasbeehCard]}>
         <View style={styles.tasbeehContent}>
           <Text style={styles.tasbeehTitle}>{t.tasbeeh33}</Text>
 
@@ -563,7 +562,6 @@ export default function AthkarScreen() {
                 key={`bead-${index}`}
                 style={[
                   styles.bead,
-                  isDark && styles.darkBead,
                   isActiveBead && styles.activeBead,
                 ]}
               />
@@ -577,11 +575,11 @@ export default function AthkarScreen() {
   const renderAsmaSection = () => (
     <>
       <View style={styles.searchContainer}>
-        <View style={[styles.searchWrapper, isDark && styles.darkSearchWrapper]}>
+        <View style={[styles.searchWrapper]}>
           <TextInput
-            style={[styles.searchInput, isDark && styles.darkText]}
+            style={[styles.searchInput]}
             placeholder={t.searchNames}
-            placeholderTextColor="#aaa"
+            placeholderTextColor="rgba(255,255,255,0.35)"
             value={searchQuery}
             onChangeText={setSearchQuery}
             autoCapitalize="none"
@@ -621,7 +619,7 @@ export default function AthkarScreen() {
 
   return (
     <GlassBackground isDark={isDark}>
-    <View style={[styles.container, isDark && styles.darkContainer]}>
+    <View style={[styles.container]}>
       <ScreenIntroTile
         title={t.athkarScreenTitle}
         description={t.athkarScreenDesc}
@@ -678,9 +676,9 @@ const styles = StyleSheet.create({
     marginHorizontal: 16,
     marginBottom: 10,
     borderRadius: UI_RADII.lg,
-    backgroundColor: 'rgba(255, 255, 255, 0.65)',
+    backgroundColor: 'rgba(255,255,255,0.08)',
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.45)',
+    borderColor: 'rgba(255,255,255,0.15)',
     overflow: 'hidden',
   },
   featureTab: {
@@ -694,7 +692,7 @@ const styles = StyleSheet.create({
   featureTabText: {
     fontSize: 13,
     fontWeight: '700',
-    color: UI_COLORS.primaryDeep,
+    color: 'rgba(255,255,255,0.6)',
   },
   featureTabTextActive: {
     color: UI_COLORS.white,
@@ -704,17 +702,17 @@ const styles = StyleSheet.create({
     marginHorizontal: 16,
     marginBottom: 10,
     borderRadius: UI_RADII.lg,
-    backgroundColor: 'rgba(255, 255, 255, 0.65)',
+    backgroundColor: 'rgba(255,255,255,0.08)',
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.45)',
+    borderColor: 'rgba(255,255,255,0.15)',
     overflow: 'hidden',
   },
   athkarMetaRow: {
     marginHorizontal: 16,
     marginBottom: 8,
-    backgroundColor: 'rgba(255, 255, 255, 0.65)',
+    backgroundColor: 'rgba(255,255,255,0.08)',
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.45)',
+    borderColor: 'rgba(255,255,255,0.15)',
     borderRadius: UI_RADII.md,
     paddingHorizontal: 10,
     paddingVertical: 8,
@@ -740,7 +738,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   periodTabActive: {
-    backgroundColor: UI_COLORS.primarySoft,
+    backgroundColor: 'rgba(31,157,85,0.2)',
   },
   periodTabText: {
     fontSize: 13,
@@ -748,17 +746,17 @@ const styles = StyleSheet.create({
     color: UI_COLORS.textMuted,
   },
   periodTabTextActive: {
-    color: UI_COLORS.primaryDeep,
+    color: '#5ddb92',
   },
   list: {
     paddingHorizontal: 16,
     paddingBottom: 24,
   },
   athkarCard: {
-    backgroundColor: 'rgba(255, 255, 255, 0.65)',
+    backgroundColor: 'rgba(255,255,255,0.08)',
     borderRadius: UI_RADII.lg,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.45)',
+    borderColor: 'rgba(255,255,255,0.15)',
     padding: 14,
     marginBottom: 10,
     ...UI_SHADOWS.card,
@@ -776,28 +774,28 @@ const styles = StyleSheet.create({
   },
   athkarTitle: {
     fontSize: 14,
-    color: UI_COLORS.primaryDeep,
+    color: '#5ddb92',
     fontWeight: '700',
     flex: 1,
     marginRight: 10,
   },
   repeatBadge: {
-    backgroundColor: '#edf7f1',
+    backgroundColor: 'rgba(31,157,85,0.2)',
     borderWidth: 1,
-    borderColor: '#cde9d5',
+    borderColor: 'rgba(31,157,85,0.3)',
     borderRadius: 999,
     paddingHorizontal: 8,
     paddingVertical: 4,
   },
   repeatBadgeText: {
     fontSize: 12,
-    color: UI_COLORS.primaryDeep,
+    color: '#5ddb92',
     fontWeight: '700',
   },
   fadlButton: {
     borderWidth: 1,
-    borderColor: '#cde9d5',
-    backgroundColor: '#f7fbf9',
+    borderColor: 'rgba(255,255,255,0.15)',
+    backgroundColor: 'rgba(255,255,255,0.06)',
     borderRadius: 999,
     paddingHorizontal: 8,
     paddingVertical: 4,
@@ -810,7 +808,7 @@ const styles = StyleSheet.create({
   aiExplainButton: {
     borderWidth: 1,
     borderColor: UI_COLORS.accent,
-    backgroundColor: '#f0f7ff',
+    backgroundColor: 'rgba(45,127,184,0.15)',
     borderRadius: 999,
     paddingHorizontal: 8,
     paddingVertical: 4,
@@ -822,7 +820,7 @@ const styles = StyleSheet.create({
   },
   aiExplainBox: {
     marginTop: 10,
-    backgroundColor: '#f0f7ff',
+    backgroundColor: 'rgba(45,127,184,0.15)',
     borderWidth: 1,
     borderColor: UI_COLORS.accent,
     borderRadius: UI_RADII.md,
@@ -842,16 +840,16 @@ const styles = StyleSheet.create({
   },
   fadlBox: {
     marginTop: 10,
-    backgroundColor: '#eef7f1',
+    backgroundColor: 'rgba(31,157,85,0.15)',
     borderWidth: 1,
-    borderColor: '#cde9d5',
+    borderColor: 'rgba(31,157,85,0.3)',
     borderRadius: UI_RADII.md,
     paddingHorizontal: 10,
     paddingVertical: 8,
   },
   fadlTitle: {
     fontSize: 12,
-    color: UI_COLORS.primaryDeep,
+    color: '#5ddb92',
     fontWeight: '700',
     marginBottom: 6,
   },
@@ -880,9 +878,9 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     padding: 14,
     borderRadius: UI_RADII.lg,
-    backgroundColor: 'rgba(255, 255, 255, 0.65)',
+    backgroundColor: 'rgba(255,255,255,0.08)',
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.45)',
+    borderColor: 'rgba(255,255,255,0.15)',
     flexDirection: 'row',
     ...UI_SHADOWS.card,
   },
@@ -892,7 +890,7 @@ const styles = StyleSheet.create({
   tasbeehTitle: {
     fontSize: 16,
     fontWeight: '700',
-    color: UI_COLORS.primaryDeep,
+    color: '#5ddb92',
     marginBottom: 8,
   },
   counterRow: {
@@ -903,9 +901,9 @@ const styles = StyleSheet.create({
   counterBlock: {
     flex: 1,
     alignItems: 'center',
-    backgroundColor: '#eef7f1',
+    backgroundColor: 'rgba(31,157,85,0.15)',
     borderWidth: 1,
-    borderColor: '#cde9d5',
+    borderColor: 'rgba(31,157,85,0.3)',
     borderRadius: UI_RADII.md,
     paddingVertical: 6,
   },
@@ -921,9 +919,9 @@ const styles = StyleSheet.create({
     color: UI_COLORS.textMuted,
   },
   wordCard: {
-    backgroundColor: '#edf7f5',
+    backgroundColor: 'rgba(31,157,85,0.12)',
     borderWidth: 1,
-    borderColor: '#d3ece6',
+    borderColor: 'rgba(31,157,85,0.25)',
     borderRadius: UI_RADII.md,
     paddingVertical: 12,
     paddingHorizontal: 12,
@@ -967,9 +965,9 @@ const styles = StyleSheet.create({
     height: 24,
     borderRadius: 12,
     marginVertical: 4,
-    backgroundColor: '#9fe2c2',
+    backgroundColor: 'rgba(31,157,85,0.3)',
     borderWidth: 1,
-    borderColor: '#76cfaa',
+    borderColor: 'rgba(31,157,85,0.5)',
   },
   darkBead: {
     backgroundColor: '#35614d',
@@ -991,10 +989,10 @@ const styles = StyleSheet.create({
   searchWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.65)',
+    backgroundColor: 'rgba(255,255,255,0.08)',
     borderRadius: UI_RADII.md,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.45)',
+    borderColor: 'rgba(255,255,255,0.15)',
     ...UI_SHADOWS.input,
   },
   searchInput: {
@@ -1017,19 +1015,19 @@ const styles = StyleSheet.create({
     paddingVertical: 20,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.65)',
+    backgroundColor: 'rgba(255,255,255,0.08)',
     borderRadius: UI_RADII.lg,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.45)',
+    borderColor: 'rgba(255,255,255,0.15)',
   },
   card: {
     flexDirection: 'row',
-    backgroundColor: 'rgba(255, 255, 255, 0.65)',
+    backgroundColor: 'rgba(255,255,255,0.08)',
     borderRadius: UI_RADII.lg,
     padding: 18,
     marginBottom: 10,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.45)',
+    borderColor: 'rgba(255,255,255,0.15)',
     ...UI_SHADOWS.card,
   },
   darkCard: {

@@ -3,7 +3,38 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 
 const client = new Anthropic();
 
-const SYSTEM_PROMPT = `You are a Quran memorization coach. Given a list of verses the user is memorizing and their quiz history, generate 3-5 quiz questions to test their knowledge.
+function getSystemPrompt(lang: string) {
+  if (lang === 'ar') {
+    return `أنت مدرب حفظ القرآن الكريم. بناءً على قائمة الآيات التي يحفظها المستخدم وسجل اختباراته، أنشئ ٣-٥ أسئلة اختبار.
+
+قواعد صارمة:
+- جميع النصوص يجب أن تكون بالعربية فقط — لا تستخدم أي كلمة إنجليزية أبداً
+- أنشئ الأسئلة فقط من الآيات المعطاة — لا تشر إلى آيات غير موجودة في القائمة
+- ركّز على الآيات التي أخطأ فيها المستخدم سابقاً
+- أعد مصفوفة JSON فقط (بدون markdown أو code blocks)
+- نوّع بين أنواع الأسئلة
+- استخدم أسماء السور بالعربية (مثل: "البقرة"، "آل عمران")
+- اكتب السؤال في prompt بالعربية الكاملة
+
+أنواع الأسئلة:
+1. "identify_surah" — اعرض جزءاً من آية واسأل من أي سورة (٤ خيارات)
+2. "next_ayah" — اعرض آية واسأل ماذا يأتي بعدها (إن وُجدت آيات متتالية)
+3. "fill_blank" — اعرض آية مع كلمة محذوفة "___" وأعطِ ٤ خيارات
+
+كل سؤال يجب أن يحتوي:
+- type: "identify_surah" | "next_ayah" | "fill_blank"
+- prompt: نص السؤال بالعربية
+- options: مصفوفة من ٤ نصوص بالعربية
+- correctAnswer: الخيار الصحيح (يجب أن يطابق أحد الخيارات تماماً)
+- verseKey: مفتاح الآية (مثل "2:255")
+- surahId: رقم السورة
+- ayahNumber: رقم الآية
+
+مثال:
+[{"type":"identify_surah","prompt":"في أي سورة وردت هذه الآية: 'اللَّهُ لَا إِلَٰهَ إِلَّا هُوَ الْحَيُّ الْقَيُّومُ'؟","options":["البقرة","آل عمران","النساء","المائدة"],"correctAnswer":"البقرة","verseKey":"2:255","surahId":2,"ayahNumber":255}]`;
+  }
+
+  return `You are a Quran memorization coach. Given a list of verses the user is memorizing and their quiz history, generate 3-5 quiz questions to test their knowledge.
 
 RULES:
 - Only create questions from the provided verses — never reference verses not in the list
@@ -27,6 +58,7 @@ Each question must have:
 
 Example:
 [{"type":"identify_surah","prompt":"Which surah contains: 'Allah - there is no deity except Him, the Ever-Living...'?","options":["Al-Baqarah","Al-Imran","An-Nisa","Al-Maidah"],"correctAnswer":"Al-Baqarah","verseKey":"2:255","surahId":2,"ayahNumber":255}]`;
+}
 
 interface BookmarkInput {
   surahId: number;
@@ -65,7 +97,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(429).json({ error: 'Too many requests. Please try again later.' });
   }
 
-  const { bookmarks, history } = req.body as { bookmarks?: BookmarkInput[]; history?: HistoryInput[] };
+  const { bookmarks, history, lang } = req.body as { bookmarks?: BookmarkInput[]; history?: HistoryInput[]; lang?: string };
 
   if (!bookmarks || bookmarks.length < 1) {
     return res.status(400).json({ error: 'At least 1 memorized ayah is needed for a quiz.' });
@@ -89,11 +121,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const response = await client.messages.create({
       model: 'claude-haiku-4-5',
       max_tokens: 2048,
-      system: SYSTEM_PROMPT,
+      system: getSystemPrompt(lang ?? 'en'),
       messages: [
         {
           role: 'user',
-          content: `Here are the verses I'm memorizing:\n${versesContext}${historyContext}\n\nGenerate a quiz for me.`,
+          content: lang === 'ar'
+            ? `هذه الآيات التي أحفظها:\n${versesContext}${historyContext}\n\nأنشئ اختباراً لي باللغة العربية.`
+            : `Here are the verses I'm memorizing:\n${versesContext}${historyContext}\n\nGenerate a quiz for me.`,
         },
       ],
     });

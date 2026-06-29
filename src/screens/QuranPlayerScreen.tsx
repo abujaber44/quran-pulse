@@ -305,20 +305,18 @@ export default function QuranPlayerScreen() {
     <TouchableOpacity
       style={[
         styles.surahItem,
-        isDark && styles.darkSurahItem,
         selectedSurah?.id === item.id && styles.selectedSurahItem,
       ]}
       onPress={() => setSelectedSurah(item)}
     >
       <Text style={styles.surahNumber}>{item.id}</Text>
       <View>
-        <Text style={[styles.surahEnglish, isDark && styles.darkText]}>{item.name_simple}</Text>
+        <Text style={styles.surahEnglish}>{item.name_simple}</Text>
         <Text
           style={[
             styles.surahArabic,
             { fontSize: arabicNameFontSize },
             arabicFontFamily ? { fontFamily: arabicFontFamily } : null,
-            isDark && styles.darkText,
           ]}
         >
           {item.name_arabic}
@@ -338,22 +336,22 @@ export default function QuranPlayerScreen() {
       />
 
       <TouchableOpacity
-        style={[styles.reciterSelector, isDark && styles.darkReciterSelector]}
+        style={styles.reciterSelector}
         onPress={() => setReciterModalVisible(true)}
       >
-        <Text style={[styles.reciterLabel, isDark && styles.darkText]}>{t.reciter}</Text>
-        <Text style={[styles.selectedReciterText, isDark && styles.darkText]}>
+        <Text style={styles.reciterLabel}>{t.reciter}</Text>
+        <Text style={styles.selectedReciterText}>
           {selectedReciter.name}
         </Text>
       </TouchableOpacity>
 
       {/* Search Bar */}
       <View style={styles.searchContainer}>
-        <View style={[styles.searchWrapper, isDark && styles.darkSearchWrapper]}>
+        <View style={styles.searchWrapper}>
           <TextInput
-            style={[styles.searchInput, isDark && styles.darkText]}
+            style={styles.searchInput}
             placeholder={t.searchSurahs}
-            placeholderTextColor="#aaa"
+            placeholderTextColor="rgba(255,255,255,0.35)"
             value={searchQuery}
             onChangeText={setSearchQuery}
             autoCapitalize="none"
@@ -362,7 +360,7 @@ export default function QuranPlayerScreen() {
           {searchQuery.length > 0 && (
             <TouchableWithoutFeedback onPress={clearSearch}>
               <View style={styles.clearButton}>
-                <Text style={[styles.clearIcon, isDark && styles.darkText]}>×</Text>
+                <Text style={styles.clearIcon}>×</Text>
               </View>
             </TouchableWithoutFeedback>
           )}
@@ -431,9 +429,12 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   reciterSelector: {
     padding: 16,
-    backgroundColor: 'rgba(255, 255, 255, 0.65)',
-    borderBottomWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.45)',
+    marginHorizontal: 16,
+    marginBottom: 10,
+    backgroundColor: 'rgba(255,255,255,0.08)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.15)',
+    borderRadius: UI_RADII.md,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
@@ -448,10 +449,10 @@ const styles = StyleSheet.create({
   searchWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.65)',
+    backgroundColor: 'rgba(255,255,255,0.08)',
     borderRadius: UI_RADII.md,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.45)',
+    borderColor: 'rgba(255,255,255,0.15)',
     ...UI_SHADOWS.input,
   },
   darkSearchWrapper: {
@@ -471,12 +472,12 @@ const styles = StyleSheet.create({
   surahItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.65)',
+    backgroundColor: 'rgba(255,255,255,0.08)',
     padding: 16,
     borderRadius: UI_RADII.md,
     marginBottom: 10,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.45)',
+    borderColor: 'rgba(255,255,255,0.15)',
     borderLeftWidth: 5,
     borderLeftColor: UI_COLORS.accent,
     ...UI_SHADOWS.card,
@@ -485,13 +486,13 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(26, 38, 52, 0.75)',
     borderColor: 'rgba(255, 255, 255, 0.08)',
   },
-  selectedSurahItem: { backgroundColor: UI_COLORS.primarySoft, borderColor: '#bde2c8' },
+  selectedSurahItem: { backgroundColor: 'rgba(31,157,85,0.2)', borderColor: 'rgba(31,157,85,0.4)' },
   surahNumber: { fontSize: 20, fontWeight: 'bold', color: UI_COLORS.accent, width: 50, textAlign: 'center' },
   surahEnglish: { fontSize: 18, color: UI_COLORS.text, fontWeight: '600' },
   surahArabic: { fontSize: 22, color: UI_COLORS.text, marginTop: 4 },
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'center', alignItems: 'center' },
-  modal: { backgroundColor: UI_COLORS.surface, padding: 20, borderRadius: UI_RADII.md, width: '90%', maxHeight: '80%' },
-  reciterModal: { backgroundColor: UI_COLORS.surface, padding: 20, borderRadius: UI_RADII.md, width: '90%', maxHeight: '80%' },
+  modal: { backgroundColor: 'rgba(23,56,77,0.95)', padding: 20, borderRadius: UI_RADII.md, width: '90%', maxHeight: '80%' },
+  reciterModal: { backgroundColor: 'rgba(23,56,77,0.95)', padding: 20, borderRadius: UI_RADII.md, width: '90%', maxHeight: '80%' },
   modalTitle: { fontSize: 20, fontWeight: 'bold', textAlign: 'center', marginBottom: 16, color: UI_COLORS.text },
   reciterModalItem: { padding: 14, borderBottomWidth: 1, borderColor: UI_COLORS.border },
   reciterModalText: { fontSize: 16, color: UI_COLORS.text },

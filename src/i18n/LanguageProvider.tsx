@@ -9,10 +9,13 @@ export default function LanguageProvider({ children }: { children: React.ReactNo
   const [lang, setLang] = useState<AppLanguage>('en');
 
   useEffect(() => {
+    if (I18nManager.isRTL) {
+      I18nManager.allowRTL(false);
+      I18nManager.forceRTL(false);
+    }
     AsyncStorage.getItem(STORAGE_KEY).then((saved) => {
       if (saved === 'ar' || saved === 'en') {
         setLang(saved);
-        I18nManager.forceRTL(saved === 'ar');
       }
     });
   }, []);
@@ -20,7 +23,6 @@ export default function LanguageProvider({ children }: { children: React.ReactNo
   const setLanguage = useCallback(async (newLang: AppLanguage) => {
     setLang(newLang);
     await AsyncStorage.setItem(STORAGE_KEY, newLang);
-    I18nManager.forceRTL(newLang === 'ar');
   }, []);
 
   const value = useMemo(() => ({

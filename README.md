@@ -8,9 +8,11 @@ Quran Pulse is a peaceful, modern companion app to help you connect deeply with 
 
 ### ✨ Features
 
-- **Complete Quran** with beautiful Uthmani script
+- **Complete Quran** with beautiful Uthmani script and multiple Arabic font choices (Scheherazade New default, Amiri Quran, Uthmanic Hafs, Noto Naskh, and more)
 - **Clear English translation** (Abdel Haleem)
 - **On-demand Tafseer** (التفسير الميسر – simple Arabic explanation)
+- **Tajweed color-coded display** with 16 rules, tappable for instant explanations (no AI tokens — all built-in with bilingual descriptions and examples)
+- **Word-by-word breakdown** for any ayah with translation and transliteration
 - **High-quality audio recitations** with multiple renowned reciters:
   - Mishary Rashid Alafasy
   - Mahmoud Khalil Al-Husary
@@ -19,9 +21,12 @@ Quran Pulse is a peaceful, modern companion app to help you connect deeply with 
 - **Auto-scroll** during playback
 - **Repeat mode** (single ayah or custom range) for memorization
 - **Memorization mode** support
-- **Bookmarks** – save and revisit your favorite ayahs anytime
+- **Tap-to-reveal ayah actions** — tap any ayah to access Translation, Tafseer, Word-by-word, Tajweed, Ask AI, and Share
+- **Bookmarks** – save and revisit your favorite ayahs with green flash highlight on navigation
 - **Smart bookmark folders** – tag ayahs as **Memorize** or **Read/Recite** and filter quickly with chips
-- **Clean, spiritual UI** with focus on Arabic typography
+- **Daily personalized ayah** on the landing screen — AI-selected based on your reading history, cached per day
+- **Bilingual UI** — full Arabic and English interface with language toggle in Settings
+- **Dark emerald theme** — consistent glassmorphic design across all screens with translucent cards and gradient backgrounds
 
 ### 🤖 AI-Powered Features
 
@@ -29,12 +34,12 @@ Quran Pulse integrates AI (Claude by Anthropic) to provide intelligent, bilingua
 
 - **Ask AI about any Ayah** – tap "Ask AI ✦" on any verse in the Surah reader to get tafsir-grounded explanations, ask follow-up questions, and explore context, grammar, and related verses
 - **AI Semantic Search** – search the Quran by concept (e.g. "patience", "gratitude", "story of Moses") instead of exact text matching. AI finds the most relevant verses and explains why each is relevant
-- **AI Memorization Coach** – generates personalized quizzes from your bookmarked "Memorize" ayahs. Tracks your quiz history and weights questions toward verses you've gotten wrong
+- **AI Memorization Coach** – generates personalized quizzes from your bookmarked "Memorize" ayahs in the app's current language (Arabic or English). Tracks your quiz history and weights questions toward verses you've gotten wrong
 - **AI Miracle Insights** – tap "Ask AI ✦" on any Quran miracle card for a deep scholarly explanation with follow-up questions. References scientific evidence and classical/modern scholarship
 - **AI Hadith Reflection** – tap "✦ AI Reflection" on the daily hadith for a personal reflection connecting the hadith to daily life with a practical action to take
 - **AI Athkar Explanation** – tap "AI ✦" on any dhikr to get the meaning of the Arabic words, spiritual significance, and when/why to recite it
 
-All AI responses are bilingual — English first, then Arabic — so both audiences benefit.
+All AI responses follow the app's selected language. AI responses for search and insights are cached locally for 7 days to save tokens and provide instant results on repeat queries.
 
 ### 📱 Screenshots
 <!-- Your screenshots code here -->
@@ -168,21 +173,29 @@ Expected Athkar JSON shape:
 ```
 
 ### 🎨 Design Philosophy
-- Inspired by tranquility, light, and closeness to Allah
-- Calming greens and deep blues with golden accents
-- Amiri Quran font for authentic Arabic beauty
-- Smooth animations and thoughtful, heart-centered UX
+- **Dark emerald glassmorphic theme** — deep gradient backgrounds (`#123b36` → `#17384d` → `#1a4a60`) with translucent cards and subtle borders
+- Consistent design language across all screens — no jarring transitions
+- Scheherazade New font for authentic Quranic Arabic beauty (user-selectable from 8+ fonts)
+- Decorative screen headers with gradient accent lines
+- Platform-specific tajweed rendering (colored text on iOS, colored underlines on Android to preserve Arabic ligatures)
+- Centered layout on landing screen for visual symmetry in both Arabic and English
+- Smooth animations: pulsing daily ayah loader with rotating inspirational messages, green flash on bookmark navigation
+- Thoughtful, heart-centered UX designed for reflection and connection
 
 ### 🛠 Tech Stack
 - React Native + Expo (managed workflow)
 - Context API for state management
-- Expo Notifications for Athan alerts
+- Expo Notifications for Athan alerts and 30-minute pre-prayer countdowns
 - Expo Audio for recitation playback
 - Expo Location for city detection and Qibla compass heading
+- Expo Linear Gradient for background theming
+- AsyncStorage for offline caching (daily ayah, AI responses, settings, reading progress)
 - Aladhan API for prayer times and Islamic calendar
-- Quran.com & open tafseer sources
+- Quran.com API for verses, translations, word-by-word, surah info, and tajweed data
+- Open tafseer sources (Tafsir Muyassar via CDN)
 - **Claude AI (Haiku 4.5)** via Vercel serverless backend for all AI features
 - Vercel serverless functions for secure API proxying (API keys never in the app)
+- i18n system with full Arabic/English support via LanguageContext
 
 ### 🙏 Dua
 May Allah accept this effort as sincere for His sake, make it a means of guidance and closeness to Him for all who use it, and grant us all the ability to live by the Quran. Ameen.

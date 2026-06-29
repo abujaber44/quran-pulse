@@ -263,7 +263,7 @@ const styles = StyleSheet.create({
   },
   suggestionText: {
     fontSize: 14,
-    color: UI_COLORS.accent,
+    color: '#FFFFFF',
     fontWeight: '500',
   },
   messageList: {
@@ -312,7 +312,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'flex-end',
     paddingHorizontal: 12,
-    paddingVertical: 10,
+    paddingTop: 10,
+    paddingBottom: Platform.OS === 'android' ? 32 : 10,
     backgroundColor: UI_COLORS.surface,
     borderTopWidth: 1,
     borderTopColor: UI_COLORS.border,

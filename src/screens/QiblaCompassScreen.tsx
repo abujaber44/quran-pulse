@@ -267,7 +267,7 @@ export default function QiblaCompassScreen({ route }: any) {
 
   return (
     <GlassBackground isDark={isDark}>
-    <SafeAreaView style={[styles.container, isDark && styles.darkBg]} edges={['left', 'right', 'bottom']}>
+    <SafeAreaView style={styles.container} edges={['left', 'right', 'bottom']}>
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         <ScreenIntroTile
           title={t.qiblaCompass}
@@ -276,9 +276,9 @@ export default function QiblaCompassScreen({ route }: any) {
           style={styles.introTile}
         />
 
-        <View style={[styles.summaryCard, isDark && styles.darkCard]}>
-          <Text style={[styles.summaryTitle, isDark && styles.darkText]}>🕋 {city || 'Current City'}</Text>
-          <Text style={[styles.summaryText, isDark && styles.darkMutedText]}>
+        <View style={styles.summaryCard}>
+          <Text style={styles.summaryTitle}>🕋 {city || 'Current City'}</Text>
+          <Text style={styles.summaryText}>
             {distanceToKaabaKm !== null
               ? `${t.distanceToKaaba}: ${distanceToKaabaKm.toFixed(1)} km`
               : 'Distance will appear after coordinates are resolved.'}
@@ -286,7 +286,7 @@ export default function QiblaCompassScreen({ route }: any) {
           {resolvingCoordinates ? (
             <View style={styles.loadingRow}>
               <ActivityIndicator size="small" color={UI_COLORS.primary} />
-              <Text style={[styles.loadingText, isDark && styles.darkMutedText]}>{t.resolvingCoordinates}</Text>
+              <Text style={styles.loadingText}>{t.resolvingCoordinates}</Text>
             </View>
           ) : null}
         </View>
@@ -294,12 +294,11 @@ export default function QiblaCompassScreen({ route }: any) {
         <View
           style={[
             styles.qiblaCard,
-            isDark && styles.darkCard,
-            qiblaFlashOn && (isDark ? styles.qiblaCardFlashDark : styles.qiblaCardFlash),
+            qiblaFlashOn && styles.qiblaCardFlashDark,
           ]}
         >
           <View style={styles.qiblaHeaderRow}>
-            <Text style={[styles.qiblaTitle, isDark && styles.darkText]}>{t.liveCompass}</Text>
+            <Text style={styles.qiblaTitle}>{t.liveCompass}</Text>
             <View style={[styles.qiblaStatusBadge, { backgroundColor: compassQuality.badgeColor }]}>
               <Text style={[styles.qiblaStatusBadgeText, { color: compassQuality.textColor }]}>
                 {compassQuality.label}
@@ -308,15 +307,15 @@ export default function QiblaCompassScreen({ route }: any) {
           </View>
 
           {qiblaBearing === null ? (
-            <Text style={[styles.qiblaHint, isDark && styles.darkText]}>
+            <Text style={styles.qiblaHint}>
               {t.chooseCity}
             </Text>
           ) : (
             <>
               <View style={styles.qiblaCompassWrap}>
                 <Animated.View style={[styles.glowRing, { backgroundColor: glowColor }]} />
-                <View style={[styles.qiblaDial, isDark && styles.darkQiblaDial]}>
-                  <View style={[styles.qiblaOuterRing, isDark && styles.darkQiblaOuterRing]} />
+                <View style={styles.qiblaDial}>
+                  <View style={styles.qiblaOuterRing} />
                   <Animated.View
                     style={[
                       styles.qiblaFaceLayer,
@@ -324,7 +323,7 @@ export default function QiblaCompassScreen({ route }: any) {
                     ]}
                   >
                     <TickMarks />
-                    <View style={[styles.qiblaInnerRing, isDark && styles.darkQiblaInnerRing]} />
+                    <View style={styles.qiblaInnerRing} />
                     <View style={[styles.qiblaCrossLine, styles.qiblaCrossHorizontal]} />
                     <View style={[styles.qiblaCrossLine, styles.qiblaCrossVertical]} />
                     <Text style={[styles.qiblaCardinal, styles.qiblaNorth]}>N</Text>
@@ -359,26 +358,26 @@ export default function QiblaCompassScreen({ route }: any) {
               </View>
 
               <View style={styles.qiblaMetricsRow}>
-                <View style={[styles.qiblaMetricPill, isDark && styles.darkQiblaMetricPill]}>
-                  <Text style={[styles.qiblaMetricLabel, isDark && styles.darkMutedText]}>🧭 {t.qibla}</Text>
-                  <Text style={[styles.qiblaMetricValue, isDark && styles.darkText]}>{Math.round(qiblaBearing)}°</Text>
+                <View style={styles.qiblaMetricPill}>
+                  <Text style={styles.qiblaMetricLabel}>🧭 {t.qibla}</Text>
+                  <Text style={styles.qiblaMetricValue}>{Math.round(qiblaBearing)}°</Text>
                 </View>
-                <View style={[styles.qiblaMetricPill, isDark && styles.darkQiblaMetricPill]}>
-                  <Text style={[styles.qiblaMetricLabel, isDark && styles.darkMutedText]}>📍 {t.heading}</Text>
-                  <Text style={[styles.qiblaMetricValue, isDark && styles.darkText]}>
+                <View style={styles.qiblaMetricPill}>
+                  <Text style={styles.qiblaMetricLabel}>📍 {t.heading}</Text>
+                  <Text style={styles.qiblaMetricValue}>
                     {heading !== null ? `${Math.round(heading)}°` : '--'}
                   </Text>
                 </View>
-                <View style={[styles.qiblaMetricPill, isDark && styles.darkQiblaMetricPill]}>
-                  <Text style={[styles.qiblaMetricLabel, isDark && styles.darkMutedText]}>🕋 {t.distance}</Text>
-                  <Text style={[styles.qiblaMetricValue, isDark && styles.darkText]}>
+                <View style={styles.qiblaMetricPill}>
+                  <Text style={styles.qiblaMetricLabel}>🕋 {t.distance}</Text>
+                  <Text style={styles.qiblaMetricValue}>
                     {distanceToKaabaKm !== null ? `${distanceToKaabaKm.toFixed(0)} km` : '--'}
                   </Text>
                 </View>
               </View>
 
               {compassQuality.needsCalibrationPrompt ? (
-                <Text style={[styles.qiblaCalibration, isDark && styles.darkMutedText]}>{compassQuality.guidance}</Text>
+                <Text style={styles.qiblaCalibration}>{compassQuality.guidance}</Text>
               ) : null}
             </>
           )}
@@ -398,10 +397,10 @@ const styles = StyleSheet.create({
   scrollContent: { padding: 16, paddingBottom: 36 },
   introTile: { width: '100%', marginHorizontal: 0, marginBottom: 12 },
   summaryCard: {
-    backgroundColor: 'rgba(255, 255, 255, 0.65)',
+    backgroundColor: 'rgba(255,255,255,0.08)',
     borderRadius: UI_RADII.lg,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.45)',
+    borderColor: 'rgba(255,255,255,0.15)',
     padding: 16,
     marginBottom: 14,
     ...UI_SHADOWS.card,
@@ -411,10 +410,10 @@ const styles = StyleSheet.create({
   loadingRow: { marginTop: 10, flexDirection: 'row', alignItems: 'center', gap: 8 },
   loadingText: { fontSize: 13, color: UI_COLORS.textMuted },
   qiblaCard: {
-    backgroundColor: 'rgba(255, 255, 255, 0.65)',
+    backgroundColor: 'rgba(255,255,255,0.08)',
     borderRadius: UI_RADII.lg,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.45)',
+    borderColor: 'rgba(255,255,255,0.15)',
     padding: 20,
     marginBottom: 10,
     ...UI_SHADOWS.card,
@@ -444,7 +443,7 @@ const styles = StyleSheet.create({
     borderRadius: COMPASS_RADIUS,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#edf5fb',
+    backgroundColor: 'rgba(255,255,255,0.06)',
     overflow: 'hidden',
   },
   darkQiblaDial: { backgroundColor: '#1a2430' },
@@ -464,7 +463,7 @@ const styles = StyleSheet.create({
     height: COMPASS_SIZE,
     borderRadius: COMPASS_RADIUS,
     borderWidth: 3,
-    borderColor: '#9abdd4',
+    borderColor: 'rgba(255,255,255,0.2)',
   },
   darkQiblaOuterRing: { borderColor: '#415061' },
   qiblaInnerRing: {
@@ -473,10 +472,10 @@ const styles = StyleSheet.create({
     height: COMPASS_SIZE * 0.72,
     borderRadius: (COMPASS_SIZE * 0.72) / 2,
     borderWidth: 1,
-    borderColor: '#c8d9e6',
+    borderColor: 'rgba(255,255,255,0.12)',
   },
   darkQiblaInnerRing: { borderColor: '#354252' },
-  qiblaCrossLine: { position: 'absolute', backgroundColor: '#d5e4ef' },
+  qiblaCrossLine: { position: 'absolute', backgroundColor: 'rgba(255,255,255,0.1)' },
   qiblaCrossHorizontal: { width: COMPASS_SIZE * 0.8, height: 1 },
   qiblaCrossVertical: { width: 1, height: COMPASS_SIZE * 0.8 },
   qiblaCardinal: { position: 'absolute', fontSize: 16, fontWeight: '800', color: UI_COLORS.textMuted },
@@ -488,7 +487,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     fontSize: 11,
     fontWeight: '700',
-    color: '#8aa8c0',
+    color: 'rgba(255,255,255,0.4)',
   },
   qiblaNorthEast: { top: 42, right: 42 },
   qiblaSouthEast: { right: 42, bottom: 42 },
@@ -557,8 +556,8 @@ const styles = StyleSheet.create({
     flex: 1,
     borderRadius: UI_RADII.md,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.45)',
-    backgroundColor: 'rgba(255, 255, 255, 0.65)',
+    borderColor: 'rgba(255,255,255,0.15)',
+    backgroundColor: 'rgba(255,255,255,0.08)',
     paddingVertical: 12,
     paddingHorizontal: 10,
     alignItems: 'center',

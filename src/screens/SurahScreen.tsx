@@ -17,7 +17,6 @@ import { useAudio, useAudioProgress } from '../context/AudioContext';
 import { useSettings } from '../context/SettingsContext';
 import { useThemedAlert } from '../context/ThemedAlertContext';
 import { getGlobalAyahNumber } from '../utils/quranUtils';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getBookmarks, addBookmark, removeBookmark, BookmarkTag } from '../services/bookmarkService';
@@ -97,6 +96,13 @@ const AyahItem = memo(({
   const [loadingWords, setLoadingWords] = useState(false);
   const [showTajweed, setShowTajweed] = useState(false);
 
+  useEffect(() => {
+    if (!isExpanded) {
+      setShowWords(false);
+      setShowTajweed(false);
+    }
+  }, [isExpanded]);
+
   const toggleWordByWord = async () => {
     if (showWords) { setShowWords(false); return; }
     if (words.length > 0) { setShowWords(true); return; }
@@ -117,13 +123,12 @@ const AyahItem = memo(({
       onPress={() => onToggleExpand(ayah.verse_number)}
       style={[
         styles.ayahCard,
-        isDark && styles.darkAyahCard,
         isActiveAyah && styles.playingCard,
         isHighlighted && styles.highlightedCard,
       ]}
     >
       <View style={styles.ayahCardTopRow}>
-        <Text style={[styles.ayahNumberBadge, isDark && styles.darkAyahNumberBadge]}>
+        <Text style={styles.ayahNumberBadge}>
           {ayah.verse_number}
         </Text>
         <View style={styles.topRowIcons}>
@@ -147,7 +152,6 @@ const AyahItem = memo(({
           styles.ayahText,
           { fontSize: arabicFontSize, lineHeight: Math.max(arabicFontSize + 14, Math.round(arabicFontSize * 1.75)) },
           arabicFontFamily ? { fontFamily: arabicFontFamily } : null,
-          isDark && styles.darkText,
         ]}
       >
         {ayah.text_uthmani}
@@ -189,10 +193,10 @@ const AyahItem = memo(({
       {showWords && words.length > 0 && (
         <View style={styles.wordGrid}>
           {words.map((w) => (
-            <View key={w.position} style={[styles.wordCard, isDark && styles.darkWordCard]}>
+            <View key={w.position} style={styles.wordCard}>
               <Text style={[styles.wordArabic, arabicFontFamily ? { fontFamily: arabicFontFamily } : null]}>{w.text_uthmani}</Text>
               <Text style={styles.wordTranslit}>{w.transliteration}</Text>
-              <Text style={[styles.wordMeaning, isDark && styles.darkText]}>{w.translation}</Text>
+              <Text style={styles.wordMeaning}>{w.translation}</Text>
             </View>
           ))}
         </View>
@@ -204,13 +208,13 @@ const AyahItem = memo(({
 
       {expandedTranslation === ayah.verse_number && (
         <View style={styles.expandedContent}>
-          <Text style={[styles.translationText, isDark && styles.darkText]}>{ayah.translation}</Text>
+          <Text style={styles.translationText}>{ayah.translation}</Text>
         </View>
       )}
 
       {expandedTafseer === ayah.verse_number && (
         <View style={styles.expandedContent}>
-          <Text style={[styles.tafseerText, isDark && styles.darkText]}>{currentTafseer}</Text>
+          <Text style={styles.tafseerText}>{currentTafseer}</Text>
         </View>
       )}
     </TouchableOpacity>
@@ -333,6 +337,7 @@ export default function SurahScreen({ route }: any) {
   const [shareAyah, setShareAyah] = useState<{ arabicText: string; translation: string; verseKey: string } | null>(null);
   const [surahInfo, setSurahInfo] = useState<SurahInfo | null>(null);
   const [expandedAyahNum, setExpandedAyahNum] = useState<number | null>(null);
+  const [showSurahDesc, setShowSurahDesc] = useState(true);
   const hasAutoExpandedRef = useRef(false);
 
   useEffect(() => {
@@ -348,20 +353,20 @@ export default function SurahScreen({ route }: any) {
   }, [ayahs.length]);
 
   const toggleExpandAyah = useCallback((ayahNum: number) => {
-    setExpandedAyahNum(prev => prev === ayahNum ? null : ayahNum);
+    setExpandedAyahNum(prev => {
+      if (prev === ayahNum) {
+        setExpandedTranslation(null);
+        setExpandedTafseer(null);
+        return null;
+      }
+      return ayahNum;
+    });
   }, []);
 
   const flatListRef = useRef<FlatList<any>>(null);
   const initialAyahScrollInProgressRef = useRef(false);
 
   const navigation = useNavigation();
-  const handleBackPress = useCallback(() => {
-    if (navigation.canGoBack()) {
-      navigation.goBack();
-      return;
-    }
-    navigation.navigate('MemorizeUnderstand' as never);
-  }, [navigation]);
 
   const {
     playAyah,
@@ -379,7 +384,7 @@ export default function SurahScreen({ route }: any) {
 
   const { settings } = useSettings();
   const { showAlert } = useThemedAlert();
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
 
   useEffect(() => {
     return () => {
@@ -405,7 +410,7 @@ export default function SurahScreen({ route }: any) {
           fetchAyahs(surah.id),
           fetchTranslations(surah.id),
           getBookmarks(),
-          fetchSurahInfo(surah.id),
+          fetchSurahInfo(surah.id, lang),
         ]);
         setSurahInfo(info);
 
@@ -661,7 +666,6 @@ export default function SurahScreen({ route }: any) {
         message: t.chooseBookmarkTag,
         variant: 'info',
         buttons: [
-          { text: t.cancel, role: 'cancel' },
           {
             text: t.memorize,
             onPress: () => {
@@ -674,6 +678,7 @@ export default function SurahScreen({ route }: any) {
               void saveBookmarkWithTag(ayahNum, 'read_recite');
             },
           },
+          { text: t.cancel, role: 'cancel' },
         ],
       });
     }
@@ -788,21 +793,7 @@ export default function SurahScreen({ route }: any) {
 
   return (
     <GlassBackground isDark={isDark}>
-    <SafeAreaView style={[styles.safeArea, isDark && styles.darkSafeArea]}>
-      <View style={[styles.container, isDark && styles.darkContainer]}>
-        {/* Header with Back Button */}
-        <View style={[styles.header, isDark && styles.darkHeader]}>
-          <TouchableOpacity onPress={handleBackPress} style={styles.backBtn}>
-            <Text style={styles.backIcon}>←</Text>
-            <Text style={styles.backLabel}>Back</Text>
-          </TouchableOpacity>
-
-          <View style={styles.titleWrapper}>
-            <Text style={[styles.headerTitle, isDark && styles.darkText]}>Quran Pulse</Text>
-          </View>
-          <View style={styles.headerRightSpacer} />
-        </View>
-
+      <View style={styles.container}>
         {currentAyah?.surah === surah.id ? (
           <SurahPlayerBar
             surahId={surah.id}
@@ -811,18 +802,23 @@ export default function SurahScreen({ route }: any) {
             onPlayAyahByNumber={handlePlayAyah}
           />
         ) : (
-          <ScreenIntroTile
-            title={surah.name_arabic}
-            subtitle={`${surah.name_simple} (${surah.translated_name.name})`}
-            description={t.surahDescription}
-            titleFontFamily={arabicFontFamily}
-            isDark={isDark}
-            style={styles.introTile}
-          />
+          <TouchableOpacity activeOpacity={0.8} onPress={() => setShowSurahDesc(prev => !prev)}>
+            <ScreenIntroTile
+              title={surah.name_arabic}
+              subtitle={showSurahDesc
+                ? (surahInfo?.shortDescription
+                  ? `${surah.name_simple} — ${surahInfo.shortDescription}`
+                  : `${surah.name_simple} (${surah.translated_name.name})`)
+                : undefined}
+              titleFontFamily={arabicFontFamily}
+              isDark={isDark}
+              style={styles.introTile}
+            />
+          </TouchableOpacity>
         )}
 
         {surahInfo && (
-          <View style={[styles.surahInfoRow, isDark && styles.darkSurahInfoRow]}>
+          <View style={styles.surahInfoRow}>
             <View style={styles.surahInfoChip}>
               <Text style={styles.surahInfoIcon}>{surahInfo.revelationPlace === 'makkah' ? '🕋' : '🕌'}</Text>
               <Text style={styles.surahInfoText}>{surahInfo.revelationPlace === 'makkah' ? t.meccan : t.medinan}</Text>
@@ -839,24 +835,24 @@ export default function SurahScreen({ route }: any) {
         )}
 
         {/* Controls Bar */}
-        <View style={[styles.controlsBar, isDark && styles.darkControlsBar]}>
+        <View style={styles.controlsBar}>
           <TouchableOpacity style={styles.controlItem} onPress={() => setReciterModal(true)}>
-            <Text style={[styles.controlLabel, isDark && styles.darkText]}>{t.reciter}</Text>
-            <Text style={[styles.controlValue, isDark && styles.darkText]} numberOfLines={1}>
+            <Text style={styles.controlLabel}>{t.reciter}</Text>
+            <Text style={styles.controlValue} numberOfLines={1}>
               {selectedReciter.name}
             </Text>
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.controlItem} onPress={toggleMemorizationMode}>
-            <Text style={[styles.controlLabel, isDark && styles.darkText]}>{t.memorize}</Text>
-            <Text style={[styles.controlValue, memorizationMode && styles.activeText, isDark && styles.darkText]}>
+            <Text style={styles.controlLabel}>{t.memorize}</Text>
+            <Text style={[styles.controlValue, memorizationMode && styles.activeText]}>
               {memorizationMode ? t.on : t.off}
             </Text>
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.controlItem} onPress={() => setRangeModal(true)}>
-            <Text style={[styles.controlLabel, isDark && styles.darkText]}>{t.repeat}</Text>
-            <Text style={[styles.controlValue, isDark && styles.darkText]}>
+            <Text style={styles.controlLabel}>{t.repeat}</Text>
+            <Text style={styles.controlValue}>
               {repeatMode === 'range' && repeatRange
                 ? `${repeatRange.start}-${repeatRange.end}`
                 : repeatMode === 'none' ? t.noRepeat : repeatMode === 'single' ? t.repeatSingle : t.repeatRange}
@@ -912,7 +908,7 @@ export default function SurahScreen({ route }: any) {
             <View style={styles.modal}>
               <Text style={styles.modalTitle}>Set Repeat Range</Text>
               <View style={styles.rangePicker}>
-                <Text>From Ayah:</Text>
+                <Text style={{ color: '#FFFFFF' }}>From Ayah:</Text>
                 <TouchableOpacity onPress={() => setTempStart(Math.max(1, tempStart - 1))}>
                   <Text style={styles.rangeBtn}>−</Text>
                 </TouchableOpacity>
@@ -922,7 +918,7 @@ export default function SurahScreen({ route }: any) {
                 </TouchableOpacity>
               </View>
               <View style={styles.rangePicker}>
-                <Text>To Ayah:</Text>
+                <Text style={{ color: '#FFFFFF' }}>To Ayah:</Text>
                 <TouchableOpacity onPress={() => setTempEnd(Math.max(tempStart, tempEnd - 1))}>
                   <Text style={styles.rangeBtn}>−</Text>
                 </TouchableOpacity>
@@ -962,7 +958,7 @@ export default function SurahScreen({ route }: any) {
 
         <Modal visible={shareAyah !== null} animationType="slide" transparent onRequestClose={() => setShareAyah(null)}>
           <View style={styles.modalOverlay}>
-            <View style={[styles.shareModal, isDark && styles.darkShareModal]}>
+            <View style={styles.shareModal}>
               {shareAyah && (
                 <ShareAyahCard
                   arabicText={shareAyah.arabicText}
@@ -979,49 +975,20 @@ export default function SurahScreen({ route }: any) {
           </View>
         </Modal>
       </View>
-    </SafeAreaView>
     </GlassBackground>
   );
 }
 
 const styles = StyleSheet.create({
-  safeArea: { flex: 1 },
-  darkSafeArea: {},
   container: { flex: 1 },
-  darkContainer: {},
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.65)',
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    borderBottomWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.45)',
-  },
-  darkHeader: { backgroundColor: 'rgba(26, 38, 52, 0.75)', borderColor: 'rgba(255, 255, 255, 0.08)' },
-  backBtn: {
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: UI_RADII.lg,
-    backgroundColor: '#ecf6ff',
-    borderWidth: 1,
-    borderColor: '#bfd9ec',
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  backIcon: { fontSize: 20, color: UI_COLORS.accent, marginRight: 4, fontWeight: '700' },
-  backLabel: { fontSize: 14, color: UI_COLORS.accent, fontWeight: '700' },
-  titleWrapper: { flex: 1, alignItems: 'center' },
-  headerTitle: { fontSize: 18, fontWeight: '700', color: UI_COLORS.text },
-  headerRightSpacer: { width: 96 },
   introTile: { marginBottom: 8 },
   controlsBar: {
     flexDirection: 'row',
-    backgroundColor: 'rgba(255, 255, 255, 0.65)',
+    backgroundColor: 'rgba(255,255,255,0.08)',
     paddingVertical: 4,
     paddingHorizontal: 6,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.45)',
+    borderColor: 'rgba(255,255,255,0.15)',
     justifyContent: 'space-between',
     borderRadius: UI_RADII.lg,
     marginHorizontal: 16,
@@ -1037,18 +1004,18 @@ const styles = StyleSheet.create({
   scrollContent: { paddingHorizontal: 16, paddingTop: 2, paddingBottom: 8 },
   listFooter: { height: 10 },
   ayahCard: {
-    backgroundColor: 'rgba(255, 255, 255, 0.65)',
+    backgroundColor: 'rgba(255,255,255,0.08)',
     paddingHorizontal: 16,
     paddingVertical: 14,
     marginBottom: 14,
     borderRadius: UI_RADII.lg,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.45)',
+    borderColor: 'rgba(255,255,255,0.15)',
     ...UI_SHADOWS.card,
   },
   darkAyahCard: { backgroundColor: 'rgba(26, 38, 52, 0.75)', borderColor: 'rgba(255, 255, 255, 0.08)' },
-  playingCard: { backgroundColor: UI_COLORS.primarySoft, borderLeftWidth: 6, borderLeftColor: UI_COLORS.primary },
-  highlightedCard: { backgroundColor: UI_COLORS.primarySoft, borderColor: UI_COLORS.primary, borderWidth: 2 },
+  playingCard: { backgroundColor: 'rgba(31,157,85,0.2)', borderLeftWidth: 6, borderLeftColor: UI_COLORS.primary },
+  highlightedCard: { backgroundColor: 'rgba(31,157,85,0.2)', borderColor: UI_COLORS.primary, borderWidth: 2 },
   ayahCardTopRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -1058,8 +1025,8 @@ const styles = StyleSheet.create({
   ayahNumberBadge: {
     fontSize: 13,
     fontWeight: '700',
-    color: UI_COLORS.accent,
-    backgroundColor: 'rgba(45,127,184,0.1)',
+    color: '#7BC4F0',
+    backgroundColor: 'rgba(45,127,184,0.25)',
     paddingHorizontal: 10,
     paddingVertical: 3,
     borderRadius: 10,
@@ -1072,18 +1039,20 @@ const styles = StyleSheet.create({
   topRowIcons: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 16,
+    gap: 12,
   },
   topIcon: {
-    fontSize: 20,
-    color: UI_COLORS.textLight,
+    fontSize: 26,
+    color: 'rgba(255,255,255,0.45)',
+    padding: 4,
   },
   topIconActive: {
     color: '#f5a623',
   },
   topIconPlaying: {
-    fontSize: 14,
+    fontSize: 16,
     color: UI_COLORS.primary,
+    padding: 4,
   },
   ayahText: {
     lineHeight: 56,
@@ -1114,10 +1083,10 @@ const styles = StyleSheet.create({
   },
   wordCard: {
     alignItems: 'center',
-    backgroundColor: 'rgba(255,255,255,0.7)',
+    backgroundColor: 'rgba(255,255,255,0.08)',
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: 'rgba(200,217,230,0.4)',
+    borderColor: 'rgba(255,255,255,0.15)',
     paddingVertical: 8,
     paddingHorizontal: 10,
     minWidth: 70,
@@ -1145,29 +1114,29 @@ const styles = StyleSheet.create({
   },
   darkText: { color: UI_COLORS.white },
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'center', alignItems: 'center' },
-  modal: { backgroundColor: 'rgba(255, 255, 255, 0.65)', padding: 20, borderRadius: UI_RADII.md, width: '90%', maxHeight: '80%', borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.45)' },
+  modal: { backgroundColor: 'rgba(23,56,77,0.95)', padding: 20, borderRadius: UI_RADII.md, width: '90%', maxHeight: '80%', borderWidth: 1, borderColor: 'rgba(255,255,255,0.15)' },
   modalTitle: { fontSize: 20, fontWeight: 'bold', textAlign: 'center', marginBottom: 16, color: UI_COLORS.text },
-  modalItem: { padding: 14, borderBottomWidth: 1, borderColor: 'rgba(255, 255, 255, 0.45)' },
+  modalItem: { padding: 14, borderBottomWidth: 1, borderColor: 'rgba(255,255,255,0.15)' },
   modalItemText: { fontSize: 16, color: UI_COLORS.text },
   modalClose: { textAlign: 'center', padding: 14, color: UI_COLORS.danger, fontWeight: 'bold' },
   rangePicker: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginVertical: 12 },
-  rangeBtn: { fontSize: 28, paddingHorizontal: 20 },
-  rangeNumber: { fontSize: 24, marginHorizontal: 20 },
+  rangeBtn: { fontSize: 28, paddingHorizontal: 20, color: '#FFFFFF' },
+  rangeNumber: { fontSize: 24, marginHorizontal: 20, color: '#FFFFFF' },
   rangeActions: { flexDirection: 'row', justifyContent: 'space-around', marginTop: 20 },
-  rangeActionBtn: { fontSize: 16, padding: 10 },
+  rangeActionBtn: { fontSize: 16, padding: 10, color: 'rgba(255,255,255,0.7)' },
   translationText: {
     fontSize: 15,
     lineHeight: 24,
     textAlign: 'left',
-    color: '#2c3e50',
+    color: 'rgba(255,255,255,0.8)',
     marginTop: 8,
   },
   actionChip: {
     minHeight: 30,
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: '#b6d2e8',
-    backgroundColor: '#ecf6ff',
+    borderColor: 'rgba(255,255,255,0.15)',
+    backgroundColor: 'rgba(45,127,184,0.15)',
     paddingHorizontal: 10,
     paddingVertical: 4,
     alignItems: 'center',
@@ -1178,8 +1147,8 @@ const styles = StyleSheet.create({
     borderColor: '#4d6376',
   },
   activeActionChip: {
-    backgroundColor: UI_COLORS.primarySoft,
-    borderColor: '#84c2a0',
+    backgroundColor: 'rgba(31,157,85,0.2)',
+    borderColor: 'rgba(31,157,85,0.4)',
   },
   actionChipText: {
     fontSize: 12,
@@ -1188,7 +1157,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   activeActionChipText: {
-    color: '#1f6b45',
+    color: '#5ddb92',
   },
   tafseerText: {
     fontSize: 14,
@@ -1196,7 +1165,7 @@ const styles = StyleSheet.create({
     textAlign: 'right',
     color: UI_COLORS.text,
     marginTop: 8,
-    backgroundColor: '#f0f4f8',
+    backgroundColor: 'rgba(255,255,255,0.06)',
     padding: 10,
     borderRadius: 12,
   },
@@ -1208,10 +1177,10 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     paddingVertical: 10,
     paddingHorizontal: 12,
-    backgroundColor: 'rgba(255,255,255,0.5)',
+    backgroundColor: 'rgba(255,255,255,0.08)',
     borderRadius: UI_RADII.md,
     borderWidth: 1,
-    borderColor: 'rgba(200,217,230,0.4)',
+    borderColor: 'rgba(255,255,255,0.15)',
   },
   darkSurahInfoRow: {
     backgroundColor: 'rgba(26,38,52,0.5)',
@@ -1230,6 +1199,15 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: UI_COLORS.textMuted,
   },
+  surahReflection: {
+    marginHorizontal: 20,
+    marginBottom: 10,
+    fontSize: 12,
+    lineHeight: 18,
+    color: 'rgba(255,255,255,0.5)',
+    fontStyle: 'italic',
+    textAlign: 'center',
+  },
   shareChip: {
     marginTop: 8,
     alignSelf: 'flex-start',
@@ -1246,7 +1224,7 @@ const styles = StyleSheet.create({
     color: UI_COLORS.primary,
   },
   shareModal: {
-    backgroundColor: '#fff',
+    backgroundColor: 'rgba(23,56,77,0.95)',
     borderRadius: UI_RADII.xl,
     padding: 20,
     width: '90%',

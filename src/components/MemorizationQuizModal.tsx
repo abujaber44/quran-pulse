@@ -35,7 +35,7 @@ export default function MemorizationQuizModal({
   onClose,
   bookmarks,
 }: MemorizationQuizModalProps) {
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
   const [state, setState] = useState<QuizState>('loading');
   const [questions, setQuestions] = useState<QuizQuestion[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -56,7 +56,7 @@ export default function MemorizationQuizModal({
 
     try {
       const history = await getQuizHistory();
-      const quizQuestions = await getMemorizationQuiz(bookmarks, history, controller.signal);
+      const quizQuestions = await getMemorizationQuiz(bookmarks, history, controller.signal, lang);
 
       if (quizQuestions.length === 0) {
         setErrorMessage(t.couldNotGenerateQuiz);
@@ -71,7 +71,7 @@ export default function MemorizationQuizModal({
       setErrorMessage('Failed to load quiz. Please try again.');
       setState('error');
     }
-  }, [bookmarks]);
+  }, [bookmarks, lang, t]);
 
   useEffect(() => {
     if (visible && bookmarks.length >= 1) {
@@ -236,11 +236,9 @@ export default function MemorizationQuizModal({
                 {results.filter((r) => !r.correct).length > 0 && (
                   <View style={styles.weakArea}>
                     <Text style={styles.weakTitle}>{t.reviewVerses}</Text>
-                    {results
-                      .filter((r) => !r.correct)
-                      .map((r) => (
-                        <Text key={r.verseKey} style={styles.weakVerse}>
-                          • {r.verseKey}
+                    {[...new Set(results.filter((r) => !r.correct).map((r) => r.verseKey))].map((vk) => (
+                        <Text key={vk} style={styles.weakVerse}>
+                          • {vk}
                         </Text>
                       ))}
                   </View>
@@ -311,8 +309,8 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     ...UI_SHADOWS.card,
   },
-  questionType: { fontSize: 13, color: UI_COLORS.accent, fontWeight: '700', marginBottom: 10 },
-  questionPrompt: { fontSize: 16, lineHeight: 24, color: UI_COLORS.text },
+  questionType: { fontSize: 13, color: UI_COLORS.accent, fontWeight: '700', marginBottom: 10, textAlign: 'center' },
+  questionPrompt: { fontSize: 16, lineHeight: 26, color: UI_COLORS.text, textAlign: 'center' },
   optionsWrap: { gap: 10 },
   optionButton: {
     backgroundColor: UI_COLORS.surface,
@@ -321,10 +319,10 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
     borderColor: UI_COLORS.border,
   },
-  optionText: { fontSize: 15, color: UI_COLORS.text },
-  optionCorrect: { borderColor: UI_COLORS.primary, backgroundColor: '#d7efe1' },
+  optionText: { fontSize: 15, color: UI_COLORS.text, textAlign: 'center' },
+  optionCorrect: { borderColor: UI_COLORS.primary, backgroundColor: 'rgba(31,157,85,0.2)' },
   optionTextCorrect: { color: UI_COLORS.primaryDeep, fontWeight: '700' },
-  optionWrong: { borderColor: UI_COLORS.danger, backgroundColor: '#fde8e8' },
+  optionWrong: { borderColor: UI_COLORS.danger, backgroundColor: 'rgba(231,76,60,0.15)' },
   optionTextWrong: { color: UI_COLORS.danger, fontWeight: '700' },
   feedbackWrap: { marginTop: 20, alignItems: 'center' },
   feedbackText: { fontSize: 16, fontWeight: '700', color: UI_COLORS.text, marginBottom: 4 },
@@ -351,7 +349,7 @@ const styles = StyleSheet.create({
   scoreBig: { fontSize: 48, fontWeight: '800', color: UI_COLORS.primary },
   scoreLabel: { fontSize: 16, color: UI_COLORS.text, marginTop: 8, textAlign: 'center' },
   weakArea: {
-    backgroundColor: '#fff8e6',
+    backgroundColor: 'rgba(201,165,78,0.15)',
     padding: 16,
     borderRadius: UI_RADII.sm,
     width: '100%',

@@ -28,12 +28,12 @@ type CategoryFilter = 'all' | MiracleCategory;
 type LanguageFilter = 'en' | 'ar';
 
 const CATEGORY_BADGE_PALETTE: Array<{ bg: string; text: string }> = [
-  { bg: '#d8ebfb', text: '#1b5d8b' },
-  { bg: '#e4f5dc', text: '#1b6d3f' },
-  { bg: '#fbe8cf', text: '#965a07' },
-  { bg: '#e5e3f9', text: '#4a3b99' },
-  { bg: '#f9e2e5', text: '#8b3142' },
-  { bg: '#d9f5f2', text: '#145d57' },
+  { bg: 'rgba(45,127,184,0.2)', text: '#7bbce0' },
+  { bg: 'rgba(31,157,85,0.2)', text: '#5ddb92' },
+  { bg: 'rgba(224,185,0,0.2)', text: '#e0b900' },
+  { bg: 'rgba(130,110,220,0.2)', text: '#b0a0f0' },
+  { bg: 'rgba(231,76,60,0.2)', text: '#f08080' },
+  { bg: 'rgba(31,157,130,0.2)', text: '#5ddbb0' },
 ];
 
 const CATEGORY_ICONS: Record<string, string> = {
@@ -249,25 +249,25 @@ export default function QuranMiraclesScreen() {
     const badge = getCategoryBadge(item.category);
 
     return (
-      <View style={[styles.card, isDark && styles.darkCard]}>
+      <View style={[styles.card]}>
         <View style={styles.cardHeaderRow}>
           <View style={[styles.categoryPill, { backgroundColor: badge.bg }]}>
             <Text style={[styles.categoryPillText, { color: badge.text }]}>{formatCategoryLabel(item.category)}</Text>
           </View>
         </View>
 
-        <Text style={[styles.cardTitle, isDark && styles.darkText]}>{item.title}</Text>
-        <Text style={[styles.cardSummary, isDark && styles.darkMutedText]}>{item.summary}</Text>
-        <Text style={[styles.cardDetail, isDark && styles.darkText]}>{item.detail}</Text>
+        <Text style={[styles.cardTitle]}>{item.title}</Text>
+        <Text style={[styles.cardSummary]}>{item.summary}</Text>
+        <Text style={[styles.cardDetail]}>{item.detail}</Text>
 
         {item.ayahRefs.length > 0 ? (
           <View style={styles.ayahRefsWrap}>
-            <Text style={[styles.ayahRefsTitle, isDark && styles.darkMutedText]}>Ayah refs</Text>
+            <Text style={[styles.ayahRefsTitle]}>Ayah refs</Text>
             <View style={styles.ayahRefsRow}>
               {item.ayahRefs.map((ref) => (
                 <TouchableOpacity
                   key={`${item.id}-${ref}`}
-                  style={[styles.ayahRefChip, isDark && styles.darkAyahRefChip]}
+                  style={[styles.ayahRefChip]}
                   onPress={() => navigateToAyahRef(ref)}
                 >
                   <Text style={styles.ayahRefChipText}>{ref}</Text>
@@ -280,22 +280,22 @@ export default function QuranMiraclesScreen() {
         {item.tags.length > 0 ? (
           <View style={styles.tagsRow}>
             {item.tags.slice(0, 6).map((tag) => (
-              <View key={`${item.id}-${tag}`} style={[styles.tagChip, isDark && styles.darkTagChip]}>
-                <Text style={[styles.tagChipText, isDark && styles.darkMutedText]}>{tag}</Text>
+              <View key={`${item.id}-${tag}`} style={[styles.tagChip]}>
+                <Text style={[styles.tagChipText]}>{tag}</Text>
               </View>
             ))}
           </View>
         ) : null}
 
         {item.examples && item.examples.length > 0 ? (
-          <View style={[styles.examplesBox, isDark && styles.darkExamplesBox]}>
-            <Text style={[styles.examplesTitle, isDark && styles.darkText]}>Examples</Text>
+          <View style={[styles.examplesBox]}>
+            <Text style={[styles.examplesTitle]}>Examples</Text>
             {item.examples.slice(0, 2).map((example, index) => (
               <View key={`${item.id}-example-${index}`} style={styles.exampleItem}>
-                <Text style={[styles.exampleItemTitle, isDark && styles.darkText]}>{example.title}</Text>
-                <Text style={[styles.exampleItemText, isDark && styles.darkMutedText]}>{example.description}</Text>
+                <Text style={[styles.exampleItemTitle]}>{example.title}</Text>
+                <Text style={[styles.exampleItemText]}>{example.description}</Text>
                 {example.ayahRef ? (
-                  <Text style={[styles.exampleMeta, isDark && styles.darkMutedText]}>Ayah: {example.ayahRef}</Text>
+                  <Text style={[styles.exampleMeta]}>Ayah: {example.ayahRef}</Text>
                 ) : null}
                 {(() => {
                   const sourceUrl = example.sourceUrl;
@@ -303,7 +303,7 @@ export default function QuranMiraclesScreen() {
 
                   return (
                   <TouchableOpacity
-                    style={[styles.exampleSourceButton, isDark && styles.darkSourceButton]}
+                    style={[styles.exampleSourceButton]}
                     onPress={() => {
                       void openSourceUrl(sourceUrl);
                     }}
@@ -318,9 +318,9 @@ export default function QuranMiraclesScreen() {
         ) : null}
 
         {item.caution ? (
-          <View style={[styles.cautionBox, isDark && styles.darkCautionBox]}>
-            <Text style={[styles.cautionLabel, isDark && styles.darkText]}>{t.note}</Text>
-            <Text style={[styles.cautionText, isDark && styles.darkMutedText]}>{item.caution}</Text>
+          <View style={[styles.cautionBox]}>
+            <Text style={[styles.cautionLabel]}>{t.note}</Text>
+            <Text style={[styles.cautionText]}>{item.caution}</Text>
           </View>
         ) : null}
 
@@ -333,12 +333,12 @@ export default function QuranMiraclesScreen() {
 
         {item.sources.length > 0 ? (
           <View style={styles.sourcesWrap}>
-            <Text style={[styles.sourcesTitle, isDark && styles.darkText]}>{t.sources}</Text>
+            <Text style={[styles.sourcesTitle]}>{t.sources}</Text>
             <View style={styles.sourcesRow}>
               {item.sources.slice(0, 3).map((source) => (
                 <TouchableOpacity
                   key={`${item.id}-${source.url}`}
-                  style={[styles.sourceButton, isDark && styles.darkSourceButton]}
+                  style={[styles.sourceButton]}
                   onPress={() => {
                     void openSourceUrl(source.url);
                   }}
@@ -358,7 +358,7 @@ export default function QuranMiraclesScreen() {
       <GlassBackground isDark={isDark}>
         <View style={styles.loaderContainer}>
           <ActivityIndicator size="large" color={UI_COLORS.primary} />
-          <Text style={[styles.loaderText, isDark && styles.darkText]}>Loading miracle insights...</Text>
+          <Text style={[styles.loaderText]}>Loading miracle insights...</Text>
         </View>
       </GlassBackground>
     );
@@ -390,8 +390,6 @@ export default function QuranMiraclesScreen() {
                 style={[
                   styles.categoryTab,
                   selected && styles.categoryTabActive,
-                  isDark && styles.darkCategoryTab,
-                  selected && isDark && styles.darkCategoryTabActive,
                 ]}
                 onPress={() => setSelectedCategory(filter.key)}
                 activeOpacity={0.8}
@@ -401,7 +399,6 @@ export default function QuranMiraclesScreen() {
                   style={[
                     styles.categoryLabel,
                     selected && styles.categoryLabelActive,
-                    isDark && styles.darkMutedText,
                     selected && styles.categoryLabelActive,
                   ]}
                   numberOfLines={1}
@@ -430,7 +427,7 @@ export default function QuranMiraclesScreen() {
             />
           }
           ListEmptyComponent={
-            <Text style={[styles.emptyText, isDark && styles.darkMutedText]}>
+            <Text style={[styles.emptyText]}>
               No items found in this category.
             </Text>
           }
@@ -473,8 +470,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     borderRadius: UI_RADII.lg,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.45)',
-    backgroundColor: 'rgba(255, 255, 255, 0.65)',
+    borderColor: 'rgba(255,255,255,0.15)',
+    backgroundColor: 'rgba(255,255,255,0.08)',
     minWidth: 80,
   },
   categoryTabActive: {
@@ -514,8 +511,8 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     borderRadius: UI_RADII.md,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.45)',
-    backgroundColor: 'rgba(255, 255, 255, 0.65)',
+    borderColor: 'rgba(255,255,255,0.15)',
+    backgroundColor: 'rgba(255,255,255,0.08)',
     paddingVertical: 10,
     paddingHorizontal: 12,
     ...UI_SHADOWS.input,
@@ -541,10 +538,10 @@ const styles = StyleSheet.create({
     paddingBottom: 26,
   },
   card: {
-    backgroundColor: 'rgba(255, 255, 255, 0.65)',
+    backgroundColor: 'rgba(255,255,255,0.08)',
     borderRadius: UI_RADII.lg,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.45)',
+    borderColor: 'rgba(255,255,255,0.15)',
     padding: 14,
     marginVertical: 7,
     ...UI_SHADOWS.card,
@@ -597,8 +594,8 @@ const styles = StyleSheet.create({
   ayahRefChip: {
     borderRadius: 999,
     borderWidth: 1,
-    borderColor: '#b6d2e8',
-    backgroundColor: '#ecf6ff',
+    borderColor: 'rgba(255,255,255,0.15)',
+    backgroundColor: 'rgba(45,127,184,0.15)',
     paddingHorizontal: 10,
     paddingVertical: 6,
   },
@@ -623,7 +620,7 @@ const styles = StyleSheet.create({
     borderColor: UI_COLORS.border,
     paddingHorizontal: 8,
     paddingVertical: 4,
-    backgroundColor: '#f2f8fc',
+    backgroundColor: 'rgba(255,255,255,0.06)',
   },
   darkTagChip: {
     backgroundColor: '#1e2a36',
@@ -637,9 +634,9 @@ const styles = StyleSheet.create({
   cautionBox: {
     marginTop: 10,
     borderRadius: UI_RADII.sm,
-    backgroundColor: '#fff6e8',
+    backgroundColor: 'rgba(224,185,0,0.12)',
     borderWidth: 1,
-    borderColor: '#f0d4a7',
+    borderColor: 'rgba(224,185,0,0.25)',
     padding: 10,
   },
   darkCautionBox: {
@@ -660,9 +657,9 @@ const styles = StyleSheet.create({
   examplesBox: {
     marginTop: 10,
     borderRadius: UI_RADII.sm,
-    backgroundColor: '#edf6ff',
+    backgroundColor: 'rgba(45,127,184,0.12)',
     borderWidth: 1,
-    borderColor: '#c9def2',
+    borderColor: 'rgba(45,127,184,0.25)',
     padding: 10,
   },
   darkExamplesBox: {
@@ -700,8 +697,8 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
     borderRadius: UI_RADII.sm,
     borderWidth: 1,
-    borderColor: '#b6d2e8',
-    backgroundColor: '#ecf6ff',
+    borderColor: 'rgba(255,255,255,0.15)',
+    backgroundColor: 'rgba(45,127,184,0.15)',
     paddingHorizontal: 10,
     paddingVertical: 6,
   },
@@ -735,8 +732,8 @@ const styles = StyleSheet.create({
   sourceButton: {
     borderRadius: UI_RADII.sm,
     borderWidth: 1,
-    borderColor: '#b6d2e8',
-    backgroundColor: '#ecf6ff',
+    borderColor: 'rgba(255,255,255,0.15)',
+    backgroundColor: 'rgba(45,127,184,0.15)',
     paddingHorizontal: 10,
     paddingVertical: 7,
   },
