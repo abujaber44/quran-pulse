@@ -306,6 +306,19 @@ export default {
   quizAccuracy: 'الدقة',
   versesMastered: 'متقنة',
 
+  // Islamic Calendar overhaul
+  hijriLabel: 'هجري',
+  gregorianLabel: 'ميلادي',
+  islamicEvent: 'مناسبة إسلامية',
+  upcomingEvents: 'المناسبات القادمة',
+  tomorrow: 'غداً',
+  whiteDays: 'الأيام البيض',
+  sunnahFast: 'صيام تطوع',
+  eventDot: 'مناسبة',
+  fastingDay: 'يوم يُستحب صيامه',
+  selectMonthYear: 'الانتقال إلى شهر',
+  noCalendarData: 'لا توجد بيانات لهذا الشهر',
+
   // Ramadan
   ramadan: 'رمضان',
   ramadanMubarak: 'رمضان مبارك',
