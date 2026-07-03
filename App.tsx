@@ -116,7 +116,7 @@ const getSharedHeaderOptions = (navigation: NavigationProp<ParamListBase>) => ({
   title: '',
   headerShadowVisible: false,
   headerStyle: { backgroundColor: '#17384d' },
-  ...(isExpoGo ? {} : { statusBarStyle: 'dark' as const }),
+  ...(isExpoGo ? {} : { statusBarStyle: 'light' as const }),
   headerBackVisible: false,
   headerTintColor: UI_COLORS.accent,
   headerLeftContainerStyle: { paddingLeft: 8, paddingRight: 0 },
@@ -146,7 +146,7 @@ export default function App() {
           <NavigationContainer>
             <Stack.Navigator
               initialRouteName="Landing"
-              screenOptions={isExpoGo ? undefined : { statusBarStyle: 'dark' as const }}
+              screenOptions={isExpoGo ? undefined : { statusBarStyle: 'light' as const }}
             >
             <Stack.Screen
               name="Landing"
@@ -191,7 +191,7 @@ export default function App() {
                 title: '',
                 headerShadowVisible: false,
                 headerStyle: { backgroundColor: '#17384d' },
-                ...(isExpoGo ? {} : { statusBarStyle: 'dark' as const }),
+                ...(isExpoGo ? {} : { statusBarStyle: 'light' as const }),
                 headerBackVisible: true,
                 headerBackTitle: 'Prayer Times',
                 headerTintColor: UI_COLORS.accent,
@@ -204,7 +204,7 @@ export default function App() {
                 title: '',
                 headerShadowVisible: false,
                 headerStyle: { backgroundColor: '#17384d' },
-                ...(isExpoGo ? {} : { statusBarStyle: 'dark' as const }),
+                ...(isExpoGo ? {} : { statusBarStyle: 'light' as const }),
                 headerBackVisible: true,
                 headerBackTitle: 'Prayer Times',
                 headerTintColor: UI_COLORS.accent,
