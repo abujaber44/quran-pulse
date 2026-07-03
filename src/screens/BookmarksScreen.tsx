@@ -172,7 +172,7 @@ export default function BookmarksScreen() {
     );
   }
 
-  if (bookmarks.length === 0) {
+  if (bookmarks.length === 0 && !pageBookmark && bookmarkHistory.length === 0) {
     return (
       <GlassBackground isDark={isDark}>
         <View style={styles.container}>
@@ -237,33 +237,40 @@ export default function BookmarksScreen() {
         </View>
       )}
 
-      {(selectedTag === 'all' || selectedTag === 'read_recite') && pageBookmark && (
+      {(selectedTag === 'all' || selectedTag === 'read_recite') &&
+        (pageBookmark || bookmarkHistory.length > 0) && (
         <View style={styles.pageBookmarkCard}>
-          <View style={styles.pageBookmarkHeader}>
-            <Ionicons name="bookmark" size={18} color="#f5a623" />
-            <Text style={styles.pageBookmarkTitle}>
-              {t.readRecite} — {t.page} {pageBookmark.page}
-              {pageBookmark.ayahNumber ? ` · ${t.ayah} ${pageBookmark.ayahNumber}` : ''}
-            </Text>
-          </View>
-          <View style={styles.pageBookmarkActions}>
-            <TouchableOpacity
-              style={styles.pageBookmarkOpen}
-              onPress={() => navigation.navigate('MushafReader' as any, { juzNumber: 1, initialPage: pageBookmark.page })}
-            >
-              <Text style={styles.pageBookmarkOpenText}>{t.continueFrom}</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              onPress={async () => {
-                await savePageBookmark(null);
-                setPageBookmarkState(null);
-              }}
-            >
-              <Text style={styles.pageBookmarkRemove}>{t.remove}</Text>
-            </TouchableOpacity>
-          </View>
+          {pageBookmark && (
+            <>
+              <View style={styles.pageBookmarkHeader}>
+                <Ionicons name="bookmark" size={18} color="#f5a623" />
+                <Text style={styles.pageBookmarkTitle}>
+                  {t.readRecite} — {t.page} {pageBookmark.page}
+                  {pageBookmark.ayahNumber ? ` · ${t.ayah} ${pageBookmark.ayahNumber}` : ''}
+                </Text>
+              </View>
+              <View style={styles.pageBookmarkActions}>
+                <TouchableOpacity
+                  style={styles.pageBookmarkOpen}
+                  onPress={() => navigation.navigate('MushafReader' as any, { juzNumber: 1, initialPage: pageBookmark.page })}
+                >
+                  <Text style={styles.pageBookmarkOpenText}>{t.continueFrom}</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={async () => {
+                    // Removing archives the bookmark into history inside savePageBookmark
+                    await savePageBookmark(null);
+                    setPageBookmarkState(null);
+                    setBookmarkHistory(await getPageBookmarkHistory());
+                  }}
+                >
+                  <Text style={styles.pageBookmarkRemove}>{t.remove}</Text>
+                </TouchableOpacity>
+              </View>
+            </>
+          )}
           {bookmarkHistory.length > 0 && (
-            <View style={styles.historyRow}>
+            <View style={[styles.historyRow, !pageBookmark && styles.historyRowStandalone]}>
               <Text style={styles.historyLabel}>{t.previousBookmarks}:</Text>
               {bookmarkHistory.map((h) => (
                 <TouchableOpacity
@@ -533,6 +540,11 @@ const styles = StyleSheet.create({
     paddingTop: 10,
     borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: 'rgba(255,255,255,0.15)',
+  },
+  historyRowStandalone: {
+    marginTop: 0,
+    paddingTop: 0,
+    borderTopWidth: 0,
   },
   historyLabel: {
     fontSize: 12,
