@@ -231,6 +231,8 @@ export default {
   morningAthkar: 'أذكار الصباح',
   eveningAthkar: 'أذكار المساء',
   fullAudioRecitation: 'تلاوة صوتية كاملة',
+  downloadForOffline: 'تنزيل للاستماع دون اتصال',
+  downloadedForOffline: 'تم التنزيل',
   surahDescription: 'وضع الحفظ يساعد على التكرار المركّز، ووضع التكرار يتيح لك تكرار آية واحدة أو نطاق مخصص.',
   quranPlayerTitle: 'استمع للقرآن',
   quranPlayerDesc: 'استمع لتلاوة القرآن الكريم بأصوات قرّائك المفضلين. دع كلمات الله تسكّن روحك وتجلب الطمأنينة لقلبك.',

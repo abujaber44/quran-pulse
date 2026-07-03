@@ -12,10 +12,16 @@ import {
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAudioPlayer, useAudioPlayerStatus, setAudioModeAsync } from 'expo-audio';
+import { Ionicons } from '@expo/vector-icons';
 import { useSettings } from '../context/SettingsContext';
 import { resolveArabicFontFamily } from '../theme/fonts';
 import { UI_COLORS, UI_GLASS, UI_RADII, UI_SHADOWS } from '../theme/ui';
 import { fetchAthkarContentOnline, AthkarItem, ATHKAR_AUDIO_URLS } from '../services/athkarService';
+import {
+  getLocalTrackAudioUri,
+  downloadTrackAudio,
+  deleteTrackAudio,
+} from '../services/audioDownloadService';
 import GlassBackground from '../components/GlassBackground';
 import ScreenIntroTile from '../components/ScreenIntroTile';
 import CompactPlayerCard from '../components/CompactPlayerCard';
@@ -197,6 +203,51 @@ export default function AthkarScreen() {
   const athkarPlayerStatus = useAudioPlayerStatus(athkarPlayer);
   const [loadedAudioPeriod, setLoadedAudioPeriod] = useState<AthkarPeriod | null>(null);
   const currentAudioUrl = ATHKAR_AUDIO_URLS[athkarPeriod];
+  const athkarTrackId = `athkar-${athkarPeriod}`;
+  const [downloadedPeriods, setDownloadedPeriods] = useState<Set<AthkarPeriod>>(new Set());
+  const [downloadingPeriod, setDownloadingPeriod] = useState<AthkarPeriod | null>(null);
+  const [downloadPct, setDownloadPct] = useState(0);
+
+  // Check which periods already have a local copy on mount / period change
+  useEffect(() => {
+    let cancelled = false;
+    (['morning', 'evening'] as AthkarPeriod[]).forEach((period) => {
+      getLocalTrackAudioUri(`athkar-${period}`).then((uri) => {
+        if (cancelled) return;
+        setDownloadedPeriods((prev) => {
+          const next = new Set(prev);
+          if (uri) next.add(period);
+          else next.delete(period);
+          return next;
+        });
+      });
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const handleAthkarDownloadPress = async () => {
+    if (!currentAudioUrl || downloadingPeriod) return;
+
+    if (downloadedPeriods.has(athkarPeriod)) {
+      await deleteTrackAudio(athkarTrackId);
+      setDownloadedPeriods((prev) => {
+        const next = new Set(prev);
+        next.delete(athkarPeriod);
+        return next;
+      });
+      return;
+    }
+
+    setDownloadingPeriod(athkarPeriod);
+    setDownloadPct(0);
+    const uri = await downloadTrackAudio(athkarTrackId, currentAudioUrl, setDownloadPct);
+    setDownloadingPeriod(null);
+    if (uri) {
+      setDownloadedPeriods((prev) => new Set(prev).add(athkarPeriod));
+    }
+  };
 
   // Allow athkar audio to keep playing when the app is backgrounded or the
   // screen is locked, same as the Quran player.
@@ -260,10 +311,11 @@ export default function AthkarScreen() {
     };
   }, [athkarPlayer]);
 
-  const toggleAthkarAudio = () => {
+  const toggleAthkarAudio = async () => {
     if (!currentAudioUrl) return;
     if (loadedAudioPeriod !== athkarPeriod) {
-      athkarPlayer.replace({ uri: currentAudioUrl });
+      const localUri = await getLocalTrackAudioUri(athkarTrackId);
+      athkarPlayer.replace({ uri: localUri ?? currentAudioUrl });
       athkarPlayer.play();
       setLoadedAudioPeriod(athkarPeriod);
       applyAthkarLockScreenControls(athkarPeriod);
@@ -570,22 +622,47 @@ export default function AthkarScreen() {
       </View>
 
       {currentAudioUrl && (
-        <CompactPlayerCard
-          isDark={isDark}
-          badgeLabel="🔊"
-          title={athkarPeriod === 'morning' ? t.morningAthkar : t.eveningAthkar}
-          subtitle={t.fullAudioRecitation}
-          currentMs={(athkarPlayerStatus.currentTime || 0) * 1000}
-          durationMs={(athkarPlayerStatus.duration || 0) * 1000}
-          isPlaying={loadedAudioPeriod === athkarPeriod && !!athkarPlayerStatus.playing}
-          disablePrev
-          disableNext
-          onPrev={() => {}}
-          onNext={() => {}}
-          onTogglePlay={toggleAthkarAudio}
-          onSeek={(value) => void seekAthkarAudio(value)}
-          layout="inline"
-        />
+        <>
+          <CompactPlayerCard
+            isDark={isDark}
+            badgeLabel="🔊"
+            title={athkarPeriod === 'morning' ? t.morningAthkar : t.eveningAthkar}
+            subtitle={t.fullAudioRecitation}
+            currentMs={(athkarPlayerStatus.currentTime || 0) * 1000}
+            durationMs={(athkarPlayerStatus.duration || 0) * 1000}
+            isPlaying={loadedAudioPeriod === athkarPeriod && !!athkarPlayerStatus.playing}
+            disablePrev
+            disableNext
+            onPrev={() => {}}
+            onNext={() => {}}
+            onTogglePlay={toggleAthkarAudio}
+            onSeek={(value) => void seekAthkarAudio(value)}
+            layout="inline"
+          />
+          <TouchableOpacity
+            style={styles.athkarDownloadRow}
+            onPress={() => void handleAthkarDownloadPress()}
+            disabled={downloadingPeriod === athkarPeriod}
+          >
+            {downloadingPeriod === athkarPeriod ? (
+              <>
+                <ActivityIndicator size="small" color={UI_COLORS.primary} />
+                <Text style={styles.athkarDownloadText}>{Math.round(downloadPct * 100)}%</Text>
+              </>
+            ) : (
+              <>
+                <Ionicons
+                  name={downloadedPeriods.has(athkarPeriod) ? 'checkmark-circle' : 'download-outline'}
+                  size={16}
+                  color={downloadedPeriods.has(athkarPeriod) ? UI_COLORS.primary : 'rgba(255,255,255,0.5)'}
+                />
+                <Text style={styles.athkarDownloadText}>
+                  {downloadedPeriods.has(athkarPeriod) ? t.downloadedForOffline : t.downloadForOffline}
+                </Text>
+              </>
+            )}
+          </TouchableOpacity>
+        </>
       )}
 
       <FlatList
@@ -803,6 +880,21 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.15)',
     overflow: 'hidden',
+  },
+  athkarDownloadRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    marginHorizontal: 16,
+    marginTop: -2,
+    marginBottom: 10,
+    paddingVertical: 6,
+  },
+  athkarDownloadText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: 'rgba(255,255,255,0.6)',
   },
   athkarLoadingBox: {
     alignItems: 'center',
