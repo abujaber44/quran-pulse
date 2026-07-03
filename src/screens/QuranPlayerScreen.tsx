@@ -23,6 +23,14 @@ import ScreenIntroTile from '../components/ScreenIntroTile';
 import { normalizeArabicForSearch } from '../utils/arabicSearch';
 import CompactPlayerCard from '../components/CompactPlayerCard';
 import { useLanguage } from '../i18n';
+import { Ionicons } from '@expo/vector-icons';
+import { Alert } from 'react-native';
+import {
+  getLocalSurahAudioUri,
+  getDownloadedSurahIds,
+  downloadSurahAudio,
+  deleteSurahAudio,
+} from '../services/audioDownloadService';
 
 interface Surah {
   id: number;
@@ -60,6 +68,9 @@ export default function QuranPlayerScreen() {
   const [searchQuery, setSearchQuery] = useState('');
 
   const [isLoading, setIsLoading] = useState(false);
+  const [downloadedIds, setDownloadedIds] = useState<Set<number>>(new Set());
+  const [downloadingId, setDownloadingId] = useState<number | null>(null);
+  const [downloadPct, setDownloadPct] = useState(0);
   const flatListRef = useRef<FlatList>(null);
   const player = useAudioPlayer(null, { updateInterval: 250 });
   const playerStatus = useAudioPlayerStatus(player);
@@ -202,6 +213,11 @@ export default function QuranPlayerScreen() {
     }
   }, [selectedSurah, selectedReciter]);
 
+  // Refresh downloaded-surah set when the reciter changes
+  useEffect(() => {
+    getDownloadedSurahIds(selectedReciter.id).then(setDownloadedIds);
+  }, [selectedReciter.id]);
+
   // Activate lock-screen controls for current surah
   useEffect(() => {
     applyLockScreenControls(selectedSurah);
@@ -212,7 +228,8 @@ export default function QuranPlayerScreen() {
 
     setIsLoading(true);
     try {
-      const url = getSurahAudioUrl(selectedReciter.id, selectedSurah.id);
+      const localUri = await getLocalSurahAudioUri(selectedReciter.id, selectedSurah.id);
+      const url = localUri ?? getSurahAudioUrl(selectedReciter.id, selectedSurah.id);
       player.replace({ uri: url });
       player.play();
       // Re-apply metadata after replacing track to keep lock screen controls active on auto-next.
@@ -301,6 +318,36 @@ export default function QuranPlayerScreen() {
     </TouchableOpacity>
   );
 
+  const handleDownloadPress = async (item: Surah) => {
+    if (downloadingId !== null) return;
+
+    if (downloadedIds.has(item.id)) {
+      Alert.alert(t.removeDownload, `${item.id}. ${item.name_simple}`, [
+        { text: t.cancel, style: 'cancel' },
+        {
+          text: t.remove,
+          style: 'destructive',
+          onPress: async () => {
+            await deleteSurahAudio(selectedReciter.id, item.id);
+            setDownloadedIds(await getDownloadedSurahIds(selectedReciter.id));
+          },
+        },
+      ]);
+      return;
+    }
+
+    setDownloadingId(item.id);
+    setDownloadPct(0);
+    const url = getSurahAudioUrl(selectedReciter.id, item.id);
+    const uri = await downloadSurahAudio(selectedReciter.id, item.id, url, setDownloadPct);
+    setDownloadingId(null);
+    if (uri) {
+      setDownloadedIds(await getDownloadedSurahIds(selectedReciter.id));
+    } else {
+      showAlert({ title: 'Error', message: t.downloadFailed, variant: 'danger' });
+    }
+  };
+
   const renderSurah = ({ item }: { item: Surah }) => (
     <TouchableOpacity
       style={[
@@ -310,7 +357,7 @@ export default function QuranPlayerScreen() {
       onPress={() => setSelectedSurah(item)}
     >
       <Text style={styles.surahNumber}>{item.id}</Text>
-      <View>
+      <View style={styles.surahNameWrap}>
         <Text style={styles.surahEnglish}>{item.name_simple}</Text>
         <Text
           style={[
@@ -322,6 +369,21 @@ export default function QuranPlayerScreen() {
           {item.name_arabic}
         </Text>
       </View>
+      <TouchableOpacity
+        onPress={() => void handleDownloadPress(item)}
+        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+        style={styles.downloadButton}
+      >
+        {downloadingId === item.id ? (
+          <Text style={styles.downloadPct}>{Math.round(downloadPct * 100)}%</Text>
+        ) : (
+          <Ionicons
+            name={downloadedIds.has(item.id) ? 'checkmark-circle' : 'download-outline'}
+            size={22}
+            color={downloadedIds.has(item.id) ? UI_COLORS.primary : 'rgba(255,255,255,0.4)'}
+          />
+        )}
+      </TouchableOpacity>
     </TouchableOpacity>
   );
 
@@ -488,6 +550,17 @@ const styles = StyleSheet.create({
   },
   selectedSurahItem: { backgroundColor: 'rgba(31,157,85,0.2)', borderColor: 'rgba(31,157,85,0.4)' },
   surahNumber: { fontSize: 20, fontWeight: 'bold', color: UI_COLORS.accent, width: 50, textAlign: 'center' },
+  surahNameWrap: { flex: 1 },
+  downloadButton: {
+    paddingHorizontal: 6,
+    minWidth: 40,
+    alignItems: 'center',
+  },
+  downloadPct: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: UI_COLORS.primary,
+  },
   surahEnglish: { fontSize: 18, color: UI_COLORS.text, fontWeight: '600' },
   surahArabic: { fontSize: 22, color: UI_COLORS.text, marginTop: 4 },
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'center', alignItems: 'center' },

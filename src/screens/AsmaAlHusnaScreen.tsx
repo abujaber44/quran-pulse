@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -11,12 +11,20 @@ import {
   ScrollView,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useAudioPlayer, useAudioPlayerStatus, setAudioModeAsync } from 'expo-audio';
+import { Ionicons } from '@expo/vector-icons';
 import { useSettings } from '../context/SettingsContext';
 import { resolveArabicFontFamily } from '../theme/fonts';
 import { UI_COLORS, UI_GLASS, UI_RADII, UI_SHADOWS } from '../theme/ui';
-import { fetchAthkarContentOnline, AthkarItem } from '../services/athkarService';
+import { fetchAthkarContentOnline, AthkarItem, ATHKAR_AUDIO_URLS } from '../services/athkarService';
+import {
+  getLocalTrackAudioUri,
+  downloadTrackAudio,
+  deleteTrackAudio,
+} from '../services/audioDownloadService';
 import GlassBackground from '../components/GlassBackground';
 import ScreenIntroTile from '../components/ScreenIntroTile';
+import CompactPlayerCard from '../components/CompactPlayerCard';
 import { getAiInsight } from '../services/aiService';
 import { useLanguage } from '../i18n';
 
@@ -162,9 +170,7 @@ export default function AthkarScreen() {
   const [athkarPeriod, setAthkarPeriod] = useState<AthkarPeriod>('morning');
   const [morningAthkar, setMorningAthkar] = useState<AthkarItem[]>(MORNING_ATHKAR);
   const [eveningAthkar, setEveningAthkar] = useState<AthkarItem[]>(EVENING_ATHKAR);
-  const [athkarSource, setAthkarSource] = useState<'fallback' | 'online'>('fallback');
   const [athkarLoading, setAthkarLoading] = useState(true);
-  const [athkarSourceLabel, setAthkarSourceLabel] = useState<string>('');
   const [expandedFadlId, setExpandedFadlId] = useState<string | null>(null);
   const [aiExplainId, setAiExplainId] = useState<string | null>(null);
   const [aiExplainText, setAiExplainText] = useState('');
@@ -192,6 +198,141 @@ export default function AthkarScreen() {
     () => (athkarPeriod === 'morning' ? morningAthkar : eveningAthkar),
     [athkarPeriod, morningAthkar, eveningAthkar]
   );
+
+  const athkarPlayer = useAudioPlayer(null, { updateInterval: 250 });
+  const athkarPlayerStatus = useAudioPlayerStatus(athkarPlayer);
+  const [loadedAudioPeriod, setLoadedAudioPeriod] = useState<AthkarPeriod | null>(null);
+  const currentAudioUrl = ATHKAR_AUDIO_URLS[athkarPeriod];
+  const athkarTrackId = `athkar-${athkarPeriod}`;
+  const [downloadedPeriods, setDownloadedPeriods] = useState<Set<AthkarPeriod>>(new Set());
+  const [downloadingPeriod, setDownloadingPeriod] = useState<AthkarPeriod | null>(null);
+  const [downloadPct, setDownloadPct] = useState(0);
+
+  // Check which periods already have a local copy on mount / period change
+  useEffect(() => {
+    let cancelled = false;
+    (['morning', 'evening'] as AthkarPeriod[]).forEach((period) => {
+      getLocalTrackAudioUri(`athkar-${period}`).then((uri) => {
+        if (cancelled) return;
+        setDownloadedPeriods((prev) => {
+          const next = new Set(prev);
+          if (uri) next.add(period);
+          else next.delete(period);
+          return next;
+        });
+      });
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const handleAthkarDownloadPress = async () => {
+    if (!currentAudioUrl || downloadingPeriod) return;
+
+    if (downloadedPeriods.has(athkarPeriod)) {
+      await deleteTrackAudio(athkarTrackId);
+      setDownloadedPeriods((prev) => {
+        const next = new Set(prev);
+        next.delete(athkarPeriod);
+        return next;
+      });
+      return;
+    }
+
+    setDownloadingPeriod(athkarPeriod);
+    setDownloadPct(0);
+    const uri = await downloadTrackAudio(athkarTrackId, currentAudioUrl, setDownloadPct);
+    setDownloadingPeriod(null);
+    if (uri) {
+      setDownloadedPeriods((prev) => new Set(prev).add(athkarPeriod));
+    }
+  };
+
+  // Allow athkar audio to keep playing when the app is backgrounded or the
+  // screen is locked, same as the Quran player.
+  useEffect(() => {
+    setAudioModeAsync({
+      playsInSilentMode: true,
+      shouldPlayInBackground: true,
+      interruptionMode: 'duckOthers',
+      shouldRouteThroughEarpiece: false,
+      allowsRecording: false,
+    }).catch((error) => {
+      console.error('Failed to configure athkar audio mode:', error);
+    });
+  }, []);
+
+  const applyAthkarLockScreenControls = useCallback((period: AthkarPeriod | null) => {
+    if (!period) {
+      try {
+        athkarPlayer.setActiveForLockScreen(false);
+      } catch {
+        // Player may already be disposed during teardown.
+      }
+      return;
+    }
+
+    try {
+      athkarPlayer.setActiveForLockScreen(
+        true,
+        {
+          title: period === 'morning' ? t.morningAthkar : t.eveningAthkar,
+          artist: 'Mishary Rashid Alafasy',
+          albumTitle: 'Quran Pulse',
+        },
+        {
+          showSeekBackward: true,
+          showSeekForward: true,
+        }
+      );
+    } catch (error) {
+      console.warn('Lock screen controls unavailable:', error);
+    }
+  }, [athkarPlayer, t.morningAthkar, t.eveningAthkar]);
+
+  // Stop playback when switching morning/evening (different track)
+  useEffect(() => {
+    if (loadedAudioPeriod && loadedAudioPeriod !== athkarPeriod) {
+      athkarPlayer.pause();
+      applyAthkarLockScreenControls(null);
+      setLoadedAudioPeriod(null);
+    }
+  }, [athkarPeriod, loadedAudioPeriod, athkarPlayer, applyAthkarLockScreenControls]);
+
+  useEffect(() => {
+    return () => {
+      try {
+        athkarPlayer.pause();
+        athkarPlayer.setActiveForLockScreen(false);
+      } catch {
+        // Player may already be disposed during teardown
+      }
+    };
+  }, [athkarPlayer]);
+
+  const toggleAthkarAudio = async () => {
+    if (!currentAudioUrl) return;
+    if (loadedAudioPeriod !== athkarPeriod) {
+      const localUri = await getLocalTrackAudioUri(athkarTrackId);
+      athkarPlayer.replace({ uri: localUri ?? currentAudioUrl });
+      athkarPlayer.play();
+      setLoadedAudioPeriod(athkarPeriod);
+      applyAthkarLockScreenControls(athkarPeriod);
+      return;
+    }
+    if (athkarPlayerStatus.playing) {
+      athkarPlayer.pause();
+    } else {
+      athkarPlayer.play();
+    }
+  };
+
+  const seekAthkarAudio = async (value: number) => {
+    if (athkarPlayerStatus.isLoaded) {
+      await athkarPlayer.seekTo(value / 1000);
+    }
+  };
 
   useEffect(() => {
     const fetchNames = async () => {
@@ -277,8 +418,6 @@ export default function AthkarScreen() {
         if (online) {
           setMorningAthkar(online.morning.length > 0 ? online.morning : MORNING_ATHKAR);
           setEveningAthkar(online.evening.length > 0 ? online.evening : EVENING_ATHKAR);
-          setAthkarSource('online');
-          setAthkarSourceLabel(online.source || 'Online source');
           return;
         }
       } catch {
@@ -289,8 +428,6 @@ export default function AthkarScreen() {
 
       setMorningAthkar(MORNING_ATHKAR);
       setEveningAthkar(EVENING_ATHKAR);
-      setAthkarSource('fallback');
-      setAthkarSourceLabel('Built-in fallback');
     };
 
     void loadAthkarOnline();
@@ -465,13 +602,6 @@ export default function AthkarScreen() {
 
   const renderAthkarSection = () => (
     <>
-      <View style={styles.athkarMetaRow}>
-        <Text style={styles.athkarMetaText}>
-          Source: {athkarSource === 'online' ? t.online : t.fallback}
-        </Text>
-        {athkarSourceLabel ? <Text style={styles.athkarMetaText}>{athkarSourceLabel}</Text> : null}
-      </View>
-
       <View style={styles.periodTabs}>
         <TouchableOpacity
           style={[styles.periodTab, athkarPeriod === 'morning' && styles.periodTabActive]}
@@ -490,6 +620,50 @@ export default function AthkarScreen() {
           </Text>
         </TouchableOpacity>
       </View>
+
+      {currentAudioUrl && (
+        <>
+          <CompactPlayerCard
+            isDark={isDark}
+            badgeLabel="🔊"
+            title={athkarPeriod === 'morning' ? t.morningAthkar : t.eveningAthkar}
+            subtitle={t.fullAudioRecitation}
+            currentMs={loadedAudioPeriod === athkarPeriod ? (athkarPlayerStatus.currentTime || 0) * 1000 : 0}
+            durationMs={loadedAudioPeriod === athkarPeriod ? (athkarPlayerStatus.duration || 0) * 1000 : 0}
+            isPlaying={loadedAudioPeriod === athkarPeriod && !!athkarPlayerStatus.playing}
+            disablePrev
+            disableNext
+            onPrev={() => {}}
+            onNext={() => {}}
+            onTogglePlay={toggleAthkarAudio}
+            onSeek={(value) => void seekAthkarAudio(value)}
+            layout="inline"
+          />
+          <TouchableOpacity
+            style={styles.athkarDownloadRow}
+            onPress={() => void handleAthkarDownloadPress()}
+            disabled={downloadingPeriod === athkarPeriod}
+          >
+            {downloadingPeriod === athkarPeriod ? (
+              <>
+                <ActivityIndicator size="small" color={UI_COLORS.primary} />
+                <Text style={styles.athkarDownloadText}>{Math.round(downloadPct * 100)}%</Text>
+              </>
+            ) : (
+              <>
+                <Ionicons
+                  name={downloadedPeriods.has(athkarPeriod) ? 'checkmark-circle' : 'download-outline'}
+                  size={16}
+                  color={downloadedPeriods.has(athkarPeriod) ? UI_COLORS.primary : 'rgba(255,255,255,0.5)'}
+                />
+                <Text style={styles.athkarDownloadText}>
+                  {downloadedPeriods.has(athkarPeriod) ? t.downloadedForOffline : t.downloadForOffline}
+                </Text>
+              </>
+            )}
+          </TouchableOpacity>
+        </>
+      )}
 
       <FlatList
         data={activeAthkarList}
@@ -707,20 +881,20 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(255,255,255,0.15)',
     overflow: 'hidden',
   },
-  athkarMetaRow: {
+  athkarDownloadRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
     marginHorizontal: 16,
-    marginBottom: 8,
-    backgroundColor: 'rgba(255,255,255,0.08)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.15)',
-    borderRadius: UI_RADII.md,
-    paddingHorizontal: 10,
-    paddingVertical: 8,
-    gap: 4,
+    marginTop: -2,
+    marginBottom: 10,
+    paddingVertical: 6,
   },
-  athkarMetaText: {
-    fontSize: 11,
-    color: UI_COLORS.textMuted,
+  athkarDownloadText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: 'rgba(255,255,255,0.6)',
   },
   athkarLoadingBox: {
     alignItems: 'center',

@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect, useMemo, useCall
 import { Audio } from 'expo-av';
 import { getReciter, saveReciter } from '../services/storage';
 import { getGlobalAyahNumber } from '../utils/quranUtils';
+import { getLocalAyahAudioUri, cacheAyahAudio } from '../services/audioDownloadService';
 import { useSettings } from './SettingsContext';
 import { useThemedAlert } from './ThemedAlertContext';
 
@@ -97,7 +98,14 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
     }
 
     try {
-      const uri = `${BASE_URL}/${selectedReciter.id}/${global}.mp3`;
+      const remoteUri = `${BASE_URL}/${selectedReciter.id}/${global}.mp3`;
+      // Play from the local cache when available; otherwise stream and cache
+      // in the background so this ayah replays offline next time.
+      const localUri = await getLocalAyahAudioUri(selectedReciter.id, global);
+      const uri = localUri ?? remoteUri;
+      if (!localUri) {
+        cacheAyahAudio(selectedReciter.id, global, remoteUri);
+      }
 
       const { sound: newSound } = await Audio.Sound.createAsync(
         { uri },

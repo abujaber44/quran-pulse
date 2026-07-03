@@ -230,6 +230,9 @@ export default {
   athkarScreenDesc: 'Morning and evening athkar, Tasbeeh 33x, and the 99 Names of Allah in one place.',
   morningAthkar: 'Morning Athkar',
   eveningAthkar: 'Evening Athkar',
+  fullAudioRecitation: 'Full audio recitation',
+  downloadForOffline: 'Download for offline',
+  downloadedForOffline: 'Downloaded',
   surahDescription: 'Memorize mode helps focused repetition using your memorization pause setting, and Repeat lets you loop a single ayah or custom range.',
   quranPlayerTitle: 'Listen to Quran',
   quranPlayerDesc: 'Listen to the beautiful recitation of the Quran with your favorite reciters. Let the words of Allah soothe your soul and bring tranquility to your heart.',
@@ -242,7 +245,7 @@ export default {
   // Reading Progress
   readingProgress: 'Your Progress',
   dayStreak: 'day streak',
-  ayahsRead: 'ayahs read',
+  ayahsRead: 'ayahs studied',
   surahsCompleted: 'surahs done',
   bestStreak: 'best streak',
   keepReading: 'Start reading to build your streak!',
@@ -291,4 +294,68 @@ export default {
   // Daily Ayah
   dailyAyah: 'Your Daily Ayah',
   selectedForYou: 'Selected for you',
+
+  previousBookmarks: 'Previous',
+
+  // Stats
+  myStats: 'My Stats',
+  myStatsDesc: 'Your reading, memorization, and khatmah journey at a glance',
+  last7Days: 'Last 7 Days',
+  noActivityYet: 'Your reading activity will appear here as you read',
+  attempts: 'quiz answers',
+  quizAccuracy: 'accuracy',
+  versesMastered: 'mastered',
+
+  // Ramadan
+  ramadan: 'Ramadan',
+  ramadanMubarak: 'Ramadan Mubarak',
+  iftarIn: 'Iftar in',
+  suhoorEndsIn: 'Suhoor ends in',
+  iftarTime: 'Iftar',
+
+  // Offline audio
+  removeDownload: 'Remove download?',
+  downloadFailed: 'Download failed. Check your connection.',
+
+  // Translation & Tafsir settings
+  translationSetting: 'Translation',
+  translationSettingDesc: 'Choose the English translation shown with each ayah',
+  tafsirSetting: 'Tafseer Source',
+  tafsirSettingDesc: 'Choose which tafseer is shown for ayah explanations',
+
+  // Mushaf Jump Navigation
+  jumpTo: 'Jump to',
+  goToPage: 'Go to page',
+  go: 'Go',
+  surahTab: 'Surah',
+  pageTab: 'Page',
+
+  // Khatmah
+  khatmah: 'Khatmah',
+  startKhatmah: 'Start a Khatmah',
+  khatmahIntro: 'Set a goal to complete the entire Quran',
+  khatmahChooseDays: 'Complete the Quran in',
+  days: 'days',
+  customDays: 'Custom',
+  enterDays: 'Number of days',
+  khatmahDay: 'Day',
+  ofWord: 'of',
+  pagesRead: 'pages read',
+  pagesLeftToday: 'pages left today',
+  todayGoalMet: "Today's goal complete, keep going!",
+  khatmahDone: 'Khatmah completed — may Allah accept it 🤲',
+  endKhatmah: 'End Khatmah',
+  endKhatmahConfirm: 'End this khatmah? Your progress will be lost.',
+  startNewKhatmah: 'Start a new Khatmah',
+
+  // Memorization Review
+  dueForReview: 'due for review',
+  reviewNow: 'Review',
+  practice: 'Practice',
+  tapToReveal: 'Tap to reveal the ayah',
+  knewIt: 'I knew it',
+  stillLearning: 'Still learning',
+  practiceComplete: 'Practice complete!',
+  practiceStats: 'known this round',
+  noVersesToPractice: 'Bookmark ayahs in Learn mode to practice them here',
 } as const;

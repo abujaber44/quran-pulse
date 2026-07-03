@@ -21,9 +21,10 @@ import { UI_GLASS } from '../theme/ui';
 import GlassBackground from '../components/GlassBackground';
 import ScreenIntroTile from '../components/ScreenIntroTile';
 import MemorizationQuizModal from '../components/MemorizationQuizModal';
+import RevealPracticeModal from '../components/RevealPracticeModal';
 import type { BookmarkForQuiz } from '../services/aiService';
 import { useLanguage } from '../i18n';
-import { getPageBookmark, savePageBookmark, type PageBookmark } from './MushafReaderScreen';
+import { getPageBookmark, savePageBookmark, getPageBookmarkHistory, type PageBookmark } from './MushafReaderScreen';
 import { Ionicons } from '@expo/vector-icons';
 
 type RootStackParamList = {
@@ -42,7 +43,9 @@ export default function BookmarksScreen() {
   const [loading, setLoading] = useState(true);
   const [selectedTag, setSelectedTag] = useState<'all' | BookmarkTag>('all');
   const [pageBookmark, setPageBookmarkState] = useState<PageBookmark | null>(null);
+  const [bookmarkHistory, setBookmarkHistory] = useState<PageBookmark[]>([]);
   const [quizModalVisible, setQuizModalVisible] = useState(false);
+  const [practiceModalVisible, setPracticeModalVisible] = useState(false);
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
   const { settings } = useSettings();
   const { showAlert } = useThemedAlert();
@@ -63,16 +66,18 @@ export default function BookmarksScreen() {
 
   const loadData = async () => {
     try {
-      const [bookmarkData, surahData, pageBm] = await Promise.all([
+      const [bookmarkData, surahData, pageBm, history] = await Promise.all([
         getBookmarks(),
         fetchSurahs(),
         getPageBookmark(),
+        getPageBookmarkHistory(),
       ]);
 
       bookmarkData.sort((a, b) => b.timestamp - a.timestamp);
       setBookmarks(bookmarkData);
       setSurahs(surahData);
       setPageBookmarkState(pageBm);
+      setBookmarkHistory(history.filter((h) => h.page !== pageBm?.page));
     } catch (error) {
       console.error('Failed to load bookmarks or surahs', error);
       showAlert({
@@ -167,7 +172,7 @@ export default function BookmarksScreen() {
     );
   }
 
-  if (bookmarks.length === 0) {
+  if (bookmarks.length === 0 && !pageBookmark && bookmarkHistory.length === 0) {
     return (
       <GlassBackground isDark={isDark}>
         <View style={styles.container}>
@@ -216,39 +221,68 @@ export default function BookmarksScreen() {
       </View>
 
       {selectedTag === 'memorize' && visibleBookmarks.length >= 1 && (
-        <TouchableOpacity
-          style={styles.coachButton}
-          onPress={() => setQuizModalVisible(true)}
-        >
-          <Text style={styles.coachButtonText}>{t.aiCoach}</Text>
-        </TouchableOpacity>
+        <View style={styles.memorizeActionsRow}>
+          <TouchableOpacity
+            style={[styles.coachButton, styles.memorizeActionButton]}
+            onPress={() => setQuizModalVisible(true)}
+          >
+            <Text style={styles.coachButtonText}>{t.aiCoach}</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.practiceButton, styles.memorizeActionButton]}
+            onPress={() => setPracticeModalVisible(true)}
+          >
+            <Text style={styles.coachButtonText}>🎙 {t.practice}</Text>
+          </TouchableOpacity>
+        </View>
       )}
 
-      {(selectedTag === 'all' || selectedTag === 'read_recite') && pageBookmark && (
+      {(selectedTag === 'all' || selectedTag === 'read_recite') &&
+        (pageBookmark || bookmarkHistory.length > 0) && (
         <View style={styles.pageBookmarkCard}>
-          <View style={styles.pageBookmarkHeader}>
-            <Ionicons name="bookmark" size={18} color="#f5a623" />
-            <Text style={styles.pageBookmarkTitle}>
-              {t.readRecite} — {t.page} {pageBookmark.page}
-              {pageBookmark.ayahNumber ? ` · ${t.ayah} ${pageBookmark.ayahNumber}` : ''}
-            </Text>
-          </View>
-          <View style={styles.pageBookmarkActions}>
-            <TouchableOpacity
-              style={styles.pageBookmarkOpen}
-              onPress={() => navigation.navigate('MushafReader' as any, { juzNumber: 1, initialPage: pageBookmark.page })}
-            >
-              <Text style={styles.pageBookmarkOpenText}>{t.continueFrom}</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              onPress={async () => {
-                await savePageBookmark(null);
-                setPageBookmarkState(null);
-              }}
-            >
-              <Text style={styles.pageBookmarkRemove}>{t.remove}</Text>
-            </TouchableOpacity>
-          </View>
+          {pageBookmark && (
+            <>
+              <View style={styles.pageBookmarkHeader}>
+                <Ionicons name="bookmark" size={18} color="#f5a623" />
+                <Text style={styles.pageBookmarkTitle}>
+                  {t.readRecite} — {t.page} {pageBookmark.page}
+                  {pageBookmark.ayahNumber ? ` · ${t.ayah} ${pageBookmark.ayahNumber}` : ''}
+                </Text>
+              </View>
+              <View style={styles.pageBookmarkActions}>
+                <TouchableOpacity
+                  style={styles.pageBookmarkOpen}
+                  onPress={() => navigation.navigate('MushafReader' as any, { juzNumber: 1, initialPage: pageBookmark.page })}
+                >
+                  <Text style={styles.pageBookmarkOpenText}>{t.continueFrom}</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={async () => {
+                    // Removing archives the bookmark into history inside savePageBookmark
+                    await savePageBookmark(null);
+                    setPageBookmarkState(null);
+                    setBookmarkHistory(await getPageBookmarkHistory());
+                  }}
+                >
+                  <Text style={styles.pageBookmarkRemove}>{t.remove}</Text>
+                </TouchableOpacity>
+              </View>
+            </>
+          )}
+          {bookmarkHistory.length > 0 && (
+            <View style={[styles.historyRow, !pageBookmark && styles.historyRowStandalone]}>
+              <Text style={styles.historyLabel}>{t.previousBookmarks}:</Text>
+              {bookmarkHistory.map((h) => (
+                <TouchableOpacity
+                  key={`hist-${h.page}`}
+                  style={styles.historyChipSmall}
+                  onPress={() => navigation.navigate('MushafReader' as any, { juzNumber: 1, initialPage: h.page })}
+                >
+                  <Text style={styles.historyChipSmallText}>{t.page} {h.page}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          )}
         </View>
       )}
 
@@ -276,6 +310,12 @@ export default function BookmarksScreen() {
             ayahText: b.ayahText,
             translation: b.translation,
           }))}
+      />
+
+      <RevealPracticeModal
+        visible={practiceModalVisible}
+        onClose={() => setPracticeModalVisible(false)}
+        bookmarks={bookmarks.filter((b) => b.tag === 'memorize')}
       />
       </View>
     </GlassBackground>
@@ -416,10 +456,28 @@ const styles = StyleSheet.create({
     color: UI_COLORS.text,
     textAlign: 'center',
   },
+  memorizeActionsRow: {
+    flexDirection: 'row',
+    marginHorizontal: 16,
+    marginBottom: 12,
+    gap: 10,
+  },
+  memorizeActionButton: {
+    flex: 1,
+    marginHorizontal: 0,
+    marginBottom: 0,
+  },
   coachButton: {
     marginHorizontal: 16,
     marginBottom: 12,
     backgroundColor: UI_COLORS.accent,
+    paddingVertical: 14,
+    borderRadius: UI_RADII.sm,
+    alignItems: 'center',
+    ...UI_SHADOWS.card,
+  },
+  practiceButton: {
+    backgroundColor: UI_COLORS.primary,
     paddingVertical: 14,
     borderRadius: UI_RADII.sm,
     alignItems: 'center',
@@ -472,5 +530,37 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: UI_COLORS.danger,
     fontWeight: '600',
+  },
+  historyRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginTop: 12,
+    paddingTop: 10,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: 'rgba(255,255,255,0.15)',
+  },
+  historyRowStandalone: {
+    marginTop: 0,
+    paddingTop: 0,
+    borderTopWidth: 0,
+  },
+  historyLabel: {
+    fontSize: 12,
+    color: UI_COLORS.textMuted,
+  },
+  historyChipSmall: {
+    backgroundColor: 'rgba(255,255,255,0.08)',
+    borderWidth: 1,
+    borderColor: 'rgba(245,166,35,0.3)',
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+  },
+  historyChipSmallText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#f5c778',
   },
 });

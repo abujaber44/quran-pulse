@@ -242,11 +242,11 @@ const styles = StyleSheet.create({
     backgroundColor: UI_COLORS.surface, paddingVertical: 10, paddingHorizontal: 14,
     borderRadius: UI_RADII.sm, borderWidth: 1, borderColor: UI_COLORS.border,
   },
-  followUpText: { fontSize: 13, color: UI_COLORS.accent, fontWeight: '500' },
+  followUpText: { fontSize: 13, color: '#FFFFFF', fontWeight: '500' },
   inputRow: {
     flexDirection: 'row', alignItems: 'flex-end',
     paddingHorizontal: 12, paddingTop: 10,
-    paddingBottom: Platform.OS === 'android' ? 32 : 10,
+    paddingBottom: Platform.OS === 'android' ? 56 : 10,
     backgroundColor: UI_COLORS.surface,
     borderTopWidth: 1, borderTopColor: UI_COLORS.border, gap: 8,
   },

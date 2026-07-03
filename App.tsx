@@ -31,6 +31,7 @@ import AthanDiagnosticsScreen from './src/screens/AthanDiagnosticsScreen';
 import QiblaCompassScreen from './src/screens/QiblaCompassScreen';
 import QuranMiraclesScreen from './src/screens/QuranMiraclesScreen';
 import MushafReaderScreen from './src/screens/MushafReaderScreen';
+import StatsScreen from './src/screens/StatsScreen';
 
 const Stack = createNativeStackNavigator();
 const isExpoGo = Constants.appOwnership === 'expo';
@@ -227,6 +228,11 @@ export default function App() {
             <Stack.Screen
               name="QuranMiracles"
               component={QuranMiraclesScreen}
+              options={({ navigation }) => getSharedHeaderOptions(navigation)}
+            />
+            <Stack.Screen
+              name="Stats"
+              component={StatsScreen}
               options={({ navigation }) => getSharedHeaderOptions(navigation)}
             />
             <Stack.Screen

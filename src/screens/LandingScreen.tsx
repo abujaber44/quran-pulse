@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState, useMemo } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Animated, ScrollView, Platform, Easing } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Animated, ScrollView, Platform, Easing, Modal, Pressable, TextInput, Alert } from 'react-native';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import type { StackNavigationProp } from '@react-navigation/stack';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -18,6 +18,16 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { fetchSurahs } from '../services/quranApi';
 import { getBookmarks } from '../services/bookmarkService';
 import { fetchDailyPersonalizedAyah, type DailyAyah } from '../services/aiService';
+import {
+  getKhatmah,
+  startKhatmah,
+  endKhatmah,
+  getKhatmahStatus,
+  type KhatmahPlan,
+} from '../services/khatmahService';
+import { getReviewSchedule, getDueVerseKeys } from '../services/memorizationService';
+import { refreshDailyReminder, scheduleStreakProtection } from '../services/dailyReminderService';
+import { getRamadanStatus, countdownTo, type RamadanStatus } from '../services/ramadanService';
 
 type RootStackParamList = {
   MemorizeUnderstand: undefined;
@@ -52,6 +62,11 @@ export default function LandingScreen() {
   const [surahs, setSurahs] = useState<any[]>([]);
   const [dailyAyah, setDailyAyah] = useState<DailyAyah | null>(null);
   const [loadingDailyAyah, setLoadingDailyAyah] = useState(false);
+  const [khatmah, setKhatmah] = useState<KhatmahPlan | null>(null);
+  const [showKhatmahModal, setShowKhatmahModal] = useState(false);
+  const [customDaysInput, setCustomDaysInput] = useState('');
+  const [dueReviewCount, setDueReviewCount] = useState(0);
+  const [ramadan, setRamadan] = useState<RamadanStatus | null>(null);
 
   const shimmerAnim = useRef(new Animated.Value(0)).current;
   const phraseFade = useRef(new Animated.Value(0)).current;
@@ -94,12 +109,54 @@ export default function LandingScreen() {
         setStreak(s);
         setLastRead(lr);
       });
+      getKhatmah().then(setKhatmah);
+      getRamadanStatus().then(setRamadan).catch(() => {});
+      Promise.all([getBookmarks(), getReviewSchedule()]).then(([bookmarks, schedule]) => {
+        const memorizeKeys = bookmarks
+          .filter((b) => b.tag === 'memorize')
+          .map((b) => `${b.surahId}:${b.ayahNum}`);
+        setDueReviewCount(getDueVerseKeys(memorizeKeys, schedule).length);
+      });
     }, [])
   );
+
+  const khatmahStatus = khatmah ? getKhatmahStatus(khatmah) : null;
+
+  const handleStartKhatmah = useCallback((days: number) => {
+    if (!days || days < 1 || days > 365) return;
+    startKhatmah(days).then((plan) => {
+      setKhatmah(plan);
+      setShowKhatmahModal(false);
+      setCustomDaysInput('');
+    });
+  }, []);
+
+  const handleEndKhatmah = useCallback(() => {
+    Alert.alert(t.endKhatmah, t.endKhatmahConfirm, [
+      { text: t.cancel, style: 'cancel' },
+      {
+        text: t.endKhatmah,
+        style: 'destructive',
+        onPress: () => endKhatmah().then(() => setKhatmah(null)),
+      },
+    ]);
+  }, [t]);
+
+  const khatmahNextPage = khatmah && khatmah.readPages.length > 0
+    ? Math.min(604, Math.max(...khatmah.readPages) + 1)
+    : 1;
 
   useEffect(() => {
     fetchSurahs().then(setSurahs);
   }, []);
+
+  // Rotate the next week of reminder content and arm streak protection
+  useEffect(() => {
+    refreshDailyReminder(lang).catch(() => {});
+    getReadingStreak()
+      .then((s) => scheduleStreakProtection(s, lang))
+      .catch(() => {});
+  }, [lang]);
 
   useEffect(() => {
     const loadDailyAyah = async () => {
@@ -159,7 +216,11 @@ export default function LandingScreen() {
 
 
         {progress && streak && (progress.totalAyahsRead > 0 || streak.currentStreak > 0) ? (
-          <View style={styles.progressCard}>
+          <TouchableOpacity
+            style={styles.progressCard}
+            activeOpacity={0.85}
+            onPress={() => (navigation as any).navigate('Stats')}
+          >
             <Text style={styles.progressTitle}>{t.readingProgress}</Text>
             <View style={styles.progressStats}>
               <View style={styles.progressStat}>
@@ -178,8 +239,85 @@ export default function LandingScreen() {
             {streak.longestStreak > 1 && (
               <Text style={styles.progressBest}>🏆 {t.bestStreak}: {streak.longestStreak} {t.dayStreak}</Text>
             )}
-          </View>
+          </TouchableOpacity>
         ) : null}
+
+        {ramadan?.isRamadan && (
+          <TouchableOpacity
+            style={styles.ramadanCard}
+            activeOpacity={0.85}
+            onPress={() => navigation.navigate('PrayerTimes')}
+          >
+            <Text style={styles.ramadanTitle}>
+              🌙 {t.ramadan} — {t.khatmahDay} {ramadan.dayOfRamadan}
+            </Text>
+            <Text style={styles.ramadanMeta}>
+              {(() => {
+                if (ramadan.fajr) {
+                  const suhoor = countdownTo(ramadan.fajr);
+                  if (suhoor) return `${t.suhoorEndsIn} ${suhoor}`;
+                }
+                if (ramadan.maghrib) {
+                  const iftar = countdownTo(ramadan.maghrib);
+                  if (iftar) return `${t.iftarIn} ${iftar}`;
+                  return `${t.iftarTime}: ${ramadan.maghrib}`;
+                }
+                return t.ramadanMubarak;
+              })()}
+            </Text>
+          </TouchableOpacity>
+        )}
+
+        {khatmahStatus ? (
+          <TouchableOpacity
+            style={styles.khatmahCard}
+            activeOpacity={0.85}
+            onPress={() => (navigation as any).navigate('MushafReader', { juzNumber: 1, initialPage: khatmahNextPage })}
+          >
+            <View style={styles.khatmahHeader}>
+              <Text style={styles.khatmahTitle}>
+                📿 {t.khatmah} — {t.khatmahDay} {khatmahStatus.dayNumber} {t.ofWord} {khatmahStatus.targetDays}
+              </Text>
+              <TouchableOpacity onPress={handleEndKhatmah} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                <Text style={styles.khatmahEnd}>✕</Text>
+              </TouchableOpacity>
+            </View>
+            <View style={styles.khatmahBarTrack}>
+              <View style={[styles.khatmahBarFill, { width: `${khatmahStatus.percent}%` }]} />
+            </View>
+            <Text style={styles.khatmahMeta}>
+              {khatmahStatus.completed
+                ? t.khatmahDone
+                : `${khatmahStatus.pagesRead}/${khatmahStatus.totalPages} ${t.pagesRead} · ${
+                    khatmahStatus.leftToday > 0
+                      ? `${khatmahStatus.leftToday} ${t.pagesLeftToday}`
+                      : t.todayGoalMet
+                  }`}
+            </Text>
+          </TouchableOpacity>
+        ) : (
+          <TouchableOpacity
+            style={styles.khatmahStartCard}
+            activeOpacity={0.85}
+            onPress={() => setShowKhatmahModal(true)}
+          >
+            <Text style={styles.khatmahStartTitle}>📿 {t.startKhatmah}</Text>
+            <Text style={styles.khatmahStartSubtitle}>{t.khatmahIntro}</Text>
+          </TouchableOpacity>
+        )}
+
+        {dueReviewCount > 0 && (
+          <TouchableOpacity
+            style={styles.reviewCard}
+            activeOpacity={0.85}
+            onPress={() => navigation.navigate('Bookmarks')}
+          >
+            <Text style={styles.reviewCardText}>
+              🧠 {dueReviewCount} {t.verses} {t.dueForReview}
+            </Text>
+            <Text style={styles.reviewCardAction}>{t.reviewNow} ›</Text>
+          </TouchableOpacity>
+        )}
 
         {(dailyAyah || loadingDailyAyah) && (
           <View style={styles.dailyAyahCard}>
@@ -290,6 +428,44 @@ export default function LandingScreen() {
           </View>
         </View>
       </ScrollView>
+
+      <Modal
+        visible={showKhatmahModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowKhatmahModal(false)}
+      >
+        <Pressable style={styles.khatmahModalBackdrop} onPress={() => setShowKhatmahModal(false)}>
+          <Pressable style={styles.khatmahModalCard} onPress={() => undefined}>
+            <Text style={styles.khatmahModalTitle}>📿 {t.startKhatmah}</Text>
+            <Text style={styles.khatmahModalSubtitle}>{t.khatmahChooseDays}</Text>
+            <View style={styles.khatmahDayOptions}>
+              {[30, 60, 90].map((d) => (
+                <TouchableOpacity key={d} style={styles.khatmahDayOption} onPress={() => handleStartKhatmah(d)}>
+                  <Text style={styles.khatmahDayOptionNum}>{d}</Text>
+                  <Text style={styles.khatmahDayOptionLabel}>{t.days}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+            <View style={styles.khatmahCustomRow}>
+              <TextInput
+                style={styles.khatmahCustomInput}
+                placeholder={t.enterDays}
+                placeholderTextColor="rgba(255,255,255,0.3)"
+                value={customDaysInput}
+                onChangeText={setCustomDaysInput}
+                keyboardType="number-pad"
+              />
+              <TouchableOpacity
+                style={styles.khatmahCustomGo}
+                onPress={() => handleStartKhatmah(Number(customDaysInput.trim()))}
+              >
+                <Text style={styles.khatmahCustomGoText}>{t.go}</Text>
+              </TouchableOpacity>
+            </View>
+          </Pressable>
+        </Pressable>
+      </Modal>
     </LinearGradient>
   );
 }
@@ -381,6 +557,188 @@ const styles = StyleSheet.create({
     color: 'rgba(215,239,225,0.6)',
     textAlign: 'center',
     marginTop: 10,
+  },
+  ramadanCard: {
+    backgroundColor: 'rgba(108,92,231,0.14)',
+    borderWidth: 1,
+    borderColor: 'rgba(162,155,254,0.35)',
+    borderRadius: UI_RADII.xl,
+    padding: 14,
+    marginBottom: 16,
+    alignItems: 'center',
+  },
+  ramadanTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#c9c3f7',
+    marginBottom: 4,
+  },
+  ramadanMeta: {
+    fontSize: 13,
+    color: 'rgba(220,216,248,0.85)',
+  },
+  khatmahCard: {
+    backgroundColor: 'rgba(245,166,35,0.1)',
+    borderWidth: 1,
+    borderColor: 'rgba(245,166,35,0.3)',
+    borderRadius: UI_RADII.xl,
+    padding: 16,
+    marginBottom: 16,
+  },
+  khatmahHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  khatmahTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#f5c778',
+  },
+  khatmahEnd: {
+    fontSize: 14,
+    color: 'rgba(255,255,255,0.35)',
+    fontWeight: '600',
+  },
+  khatmahBarTrack: {
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: 'rgba(255,255,255,0.12)',
+    overflow: 'hidden',
+    marginBottom: 10,
+  },
+  khatmahBarFill: {
+    height: '100%',
+    borderRadius: 4,
+    backgroundColor: '#f5a623',
+  },
+  khatmahMeta: {
+    fontSize: 12,
+    color: 'rgba(240,228,205,0.85)',
+    textAlign: 'center',
+  },
+  khatmahStartCard: {
+    backgroundColor: 'rgba(245,166,35,0.08)',
+    borderWidth: 1,
+    borderColor: 'rgba(245,166,35,0.25)',
+    borderRadius: UI_RADII.xl,
+    padding: 16,
+    marginBottom: 16,
+    alignItems: 'center',
+  },
+  khatmahStartTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#f5c778',
+    marginBottom: 4,
+  },
+  khatmahStartSubtitle: {
+    fontSize: 12,
+    color: 'rgba(240,228,205,0.7)',
+    textAlign: 'center',
+  },
+  reviewCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: 'rgba(155,89,182,0.12)',
+    borderWidth: 1,
+    borderColor: 'rgba(155,89,182,0.3)',
+    borderRadius: UI_RADII.lg,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    marginBottom: 16,
+  },
+  reviewCardText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: UI_COLORS.white,
+    flex: 1,
+  },
+  reviewCardAction: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#c39bd3',
+  },
+  khatmahModalBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(5,18,31,0.6)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 30,
+  },
+  khatmahModalCard: {
+    width: '100%',
+    backgroundColor: 'rgba(18,46,63,0.97)',
+    borderRadius: UI_RADII.lg,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.15)',
+    padding: 20,
+  },
+  khatmahModalTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#f5c778',
+    textAlign: 'center',
+  },
+  khatmahModalSubtitle: {
+    fontSize: 13,
+    color: 'rgba(255,255,255,0.6)',
+    textAlign: 'center',
+    marginTop: 6,
+    marginBottom: 16,
+  },
+  khatmahDayOptions: {
+    flexDirection: 'row',
+    gap: 10,
+    marginBottom: 14,
+  },
+  khatmahDayOption: {
+    flex: 1,
+    backgroundColor: 'rgba(255,255,255,0.08)',
+    borderWidth: 1,
+    borderColor: 'rgba(245,166,35,0.3)',
+    borderRadius: UI_RADII.md,
+    paddingVertical: 14,
+    alignItems: 'center',
+  },
+  khatmahDayOptionNum: {
+    fontSize: 22,
+    fontWeight: '800',
+    color: '#f5a623',
+  },
+  khatmahDayOptionLabel: {
+    fontSize: 12,
+    color: 'rgba(255,255,255,0.6)',
+    marginTop: 2,
+  },
+  khatmahCustomRow: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  khatmahCustomInput: {
+    flex: 1,
+    backgroundColor: 'rgba(255,255,255,0.08)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.15)',
+    borderRadius: UI_RADII.sm,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    fontSize: 16,
+    color: UI_COLORS.white,
+    textAlign: 'center',
+  },
+  khatmahCustomGo: {
+    backgroundColor: '#f5a623',
+    borderRadius: UI_RADII.sm,
+    paddingHorizontal: 22,
+    justifyContent: 'center',
+  },
+  khatmahCustomGoText: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#000',
   },
   dailyAyahCard: {
     backgroundColor: 'rgba(31,157,85,0.08)',

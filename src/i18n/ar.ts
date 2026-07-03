@@ -230,6 +230,9 @@ export default {
   athkarScreenDesc: 'أذكار الصباح والمساء، تسبيح ٣٣، وأسماء الله الحسنى الـ٩٩ في مكان واحد.',
   morningAthkar: 'أذكار الصباح',
   eveningAthkar: 'أذكار المساء',
+  fullAudioRecitation: 'تلاوة صوتية كاملة',
+  downloadForOffline: 'تنزيل للاستماع دون اتصال',
+  downloadedForOffline: 'تم التنزيل',
   surahDescription: 'وضع الحفظ يساعد على التكرار المركّز، ووضع التكرار يتيح لك تكرار آية واحدة أو نطاق مخصص.',
   quranPlayerTitle: 'استمع للقرآن',
   quranPlayerDesc: 'استمع لتلاوة القرآن الكريم بأصوات قرّائك المفضلين. دع كلمات الله تسكّن روحك وتجلب الطمأنينة لقلبك.',
@@ -242,7 +245,7 @@ export default {
   // Reading Progress
   readingProgress: 'رحلتك مع القرآن',
   dayStreak: 'يوم متواصل',
-  ayahsRead: 'آية',
+  ayahsRead: 'آية مدروسة',
   surahsCompleted: 'سورة',
   bestStreak: 'أطول مداومة',
   keepReading: 'ابدأ رحلتك مع كتاب الله!',
@@ -291,4 +294,68 @@ export default {
   // Daily Ayah
   dailyAyah: 'آيتك اليومية',
   selectedForYou: 'مختارة لك',
+
+  previousBookmarks: 'السابقة',
+
+  // Stats
+  myStats: 'إحصائياتي',
+  myStatsDesc: 'رحلتك في القراءة والحفظ والختمة في نظرة واحدة',
+  last7Days: 'آخر ٧ أيام',
+  noActivityYet: 'سيظهر نشاط قراءتك هنا كلما قرأت',
+  attempts: 'إجابة',
+  quizAccuracy: 'الدقة',
+  versesMastered: 'متقنة',
+
+  // Ramadan
+  ramadan: 'رمضان',
+  ramadanMubarak: 'رمضان مبارك',
+  iftarIn: 'الإفطار بعد',
+  suhoorEndsIn: 'ينتهي السحور بعد',
+  iftarTime: 'الإفطار',
+
+  // Offline audio
+  removeDownload: 'حذف التنزيل؟',
+  downloadFailed: 'فشل التنزيل. تحقق من الاتصال.',
+
+  // Translation & Tafsir settings
+  translationSetting: 'الترجمة',
+  translationSettingDesc: 'اختر الترجمة الإنجليزية المعروضة مع كل آية',
+  tafsirSetting: 'مصدر التفسير',
+  tafsirSettingDesc: 'اختر التفسير المعروض عند شرح الآيات',
+
+  // Mushaf Jump Navigation
+  jumpTo: 'الانتقال إلى',
+  goToPage: 'اذهب إلى صفحة',
+  go: 'اذهب',
+  surahTab: 'سورة',
+  pageTab: 'صفحة',
+
+  // Khatmah
+  khatmah: 'ختمة',
+  startKhatmah: 'ابدأ ختمة',
+  khatmahIntro: 'حدد هدفاً لختم القرآن الكريم',
+  khatmahChooseDays: 'ختم القرآن خلال',
+  days: 'يوم',
+  customDays: 'مخصص',
+  enterDays: 'عدد الأيام',
+  khatmahDay: 'اليوم',
+  ofWord: 'من',
+  pagesRead: 'صفحة مقروءة',
+  pagesLeftToday: 'صفحة متبقية اليوم',
+  todayGoalMet: 'أنجزت ورد اليوم، واصل!',
+  khatmahDone: 'تمت الختمة — تقبّل الله منك 🤲',
+  endKhatmah: 'إنهاء الختمة',
+  endKhatmahConfirm: 'إنهاء هذه الختمة؟ سيتم فقدان تقدمك.',
+  startNewKhatmah: 'ابدأ ختمة جديدة',
+
+  // Memorization Review
+  dueForReview: 'بحاجة للمراجعة',
+  reviewNow: 'راجع الآن',
+  practice: 'تسميع',
+  tapToReveal: 'اضغط لإظهار الآية',
+  knewIt: 'أتقنتها',
+  stillLearning: 'ما زلت أحفظ',
+  practiceComplete: 'اكتمل التسميع!',
+  practiceStats: 'متقنة في هذه الجولة',
+  noVersesToPractice: 'احفظ آيات من وضع التعلّم لتسميعها هنا',
 } as const;

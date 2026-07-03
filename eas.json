@@ -15,7 +15,9 @@
       "distribution": "internal",
       "env": {
         "EXPO_PUBLIC_APP_ENV": "preview",
-        "EXPO_PUBLIC_AI_API_URL": "https://quran-pulse-app-umber.vercel.app"
+        "EXPO_PUBLIC_AI_API_URL": "https://quran-pulse-app-umber.vercel.app",
+        "EXPO_PUBLIC_ATHKAR_MORNING_AUDIO_URL": "https://archive.org/download/sheikh-mishary-rashid-alafasy-azkar/Sheikh%20Mishary%20Rashid%20Alafasy%20-%20%D8%A3%D8%B0%D9%83%D8%A7%D8%B1%20%D8%A7%D9%84%D8%B5%D8%A8%D8%A7%D8%AD.mp3",
+        "EXPO_PUBLIC_ATHKAR_EVENING_AUDIO_URL": "https://archive.org/download/sheikh-mishary-rashid-alafasy-azkar/Sheikh%20Mishary%20Rashid%20Alafasy%20-%20%D8%A3%D8%B0%D9%83%D8%A7%D8%B1%20%D8%A7%D9%84%D9%85%D8%B3%D8%A7%D8%A1.mp3"
       },
       "android": {
         "buildType": "apk"  
@@ -28,7 +30,9 @@
       "autoIncrement": true,
       "env": {
         "EXPO_PUBLIC_APP_ENV": "production",
-        "EXPO_PUBLIC_AI_API_URL": "https://quran-pulse-app-umber.vercel.app"
+        "EXPO_PUBLIC_AI_API_URL": "https://quran-pulse-app-umber.vercel.app",
+        "EXPO_PUBLIC_ATHKAR_MORNING_AUDIO_URL": "https://archive.org/download/sheikh-mishary-rashid-alafasy-azkar/Sheikh%20Mishary%20Rashid%20Alafasy%20-%20%D8%A3%D8%B0%D9%83%D8%A7%D8%B1%20%D8%A7%D9%84%D8%B5%D8%A8%D8%A7%D8%AD.mp3",
+        "EXPO_PUBLIC_ATHKAR_EVENING_AUDIO_URL": "https://archive.org/download/sheikh-mishary-rashid-alafasy-azkar/Sheikh%20Mishary%20Rashid%20Alafasy%20-%20%D8%A3%D8%B0%D9%83%D8%A7%D8%B1%20%D8%A7%D9%84%D9%85%D8%B3%D8%A7%D8%A1.mp3"
       },
       "android": {
         "buildType": "app-bundle"  

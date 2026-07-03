@@ -11,17 +11,26 @@ Quran Pulse is a peaceful, modern companion app to help you connect deeply with 
 #### 📖 Mushaf Reader
 - **Full Quran mushaf** — all 604 pages of the Madani mushaf rendered as HD images with dark theme integration
 - **Swipe navigation** — flip through pages right-to-left like a physical mushaf, with seamless reading across juz boundaries
+- **Jump navigation** — go directly to any surah, juz, or page number from a quick picker
 - **Page bookmarking** — bookmark your current page with optional ayah number to pick up where you left off
-- **"Continue reading"** card in the Mushaf tab for one-tap access to your bookmarked page
+- **Bookmark history** — the last 3 replaced page bookmarks stay available as restorable chips in My Bookmarks
+- **Auto-saved reading position** — your last viewed page is remembered automatically, even without an explicit bookmark
+- **"Continue reading"** card in the Mushaf tab for one-tap access to your bookmarked or last-viewed page
+- **Offline mushaf pages** — pages are cached to the device as you read, with the next few pages pre-fetched in the background for seamless offline reading
+- **Khatmah planner** — set a goal to complete the Quran in 30/60/90 or a custom number of days; progress and daily quota tracked automatically as you read
 
 #### 📚 Learn Mode
 - **Complete Quran** with beautiful Uthmani script and multiple Arabic font choices (Scheherazade New default, Amiri Quran, Uthmanic Hafs, Noto Naskh, and more)
-- **Clear English translation** (Abdel Haleem)
-- **On-demand Tafseer** (التفسير الميسر – simple Arabic explanation)
+- **Multiple English translations** — Abdel Haleem, Saheeh International, and Mufti Taqi Usmani, selectable in Settings
+- **Multiple Tafseer sources** — Al-Muyassar, Ibn Kathir, As-Saadi, and Al-Qurtubi, selectable in Settings
 - **Tajweed color-coded display** with 16 uniquely colored rules, tappable for instant bilingual explanations (no AI tokens — all built-in)
 - **Word-by-word breakdown** for any ayah with translation and transliteration
 - **Tap-to-reveal ayah actions** — tap any ayah to access Translation, Tafseer, Word-by-word, Tajweed, Ask AI, and Share
+- **Offline-first Quran data** — verses, translations, tafseer, tajweed, and word-by-word are cached locally after first load for instant, offline access
 - **Memorization bookmarks** — bookmark ayahs for memorization with AI-powered quiz testing
+- **Spaced-repetition review** — quiz results schedule each memorized verse for review (1 → 3 → 7 → 14 → 30 → 60 days); a "due for review" reminder appears on the home screen
+- **Hide-and-reveal practice mode** — recite a memorized ayah from memory, reveal it to check, and self-grade — no AI needed
+- Reading progress now counts both playing an ayah's audio **and** tapping to study it (translation, tafseer, word-by-word, etc.)
 
 #### 🎧 Audio Recitation
 - **High-quality audio recitations** with multiple renowned reciters:
@@ -29,14 +38,20 @@ Quran Pulse is a peaceful, modern companion app to help you connect deeply with 
   - Mahmoud Khalil Al-Husary
   - Muhammad Siddiq Al-Minshawi
   - And more
+- **Offline audio downloads** — download any surah's recitation for offline playback, with progress indicator and one-tap removal
+- **Automatic ayah caching** — any ayah played once is cached locally and replays offline afterward
 - **Auto-scroll** during playback
 - **Repeat mode** (single ayah or custom range) for memorization
 - **Memorization mode** support
 
 #### 🏠 Home Dashboard
 - **Daily personalized ayah** — AI-selected based on your reading history, with animated loader and rotating inspirational messages
-- **Reading progress** — streak tracking, ayahs read count, surahs completed
+- **Reading progress** — streak tracking, ayahs studied count, surahs completed, tap through to a full Stats screen
+- **Stats screen** — weekly reading activity chart, quiz accuracy, mastered verses, and khatmah progress in one place
+- **Khatmah progress card** — day number, pages read, and today's remaining quota, one tap from reading to your next page
+- **Ramadan mode** — during Ramadan, a live card shows the day of Ramadan with a suhoor/iftar countdown based on your saved city
 - **Continue learning** — one-tap return to your last studied ayah
+- **Smart daily reminder** — a rotating ayah-based notification in your app language, plus a streak-protection alert if your streak is about to end
 - **Bilingual UI** — full Arabic and English interface with language toggle in Settings
 - **Dark emerald theme** — consistent design across all screens
 
@@ -145,16 +160,26 @@ Expected CMS JSON shape:
 ### 📿 Athkar & Remembrance
 - Morning and evening athkar in one dedicated flow
 - Online athkar content loading via JSON endpoint, with automatic fallback to local content
+- **Full-track audio recitation** of morning and evening athkar (Mishary Rashid Alafasy), with play/pause and seek
+- **Background playback** — athkar audio keeps playing when the app is backgrounded or the screen is locked, with lock-screen controls
+- **Offline audio download** — download the morning/evening track for offline listening, with progress indicator
 - On-demand **Show Fadl** per dhikr card
 - **AI Explain ✦** per dhikr — get the meaning, spiritual significance, and hadith references (cached per item)
 - If Fadl is missing, the app shows Hadith text; if both are missing, a smart guidance fallback is shown
 - Tasbeeh 33x tracker with daily local progress persistence
 - Full 99 Beautiful Names of Allah tab with Arabic, transliteration, and English meaning
 
-Set Athkar endpoint in environment variables:
+Set Athkar content endpoint in environment variables:
 
 ```bash
 EXPO_PUBLIC_ATHKAR_API_URL=https://your-domain.com/athkar.json
+```
+
+Set Athkar audio endpoints (direct, hosted MP3 URLs — optional):
+
+```bash
+EXPO_PUBLIC_ATHKAR_MORNING_AUDIO_URL=https://your-domain.com/morning-athkar.mp3
+EXPO_PUBLIC_ATHKAR_EVENING_AUDIO_URL=https://your-domain.com/evening-athkar.mp3
 ```
 
 Starter dataset (ready to host): [`cms/athkar.json`](cms/athkar.json)
@@ -188,7 +213,9 @@ Expected Athkar JSON shape:
 - **Two bookmark categories**: Memorize (from Learn mode) and Read/Recite (from Mushaf reader)
 - Ayah bookmarks save directly to Memorize for quick quiz access
 - Mushaf page bookmark (single active bookmark) with optional ayah number
-- AI Memorization Coach generates quizzes from memorized ayahs
+- **Bookmark history** — the last 3 replaced page bookmarks are kept as restorable chips, so an accidental overwrite never loses your place
+- **AI Memorization Coach** generates quizzes from memorized ayahs
+- **Practice mode** — hide-and-reveal recitation practice for memorized ayahs, prioritizing verses due for spaced-repetition review
 - Filter by category, add personal notes, remove with one tap
 - Navigate directly to bookmarked ayah or mushaf page
 
@@ -206,17 +233,19 @@ Expected Athkar JSON shape:
 ### 🛠 Tech Stack
 - React Native + Expo (managed workflow)
 - Context API for state management
-- Expo Notifications for Athan alerts and pre-prayer countdowns
-- Expo Audio for recitation playback
+- Expo Notifications for Athan alerts, pre-prayer countdowns, and rotating daily/streak-protection reminders
+- Expo Audio for recitation and athkar playback, with background playback and lock-screen controls
+- Expo File System for offline audio downloads (surah recitations, athkar tracks) and mushaf page caching
 - Expo Location for city detection and Qibla compass heading
 - Expo Image for optimized image loading and caching
 - Expo Linear Gradient for background theming
 - React Native WebView for mushaf page rendering and Android tajweed
-- AsyncStorage for offline caching (daily ayah, AI responses, settings, reading progress, bookmarks)
-- Aladhan API for prayer times and Islamic calendar
+- AsyncStorage for offline caching (Quran text/translations/tafseer/tajweed, daily ayah, AI responses, settings, reading progress, bookmarks, khatmah and review schedules)
+- Aladhan API for prayer times, Islamic calendar, and Ramadan detection
 - Quran.com API for verses, translations, word-by-word, surah info, and tajweed data
-- HD mushaf page images via GitHub CDN (604 Madani mushaf pages)
-- Open tafseer sources (Tafsir Muyassar via CDN)
+- HD mushaf page images via GitHub CDN (604 Madani mushaf pages), downloaded and cached locally with read-ahead prefetch
+- Open tafseer sources (Al-Muyassar, Ibn Kathir, As-Saadi, Al-Qurtubi via CDN)
+- Athkar audio hosted on the Internet Archive (Mishary Rashid Alafasy)
 - **Claude AI (Haiku 4.5)** via Vercel serverless backend for all AI features
 - Vercel serverless functions for secure API proxying (API keys never in the app)
 - i18n system with full Arabic/English support via LanguageContext
