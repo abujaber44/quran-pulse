@@ -595,6 +595,7 @@ const styles = StyleSheet.create({
   },
   list: {
     paddingHorizontal: 16,
+    paddingTop: 6,
     paddingBottom: 26,
   },
   featuredCard: {
@@ -603,7 +604,8 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(245,166,35,0.35)',
     padding: 14,
-    marginVertical: 7,
+    marginTop: 8,
+    marginBottom: 10,
     ...UI_SHADOWS.card,
   },
   featuredHeader: {
