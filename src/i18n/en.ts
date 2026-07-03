@@ -309,13 +309,8 @@ export default {
   // Quran Miracles overhaul
   miracleOfTheDay: 'Miracle of the Day',
   searchMiracles: 'Search miracles...',
-  ayahReferences: 'Ayah References',
-  examplesLabel: 'Examples',
-  openSourceLink: 'Open Source',
   loadingMiracles: 'Loading miracle insights...',
   noMiraclesFound: 'No miracles found.',
-  showMore: 'Show more',
-  showLess: 'Show less',
 
   // Islamic Calendar overhaul
   hijriLabel: 'Hijri',

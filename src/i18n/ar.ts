@@ -309,13 +309,8 @@ export default {
   // Quran Miracles overhaul
   miracleOfTheDay: 'معجزة اليوم',
   searchMiracles: 'ابحث في المعجزات...',
-  ayahReferences: 'الآيات المرتبطة',
-  examplesLabel: 'أمثلة',
-  openSourceLink: 'فتح المصدر',
   loadingMiracles: 'جاري تحميل المعجزات...',
   noMiraclesFound: 'لا توجد نتائج.',
-  showMore: 'عرض المزيد',
-  showLess: 'عرض أقل',
 
   // Islamic Calendar overhaul
   hijriLabel: 'هجري',

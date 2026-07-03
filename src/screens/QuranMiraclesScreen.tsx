@@ -283,94 +283,50 @@ export default function QuranMiraclesScreen() {
     [navigation, showAlert, surahs]
   );
 
+  const isArabic = lang === 'ar';
+
   const renderExpandedBody = (item: MiracleItem) => (
     <>
-      <Text style={styles.cardDetail}>{item.detail}</Text>
+      <Text style={[styles.cardDetail, isArabic && styles.rtlText]}>{item.detail}</Text>
 
       {item.ayahRefs.length > 0 ? (
-        <View style={styles.ayahRefsWrap}>
-          <Text style={styles.ayahRefsTitle}>{t.ayahReferences}</Text>
-          <View style={styles.ayahRefsRow}>
-            {item.ayahRefs.map((ref) => (
-              <TouchableOpacity
-                key={`${item.id}-${ref}`}
-                style={styles.ayahRefChip}
-                onPress={() => navigateToAyahRef(ref)}
-              >
-                <Text style={styles.ayahRefChipText}>{ref}</Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        </View>
-      ) : null}
-
-      {item.tags.length > 0 ? (
-        <View style={styles.tagsRow}>
-          {item.tags.slice(0, 6).map((tag) => (
-            <View key={`${item.id}-${tag}`} style={styles.tagChip}>
-              <Text style={styles.tagChipText}>{tag}</Text>
-            </View>
-          ))}
-        </View>
-      ) : null}
-
-      {item.examples && item.examples.length > 0 ? (
-        <View style={styles.examplesBox}>
-          <Text style={styles.examplesTitle}>{t.examplesLabel}</Text>
-          {item.examples.slice(0, 2).map((example, index) => (
-            <View key={`${item.id}-example-${index}`} style={styles.exampleItem}>
-              <Text style={styles.exampleItemTitle}>{example.title}</Text>
-              <Text style={styles.exampleItemText}>{example.description}</Text>
-              {example.ayahRef ? (
-                <Text style={styles.exampleMeta}>{t.ayah}: {example.ayahRef}</Text>
-              ) : null}
-              {example.sourceUrl ? (
-                <TouchableOpacity
-                  style={styles.exampleSourceButton}
-                  onPress={() => {
-                    void openSourceUrl(example.sourceUrl as string);
-                  }}
-                >
-                  <Text style={styles.sourceButtonText}>{t.openSourceLink}</Text>
-                </TouchableOpacity>
-              ) : null}
-            </View>
+        <View style={styles.ayahRefsRow}>
+          {item.ayahRefs.map((ref) => (
+            <TouchableOpacity
+              key={`${item.id}-${ref}`}
+              style={styles.ayahRefChip}
+              onPress={() => navigateToAyahRef(ref)}
+            >
+              <Text style={styles.ayahRefChipText}>📖 {ref}</Text>
+            </TouchableOpacity>
           ))}
         </View>
       ) : null}
 
       {item.caution ? (
         <View style={styles.cautionBox}>
-          <Text style={styles.cautionLabel}>{t.note}</Text>
-          <Text style={styles.cautionText}>{item.caution}</Text>
+          <Text style={[styles.cautionText, isArabic && styles.rtlText]}>⚠️ {item.caution}</Text>
         </View>
       ) : null}
 
-      <TouchableOpacity
-        style={styles.aiInsightButton}
-        onPress={() => setSelectedMiracle(item)}
-      >
-        <Text style={styles.aiInsightButtonText}>{t.askAiExplainMiracle}</Text>
-      </TouchableOpacity>
-
-      {item.sources.length > 0 ? (
-        <View style={styles.sourcesWrap}>
-          <Text style={styles.sourcesTitle}>{t.sources}</Text>
-          <View style={styles.sourcesRow}>
-            {item.sources.slice(0, 3).map((source) => (
-              <TouchableOpacity
-                key={`${item.id}-${source.url}`}
-                style={styles.sourceButton}
-                onPress={() => {
-                  void openSourceUrl(source.url);
-                }}
-              >
-                <Text style={styles.sourceButtonText}>{source.label}</Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        </View>
-      ) : null}
+      <View style={styles.actionsRow}>
+        <TouchableOpacity
+          style={styles.aiInsightButton}
+          onPress={() => setSelectedMiracle(item)}
+        >
+          <Text style={styles.aiInsightButtonText}>{t.askAiExplainMiracle}</Text>
+        </TouchableOpacity>
+        {item.sources.length > 0 ? (
+          <TouchableOpacity
+            style={styles.sourceButton}
+            onPress={() => {
+              void openSourceUrl(item.sources[0].url);
+            }}
+          >
+            <Text style={styles.sourceButtonText}>🔗 {t.sources}</Text>
+          </TouchableOpacity>
+        ) : null}
+      </View>
     </>
   );
 
@@ -397,8 +353,11 @@ export default function QuranMiraclesScreen() {
           />
         </View>
 
-        <Text style={styles.cardTitle}>{item.title}</Text>
-        <Text style={styles.cardSummary} numberOfLines={isExpanded ? undefined : 3}>
+        <Text style={[styles.cardTitle, isArabic && styles.rtlText]}>{item.title}</Text>
+        <Text
+          style={[styles.cardSummary, isArabic && styles.rtlText]}
+          numberOfLines={isExpanded ? undefined : 3}
+        >
           {item.summary}
         </Text>
 
@@ -429,8 +388,11 @@ export default function QuranMiraclesScreen() {
             color="rgba(245,199,120,0.7)"
           />
         </View>
-        <Text style={styles.featuredTitle}>{miracleOfTheDay.title}</Text>
-        <Text style={styles.featuredSummary} numberOfLines={isExpanded ? undefined : 2}>
+        <Text style={[styles.featuredTitle, isArabic && styles.rtlText]}>{miracleOfTheDay.title}</Text>
+        <Text
+          style={[styles.featuredSummary, isArabic && styles.rtlText]}
+          numberOfLines={isExpanded ? undefined : 2}
+        >
           {miracleOfTheDay.summary}
         </Text>
         {isExpanded && renderExpandedBody(miracleOfTheDay)}
@@ -463,7 +425,7 @@ export default function QuranMiraclesScreen() {
         <View style={styles.searchContainer}>
           <View style={styles.searchWrapper}>
             <TextInput
-              style={styles.searchInput}
+              style={[styles.searchInput, isArabic && styles.rtlText]}
               placeholder={t.searchMiracles}
               placeholderTextColor="rgba(255,255,255,0.35)"
               value={searchQuery}
@@ -484,6 +446,7 @@ export default function QuranMiraclesScreen() {
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
+          style={styles.categoryScrollView}
           contentContainerStyle={styles.categoryScroll}
         >
           {categoryFilters.map((filter) => {
@@ -583,10 +546,16 @@ const styles = StyleSheet.create({
   },
   clearButton: { paddingHorizontal: 16 },
   clearIcon: { fontSize: 20, color: UI_COLORS.textMuted },
+  // flexGrow: 0 stops the horizontal ScrollView from absorbing leftover
+  // vertical space (which stretched the tabs when the list below shrank)
+  categoryScrollView: {
+    flexGrow: 0,
+  },
   categoryScroll: {
     paddingHorizontal: 16,
     paddingBottom: 12,
     gap: 10,
+    alignItems: 'flex-start',
   },
   categoryTab: {
     alignItems: 'center',
@@ -702,16 +671,12 @@ const styles = StyleSheet.create({
     color: UI_COLORS.text,
     lineHeight: 21,
   },
-  ayahRefsWrap: {
-    marginTop: 10,
-  },
-  ayahRefsTitle: {
-    color: UI_COLORS.textMuted,
-    fontSize: 12,
-    fontWeight: '600',
+  rtlText: {
+    textAlign: 'right',
+    writingDirection: 'rtl',
   },
   ayahRefsRow: {
-    marginTop: 6,
+    marginTop: 10,
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 8,
@@ -729,25 +694,6 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '700',
   },
-  tagsRow: {
-    marginTop: 8,
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 6,
-  },
-  tagChip: {
-    borderRadius: 999,
-    borderWidth: 1,
-    borderColor: UI_COLORS.border,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    backgroundColor: 'rgba(255,255,255,0.06)',
-  },
-  tagChipText: {
-    fontSize: 11,
-    color: UI_COLORS.textMuted,
-    fontWeight: '600',
-  },
   cautionBox: {
     marginTop: 10,
     borderRadius: UI_RADII.sm,
@@ -756,95 +702,37 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(224,185,0,0.25)',
     padding: 10,
   },
-  cautionLabel: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: UI_COLORS.text,
-    marginBottom: 3,
-  },
   cautionText: {
     fontSize: 12,
     color: UI_COLORS.textMuted,
     lineHeight: 17,
   },
-  examplesBox: {
-    marginTop: 10,
-    borderRadius: UI_RADII.sm,
-    backgroundColor: 'rgba(45,127,184,0.12)',
-    borderWidth: 1,
-    borderColor: 'rgba(45,127,184,0.25)',
-    padding: 10,
-  },
-  examplesTitle: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: UI_COLORS.text,
-    marginBottom: 6,
-  },
-  exampleItem: {
-    marginBottom: 8,
-  },
-  exampleItemTitle: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: UI_COLORS.text,
-  },
-  exampleItemText: {
-    marginTop: 2,
-    fontSize: 12,
-    lineHeight: 17,
-    color: UI_COLORS.textMuted,
-  },
-  exampleMeta: {
-    marginTop: 3,
-    fontSize: 11,
-    fontWeight: '600',
-    color: UI_COLORS.textMuted,
-  },
-  exampleSourceButton: {
-    marginTop: 6,
-    alignSelf: 'flex-start',
-    borderRadius: UI_RADII.sm,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.15)',
-    backgroundColor: 'rgba(45,127,184,0.15)',
-    paddingHorizontal: 10,
-    paddingVertical: 6,
+  actionsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginTop: 12,
+    marginBottom: 4,
   },
   aiInsightButton: {
+    flex: 1,
     backgroundColor: UI_COLORS.accent,
     paddingVertical: 12,
     borderRadius: UI_RADII.sm,
     alignItems: 'center',
-    marginTop: 12,
-    marginBottom: 4,
   },
   aiInsightButtonText: {
     color: UI_COLORS.white,
     fontSize: 14,
     fontWeight: '700',
   },
-  sourcesWrap: {
-    marginTop: 11,
-  },
-  sourcesTitle: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: UI_COLORS.text,
-    marginBottom: 6,
-  },
-  sourcesRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-  },
   sourceButton: {
     borderRadius: UI_RADII.sm,
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.15)',
     backgroundColor: 'rgba(45,127,184,0.15)',
-    paddingHorizontal: 10,
-    paddingVertical: 7,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
   },
   sourceButtonText: {
     fontSize: 12,
