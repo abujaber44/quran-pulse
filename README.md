@@ -21,7 +21,7 @@ Quran Pulse is a peaceful, modern companion app to help you connect deeply with 
 
 #### 📚 Learn Mode
 - **Complete Quran** with beautiful Uthmani script and multiple Arabic font choices (Scheherazade New default, Amiri Quran, Uthmanic Hafs, Noto Naskh, and more)
-- **Multiple English translations** — Abdel Haleem, The Clear Quran (Khattab), Saheeh International, and Mufti Taqi Usmani, selectable in Settings
+- **Multiple English translations** — Abdel Haleem, Saheeh International, and Mufti Taqi Usmani, selectable in Settings
 - **Multiple Tafseer sources** — Al-Muyassar, Ibn Kathir, As-Saadi, and Al-Qurtubi, selectable in Settings
 - **Tajweed color-coded display** with 16 uniquely colored rules, tappable for instant bilingual explanations (no AI tokens — all built-in)
 - **Word-by-word breakdown** for any ayah with translation and transliteration

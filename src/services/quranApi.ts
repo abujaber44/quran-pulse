@@ -72,7 +72,6 @@ export interface TranslationOption {
 
 export const TRANSLATION_OPTIONS: TranslationOption[] = [
   { id: 85, label: 'Abdel Haleem', labelAr: 'عبد الحليم' },
-  { id: 131, label: 'The Clear Quran (Khattab)', labelAr: 'القرآن الميسر (خطّاب)' },
   { id: 20, label: 'Saheeh International', labelAr: 'صحيح إنترناشونال' },
   { id: 84, label: 'Mufti Taqi Usmani', labelAr: 'تقي عثماني' },
 ];
