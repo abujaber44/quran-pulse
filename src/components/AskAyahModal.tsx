@@ -104,7 +104,7 @@ export default function AskAyahModal({
       <SafeAreaView style={styles.safeArea}>
         <KeyboardAvoidingView
           style={styles.container}
-          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         >
           <View style={styles.header}>
             <View style={styles.headerTextWrap}>
