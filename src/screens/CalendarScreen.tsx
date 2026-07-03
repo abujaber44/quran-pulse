@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useEffect } from 'react';
+import React, { useMemo, useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -6,22 +6,33 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   ScrollView,
+  Modal,
+  Pressable,
 } from 'react-native';
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Ionicons } from '@expo/vector-icons';
 import { useSettings } from '../context/SettingsContext';
 import { useThemedAlert } from '../context/ThemedAlertContext';
 import { resolveArabicFontFamily } from '../theme/fonts';
-import { UI_COLORS, UI_RADII, UI_SHADOWS, UI_GLASS } from '../theme/ui';
+import { UI_COLORS, UI_RADII, UI_SHADOWS } from '../theme/ui';
 import { fetchRandomDailyHadith, DailyHadith } from '../services/hadithService';
 import ScreenIntroTile from '../components/ScreenIntroTile';
 import GlassBackground from '../components/GlassBackground';
 import { getAiInsight } from '../services/aiService';
 import { useLanguage } from '../i18n';
+import {
+  getHijriToday,
+  getHijriMonthName,
+  getEventsForHijriDay,
+  getUpcomingEvents,
+  type UpcomingEvent,
+} from '../services/islamicEventsService';
 
 const API_BASE = 'https://api.aladhan.com/v1';
 const WEEKDAYS_FALLBACK = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const DAILY_INSIGHT_CACHE_PREFIX = 'onThisDateInsight:';
+const MONTH_CACHE_PREFIX = '@qp_hijri_cal:';
 
 type CalendarDay = {
   gregorian: {
@@ -174,14 +185,19 @@ const fetchInsightForDateFromApi = async (date: Date): Promise<OnThisDateReflect
 };
 
 const FALLBACK_HADITH: DailyHadith = {
-  arabic: 'خَيْرُكُمْ مَنْ تَعَلَّمَ الْقُرْآنَ وَعَلَّمَهُ',
+  arabic: 'خَيْرُكُمْ مَنْ تَعَلَّمَ الْقُرْآنَ وَعَلَّمَهُ',
   english: 'The best among you are those who learn the Quran and teach it.',
   source: 'Sahih al-Bukhari',
 };
 
+const isWhiteDay = (hijriDay: number): boolean => hijriDay >= 13 && hijriDay <= 15;
+const isSunnahFastWeekday = (weekdayEn: string): boolean =>
+  weekdayEn === 'Monday' || weekdayEn === 'Thursday';
+
 export default function CalendarScreen() {
   const [hijriMonth, setHijriMonth] = useState<number>(1);
   const [hijriYear, setHijriYear] = useState<number>(1447);
+  const [currentHijri, setCurrentHijri] = useState<{ year: number; month: number } | null>(null);
   const [monthData, setMonthData] = useState<CalendarDay[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [dailyHadith, setDailyHadith] = useState<DailyHadith | null>(null);
@@ -189,6 +205,9 @@ export default function CalendarScreen() {
   const [loadingReflection, setLoadingReflection] = useState(false);
   const [selectedDay, setSelectedDay] = useState<CalendarDay | null>(null);
   const [selectedDayApiInsight, setSelectedDayApiInsight] = useState<OnThisDateReflection | null>(null);
+  const [upcomingEvents, setUpcomingEvents] = useState<UpcomingEvent[]>([]);
+  const [showMonthPicker, setShowMonthPicker] = useState(false);
+  const [pickerYear, setPickerYear] = useState<number>(1447);
   const { settings } = useSettings();
   const { showAlert } = useThemedAlert();
   const { t, lang } = useLanguage();
@@ -198,30 +217,18 @@ export default function CalendarScreen() {
   const onDateArabicFontSize = Math.max(20, settings.arabicFontSize - 12);
   const arabicFontFamily = resolveArabicFontFamily(settings.arabicFontFamily);
 
-
   // Automatically set to today's Hijri month on first load
   useEffect(() => {
-    const loadCurrentHijriMonth = async () => {
-      try {
-        const today = new Date();
-        const formatted = today.toLocaleDateString('en-GB', {
-          day: '2-digit',
-          month: '2-digit',
-          year: 'numeric',
-        }).replace(/\//g, '-');
+    getHijriToday().then((hijri) => {
+      if (!hijri) return;
+      setCurrentHijri({ year: hijri.year, month: hijri.month });
+      setHijriMonth(hijri.month);
+      setHijriYear(hijri.year);
+    });
+  }, []);
 
-        const response = await axios.get(`${API_BASE}/gToH/${formatted}`);
-        if (response.data.code === 200) {
-          const hijri = response.data.data.hijri;
-          setHijriMonth(Number(hijri.month.number));
-          setHijriYear(Number(hijri.year));
-        }
-      } catch (error) {
-        console.error('Failed to load current Hijri month:', error);
-      }
-    };
-
-    loadCurrentHijriMonth();
+  useEffect(() => {
+    getUpcomingEvents(6).then(setUpcomingEvents).catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -254,33 +261,32 @@ export default function CalendarScreen() {
 
   // Fetch Hadith of the Day (once per day, cached)
   useEffect(() => {
-  const loadDailyHadith = async () => {
-    try {
-      // Check if we already have a Hadith cached for today
-      const cached = await AsyncStorage.getItem('dailyHadith');
-      const cachedDate = await AsyncStorage.getItem('dailyHadithDate');
-      const today = new Date().toDateString();
+    const loadDailyHadith = async () => {
+      try {
+        const cached = await AsyncStorage.getItem('dailyHadith');
+        const cachedDate = await AsyncStorage.getItem('dailyHadithDate');
+        const today = new Date().toDateString();
 
-      if (cached && cachedDate === today) {
-        setDailyHadith(JSON.parse(cached) as DailyHadith);
-        return;
-      }
+        if (cached && cachedDate === today) {
+          setDailyHadith(JSON.parse(cached) as DailyHadith);
+          return;
+        }
 
-      const hadith = await fetchRandomDailyHadith();
-      if (hadith) {
-        setDailyHadith(hadith);
-        await AsyncStorage.setItem('dailyHadith', JSON.stringify(hadith));
-        await AsyncStorage.setItem('dailyHadithDate', today);
-      } else {
+        const hadith = await fetchRandomDailyHadith();
+        if (hadith) {
+          setDailyHadith(hadith);
+          await AsyncStorage.setItem('dailyHadith', JSON.stringify(hadith));
+          await AsyncStorage.setItem('dailyHadithDate', today);
+        } else {
+          setDailyHadith(FALLBACK_HADITH);
+        }
+      } catch (error) {
+        console.error('Hadith fetch error:', error);
         setDailyHadith(FALLBACK_HADITH);
       }
-    } catch (error) {
-      console.error('Hadith fetch error:', error);
-      setDailyHadith(FALLBACK_HADITH);
-    }
-  };
+    };
 
-   loadDailyHadith();
+    loadDailyHadith();
   }, []);
 
   useEffect(() => {
@@ -333,10 +339,26 @@ export default function CalendarScreen() {
 
   const fetchHijriMonth = async (): Promise<void> => {
     setLoading(true);
+    const cacheKey = `${MONTH_CACHE_PREFIX}${hijriYear}-${hijriMonth}`;
+
+    // Hijri↔gregorian mapping never changes — cached months work fully offline
+    try {
+      const cached = await AsyncStorage.getItem(cacheKey);
+      if (cached) {
+        setMonthData(JSON.parse(cached) as CalendarDay[]);
+        setLoading(false);
+        return;
+      }
+    } catch {
+      // fall through to the network
+    }
+
     try {
       const response = await axios.get(`${API_BASE}/hToGCalendar/${hijriMonth}/${hijriYear}`);
       if (response.data.code === 200) {
-        setMonthData(response.data.data);
+        const days = response.data.data as CalendarDay[];
+        setMonthData(days);
+        AsyncStorage.setItem(cacheKey, JSON.stringify(days)).catch(() => {});
       } else {
         showAlert({
           title: 'Error',
@@ -372,14 +394,22 @@ export default function CalendarScreen() {
     setHijriYear(newYear);
   };
 
-  const getMonthName = (month: number) => {
-    const names = [
-      'Muharram', 'Safar', 'Rabi\' I', 'Rabi\' II',
-      'Jumada I', 'Jumada II', 'Rajab', 'Sha\'ban',
-      'Ramadan', 'Shawwal', 'Dhul-Qa\'dah', 'Dhul-Hijjah'
-    ];
-    return names[month - 1] || 'Unknown';
-  };
+  const goToToday = useCallback(() => {
+    if (!currentHijri) return;
+    setHijriMonth(currentHijri.month);
+    setHijriYear(currentHijri.year);
+
+    const today = new Date();
+    const todayInMonth = monthData.find((day) =>
+      Number(day.gregorian.day) === today.getDate() &&
+      day.gregorian.month.number === today.getMonth() + 1 &&
+      Number(day.gregorian.year) === today.getFullYear()
+    );
+    if (todayInMonth) setSelectedDay(todayInMonth);
+  }, [currentHijri, monthData]);
+
+  const isOnCurrentMonth =
+    currentHijri !== null && hijriMonth === currentHijri.month && hijriYear === currentHijri.year;
 
   const monthGrid = useMemo<(CalendarDay | null)[]>(() => {
     if (monthData.length === 0) return [];
@@ -398,12 +428,34 @@ export default function CalendarScreen() {
   }, [monthData]);
 
   const selectedDayEvents = useMemo<string[]>(() => {
-    if (!selectedDay || !Array.isArray(selectedDay.hijri.holidays)) return [];
-    return selectedDay.hijri.holidays
-      .filter((event): event is string => typeof event === 'string')
-      .map((event) => event.trim())
-      .filter((event) => event.length > 0);
-  }, [selectedDay]);
+    if (!selectedDay) return [];
+    const apiEvents = Array.isArray(selectedDay.hijri.holidays)
+      ? selectedDay.hijri.holidays
+          .filter((event): event is string => typeof event === 'string')
+          .map((event) => event.trim())
+          .filter((event) => event.length > 0)
+      : [];
+
+    const staticEvents = getEventsForHijriDay(hijriMonth, Number(selectedDay.hijri.day)).map((e) =>
+      lang === 'ar' ? `${e.emoji} ${e.nameAr}` : `${e.emoji} ${e.nameEn}`
+    );
+
+    // Static list first (localized), then any extra API holidays not duplicating it
+    const merged = [...staticEvents];
+    for (const apiEvent of apiEvents) {
+      const dup = staticEvents.some((s) => s.toLowerCase().includes(apiEvent.toLowerCase().slice(0, 8)));
+      if (!dup) merged.push(apiEvent);
+    }
+    return merged;
+  }, [selectedDay, hijriMonth, lang]);
+
+  const selectedDayFastingBadges = useMemo<string[]>(() => {
+    if (!selectedDay) return [];
+    const badges: string[] = [];
+    if (isWhiteDay(Number(selectedDay.hijri.day))) badges.push(`🌕 ${t.whiteDays}`);
+    if (isSunnahFastWeekday(selectedDay.gregorian.weekday.en)) badges.push(`🤍 ${t.sunnahFast}`);
+    return badges;
+  }, [selectedDay, t.whiteDays, t.sunnahFast]);
 
   const selectedDayReflection = useMemo<OnThisDateReflection | null>(() => {
     if (!selectedDay) return null;
@@ -419,6 +471,14 @@ export default function CalendarScreen() {
   }, [selectedDay, hijriMonth]);
   const onThisDateInsight = selectedDayApiInsight ?? selectedDayReflection;
 
+  const countdownLabel = (daysAway: number): string => {
+    if (daysAway === 0) return t.today;
+    if (daysAway === 1) return t.tomorrow;
+    return `${daysAway} ${t.days}`;
+  };
+
+  const isRamadanMonth = hijriMonth === 9;
+
   const renderDay = (day: CalendarDay | null, index: number) => {
     if (!day) {
       return <View key={`empty-${index}`} style={styles.emptyCell} />;
@@ -426,6 +486,7 @@ export default function CalendarScreen() {
 
     const greg = day.gregorian;
     const hij = day.hijri;
+    const hijDayNum = Number(hij.day);
     const isSelected = selectedDay?.gregorian.date === day.gregorian.date;
 
     const today = new Date();
@@ -433,6 +494,12 @@ export default function CalendarScreen() {
       Number(greg.day) === today.getDate() &&
       greg.month.number === today.getMonth() + 1 &&
       Number(greg.year) === today.getFullYear();
+
+    const hasEvent =
+      getEventsForHijriDay(hijriMonth, hijDayNum).length > 0 ||
+      (Array.isArray(hij.holidays) && hij.holidays.length > 0);
+    const whiteDay = isWhiteDay(hijDayNum);
+    const sunnahFast = isSunnahFastWeekday(greg.weekday.en);
 
     return (
       <TouchableOpacity
@@ -442,6 +509,7 @@ export default function CalendarScreen() {
       >
         <View style={[
           styles.dayCard,
+          isRamadanMonth && styles.ramadanCell,
           greg.weekday.en === 'Friday' && styles.fridayCell,
           isToday && styles.todayCell,
           isSelected && !isToday && styles.selectedCell,
@@ -458,16 +526,17 @@ export default function CalendarScreen() {
           ]}>
             {greg.day}
           </Text>
-          <Text style={styles.gregMonthSmall}>
-            {greg.month.en.substring(0, 3)}
-          </Text>
+          <View style={styles.dotsRow}>
+            {hasEvent && <View style={[styles.dot, styles.eventDot]} />}
+            {whiteDay && <View style={[styles.dot, styles.whiteDayDot]} />}
+            {!whiteDay && sunnahFast && <View style={[styles.dot, styles.fastDot]} />}
+          </View>
         </View>
       </TouchableOpacity>
     );
   };
 
   return (
-    //<SafeAreaView style={styles.safeArea}>
     <GlassBackground isDark={isDark}>
       <View style={styles.container}>
         <ScreenIntroTile
@@ -478,162 +547,271 @@ export default function CalendarScreen() {
         />
 
         <View style={styles.navigation}>
-          <TouchableOpacity onPress={() => changeMonth(-1)}>
-            <Text style={styles.navButton}>← Prev</Text>
+          <TouchableOpacity style={styles.navChevron} onPress={() => changeMonth(-1)}>
+            <Ionicons name="chevron-back" size={18} color={UI_COLORS.accent} />
           </TouchableOpacity>
 
-          <Text style={styles.monthTitle}>
-            {getMonthName(hijriMonth)} {hijriYear} AH
-          </Text>
+          <TouchableOpacity
+            style={styles.monthTitleWrap}
+            onPress={() => {
+              setPickerYear(hijriYear);
+              setShowMonthPicker(true);
+            }}
+          >
+            <Text style={styles.monthTitle}>
+              {getHijriMonthName(hijriMonth, lang)} {hijriYear}
+            </Text>
+            <Ionicons name="chevron-down" size={14} color="rgba(255,255,255,0.5)" />
+          </TouchableOpacity>
 
-          <TouchableOpacity onPress={() => changeMonth(1)}>
-            <Text style={styles.navButton}>Next →</Text>
+          <TouchableOpacity style={styles.navChevron} onPress={() => changeMonth(1)}>
+            <Ionicons name="chevron-forward" size={18} color={UI_COLORS.accent} />
           </TouchableOpacity>
         </View>
 
-        {loading ? (
-          <ActivityIndicator size="large" color="#27ae60" />
-        ) : monthData.length === 0 ? (
-          <Text style={styles.noData}>No data available for this month</Text>
-        ) : (
-          <>
-            <ScrollView contentContainerStyle={styles.scrollContent}>
-
-              {/* Centered calendar grid wrapper */}
-              <View style={styles.gridWrapper}>
-                <View style={styles.weekdayHeader}>
-                  {WEEKDAYS.map((weekday) => (
-                    <Text key={weekday} style={styles.weekdayText}>
-                      {weekday}
-                    </Text>
-                  ))}
-                </View>
-
-                {/* Days grid */}
-                <View style={styles.grid}>
-                  {monthGrid.map((day, index) => renderDay(day, index))}
-                </View>
-              </View>
-
-              {selectedDay && (
-                <View style={styles.selectedDayContainer}>
-                  <Text style={styles.selectedDayTitle}>{t.onThisDate}</Text>
-                  <Text style={styles.selectedDayText}>
-                    Hijri: {selectedDay.hijri.day} {selectedDay.hijri.month.en} {selectedDay.hijri.year} AH
-                  </Text>
-                  <Text style={styles.selectedDayText}>
-                    Gregorian: {selectedDay.gregorian.weekday.en}, {selectedDay.gregorian.day} {selectedDay.gregorian.month.en} {selectedDay.gregorian.year}
-                  </Text>
-                  {selectedDayEvents.length > 0 ? (
-                    <View style={styles.onDateSection}>
-                      <Text style={styles.onDateSectionTitle}>Islamic Event</Text>
-                      {selectedDayEvents.map((event) => (
-                        <Text key={event} style={styles.onDateInsightText}>
-                          • {event}
-                        </Text>
-                      ))}
-                    </View>
-                  ) : (
-                    <View style={styles.onDateSection}>
-                      <Text style={styles.onDateSectionTitle}>{onThisDateInsight?.title || 'Reflection'}</Text>
-                      {onThisDateInsight?.arabicText ? (
-                        <Text
-                          style={[
-                            styles.onDateArabicText,
-                            { fontSize: onDateArabicFontSize },
-                            arabicFontFamily ? { fontFamily: arabicFontFamily } : null,
-                          ]}
-                        >
-                          {onThisDateInsight.arabicText}
-                        </Text>
-                      ) : null}
-                      <Text style={styles.onDateInsightText}>
-                        {onThisDateInsight?.text || 'Reflect on this day with gratitude and sincere intention.'}
-                      </Text>
-                      <Text style={styles.onDateSourceText}>
-                        {onThisDateInsight?.source || 'Daily reflection'}
-                      </Text>
-                    </View>
-                  )}
-                </View>
-              )}
-
-              {/* Hadith of the Day - displayed below the calendar */}
-              {dailyHadith && (
-                <View style={styles.hadithContainer}>
-                  <Text style={styles.hadithTitle}>{t.hadithOfTheDay}</Text>
-                  <Text
-                    style={[
-                      styles.hadithArabic,
-                      { fontSize: hadithArabicFontSize },
-                      arabicFontFamily ? { fontFamily: arabicFontFamily } : null,
-                    ]}
-                  >
-                    {dailyHadith.arabic}
-                  </Text>
-                  <Text style={styles.hadithEnglish}>{dailyHadith.english}</Text>
-                  <Text style={styles.hadithSource}>({dailyHadith.source})</Text>
-
-                  {hadithReflection ? (
-                    <View style={styles.reflectionBox}>
-                      <Text style={styles.reflectionLabel}>{t.aiReflection}</Text>
-                      <Text style={styles.reflectionText}>{hadithReflection}</Text>
-                    </View>
-                  ) : (
-                    <TouchableOpacity
-                      style={styles.reflectionButton}
-                      onPress={async () => {
-                        if (loadingReflection || !dailyHadith) return;
-                        setLoadingReflection(true);
-                        try {
-                          const reflection = await getAiInsight('hadith', {
-                            arabic: dailyHadith.arabic,
-                            english: dailyHadith.english,
-                            source: dailyHadith.source,
-                          }, undefined, lang);
-                          setHadithReflection(reflection);
-                        } catch {
-                          setHadithReflection('Could not load reflection. Please try again.');
-                        } finally {
-                          setLoadingReflection(false);
-                        }
-                      }}
-                      disabled={loadingReflection}
-                    >
-                      {loadingReflection ? (
-                        <ActivityIndicator size="small" color={UI_COLORS.accent} />
-                      ) : (
-                        <Text style={styles.reflectionButtonText}>{t.aiReflection}</Text>
-                      )}
-                    </TouchableOpacity>
-                  )}
-                </View>
-              )}
-
-              {/* Legend */}
-              <View style={styles.legend}>
-                <View style={styles.legendItem}>
-                  <View style={[styles.legendColor, { backgroundColor: '#27ae60' }]} />
-                  <Text style={styles.legendText}>{t.today}</Text>
-                </View>
-                <View style={styles.legendItem}>
-                  <View style={[styles.legendColor, { backgroundColor: '#b3e0f9' }]} />
-                  <Text style={styles.legendText}>{t.friday}</Text>
-                </View>
-              </View>
-            </ScrollView>
-          </>
+        {!isOnCurrentMonth && currentHijri && (
+          <TouchableOpacity style={styles.todayButton} onPress={goToToday}>
+            <Ionicons name="calendar-outline" size={13} color="#5ddb92" />
+            <Text style={styles.todayButtonText}>{t.today}</Text>
+          </TouchableOpacity>
         )}
+
+        {loading ? (
+          <ActivityIndicator size="large" color="#27ae60" style={{ marginTop: 30 }} />
+        ) : monthData.length === 0 ? (
+          <Text style={styles.noData}>{t.noCalendarData}</Text>
+        ) : (
+          <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+
+            {/* Centered calendar grid wrapper */}
+            <View style={styles.gridWrapper}>
+              <View style={styles.weekdayHeader}>
+                {WEEKDAYS.map((weekday) => (
+                  <Text key={weekday} style={styles.weekdayText}>
+                    {weekday}
+                  </Text>
+                ))}
+              </View>
+
+              <View style={styles.grid}>
+                {monthGrid.map((day, index) => renderDay(day, index))}
+              </View>
+            </View>
+
+            {/* Legend */}
+            <View style={styles.legend}>
+              <View style={styles.legendItem}>
+                <View style={[styles.legendColor, { backgroundColor: UI_COLORS.primary }]} />
+                <Text style={styles.legendText}>{t.today}</Text>
+              </View>
+              <View style={styles.legendItem}>
+                <View style={[styles.legendColor, { backgroundColor: UI_COLORS.friday }]} />
+                <Text style={styles.legendText}>{t.friday}</Text>
+              </View>
+              <View style={styles.legendItem}>
+                <View style={[styles.legendDot, styles.eventDot]} />
+                <Text style={styles.legendText}>{t.eventDot}</Text>
+              </View>
+              <View style={styles.legendItem}>
+                <View style={[styles.legendDot, styles.whiteDayDot]} />
+                <Text style={styles.legendText}>{t.whiteDays}</Text>
+              </View>
+              <View style={styles.legendItem}>
+                <View style={[styles.legendDot, styles.fastDot]} />
+                <Text style={styles.legendText}>{t.sunnahFast}</Text>
+              </View>
+            </View>
+
+            {selectedDay && (
+              <View style={styles.selectedDayContainer}>
+                <View style={styles.selectedDateRow}>
+                  <View style={styles.selectedDateBlock}>
+                    <Text style={styles.selectedDateLabel}>{t.hijriLabel}</Text>
+                    <Text style={styles.selectedDateBig}>{selectedDay.hijri.day}</Text>
+                    <Text style={styles.selectedDateSub}>
+                      {getHijriMonthName(hijriMonth, lang)} {selectedDay.hijri.year}
+                    </Text>
+                  </View>
+                  <View style={styles.selectedDateDivider} />
+                  <View style={styles.selectedDateBlock}>
+                    <Text style={styles.selectedDateLabel}>{t.gregorianLabel}</Text>
+                    <Text style={styles.selectedDateBig}>{selectedDay.gregorian.day}</Text>
+                    <Text style={styles.selectedDateSub}>
+                      {selectedDay.gregorian.month.en} {selectedDay.gregorian.year}
+                    </Text>
+                  </View>
+                </View>
+
+                {(selectedDayEvents.length > 0 || selectedDayFastingBadges.length > 0) && (
+                  <View style={styles.badgesWrap}>
+                    {selectedDayEvents.map((event) => (
+                      <View key={event} style={[styles.badge, styles.eventBadge]}>
+                        <Text style={styles.eventBadgeText}>{event}</Text>
+                      </View>
+                    ))}
+                    {selectedDayFastingBadges.map((badge) => (
+                      <View key={badge} style={[styles.badge, styles.fastBadge]}>
+                        <Text style={styles.fastBadgeText}>{badge}</Text>
+                      </View>
+                    ))}
+                  </View>
+                )}
+
+                {selectedDayEvents.length === 0 && (
+                  <View style={styles.onDateSection}>
+                    <Text style={styles.onDateSectionTitle}>{onThisDateInsight?.title || 'Reflection'}</Text>
+                    {onThisDateInsight?.arabicText ? (
+                      <Text
+                        style={[
+                          styles.onDateArabicText,
+                          { fontSize: onDateArabicFontSize },
+                          arabicFontFamily ? { fontFamily: arabicFontFamily } : null,
+                        ]}
+                      >
+                        {onThisDateInsight.arabicText}
+                      </Text>
+                    ) : null}
+                    <Text style={styles.onDateInsightText}>
+                      {onThisDateInsight?.text || 'Reflect on this day with gratitude and sincere intention.'}
+                    </Text>
+                    <Text style={styles.onDateSourceText}>
+                      {onThisDateInsight?.source || 'Daily reflection'}
+                    </Text>
+                  </View>
+                )}
+              </View>
+            )}
+
+            {/* Upcoming Islamic occasions */}
+            {upcomingEvents.length > 0 && (
+              <View style={styles.upcomingContainer}>
+                <Text style={styles.upcomingTitle}>{t.upcomingEvents}</Text>
+                {upcomingEvents.map((event) => (
+                  <View key={`${event.hijriYear}-${event.month}-${event.day}`} style={styles.upcomingRow}>
+                    <Text style={styles.upcomingEmoji}>{event.emoji}</Text>
+                    <View style={styles.upcomingInfo}>
+                      <Text style={styles.upcomingName}>
+                        {lang === 'ar' ? event.nameAr : event.nameEn}
+                      </Text>
+                      <Text style={styles.upcomingDate}>
+                        {event.day} {getHijriMonthName(event.month, lang)} · {event.gregorianDate.toLocaleDateString(lang === 'ar' ? 'ar' : 'en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
+                      </Text>
+                    </View>
+                    <View style={[styles.countdownChip, event.daysAway <= 1 && styles.countdownChipSoon]}>
+                      <Text style={[styles.countdownText, event.daysAway <= 1 && styles.countdownTextSoon]}>
+                        {countdownLabel(event.daysAway)}
+                      </Text>
+                    </View>
+                  </View>
+                ))}
+              </View>
+            )}
+
+            {/* Hadith of the Day */}
+            {dailyHadith && (
+              <View style={styles.hadithContainer}>
+                <Text style={styles.hadithTitle}>{t.hadithOfTheDay}</Text>
+                <Text
+                  style={[
+                    styles.hadithArabic,
+                    { fontSize: hadithArabicFontSize },
+                    arabicFontFamily ? { fontFamily: arabicFontFamily } : null,
+                  ]}
+                >
+                  {dailyHadith.arabic}
+                </Text>
+                <Text style={styles.hadithEnglish}>{dailyHadith.english}</Text>
+                <Text style={styles.hadithSource}>({dailyHadith.source})</Text>
+
+                {hadithReflection ? (
+                  <View style={styles.reflectionBox}>
+                    <Text style={styles.reflectionLabel}>{t.aiReflection}</Text>
+                    <Text style={styles.reflectionText}>{hadithReflection}</Text>
+                  </View>
+                ) : (
+                  <TouchableOpacity
+                    style={styles.reflectionButton}
+                    onPress={async () => {
+                      if (loadingReflection || !dailyHadith) return;
+                      setLoadingReflection(true);
+                      try {
+                        const reflection = await getAiInsight('hadith', {
+                          arabic: dailyHadith.arabic,
+                          english: dailyHadith.english,
+                          source: dailyHadith.source,
+                        }, undefined, lang);
+                        setHadithReflection(reflection);
+                      } catch {
+                        setHadithReflection('Could not load reflection. Please try again.');
+                      } finally {
+                        setLoadingReflection(false);
+                      }
+                    }}
+                    disabled={loadingReflection}
+                  >
+                    {loadingReflection ? (
+                      <ActivityIndicator size="small" color={UI_COLORS.accent} />
+                    ) : (
+                      <Text style={styles.reflectionButtonText}>{t.aiReflection}</Text>
+                    )}
+                  </TouchableOpacity>
+                )}
+              </View>
+            )}
+          </ScrollView>
+        )}
+
+        {/* Month/year picker */}
+        <Modal
+          visible={showMonthPicker}
+          transparent
+          animationType="fade"
+          onRequestClose={() => setShowMonthPicker(false)}
+        >
+          <Pressable style={styles.pickerBackdrop} onPress={() => setShowMonthPicker(false)}>
+            <Pressable style={styles.pickerCard} onPress={() => undefined}>
+              <Text style={styles.pickerTitle}>{t.selectMonthYear}</Text>
+
+              <View style={styles.pickerYearRow}>
+                <TouchableOpacity style={styles.pickerYearBtn} onPress={() => setPickerYear((y) => y - 1)}>
+                  <Ionicons name="chevron-back" size={18} color={UI_COLORS.accent} />
+                </TouchableOpacity>
+                <Text style={styles.pickerYearText}>{pickerYear}</Text>
+                <TouchableOpacity style={styles.pickerYearBtn} onPress={() => setPickerYear((y) => y + 1)}>
+                  <Ionicons name="chevron-forward" size={18} color={UI_COLORS.accent} />
+                </TouchableOpacity>
+              </View>
+
+              <View style={styles.pickerMonthGrid}>
+                {Array.from({ length: 12 }, (_, i) => i + 1).map((m) => {
+                  const isActive = m === hijriMonth && pickerYear === hijriYear;
+                  return (
+                    <TouchableOpacity
+                      key={m}
+                      style={[styles.pickerMonthCell, isActive && styles.pickerMonthCellActive]}
+                      onPress={() => {
+                        setHijriMonth(m);
+                        setHijriYear(pickerYear);
+                        setShowMonthPicker(false);
+                      }}
+                    >
+                      <Text style={[styles.pickerMonthText, isActive && styles.pickerMonthTextActive]}>
+                        {getHijriMonthName(m, lang)}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            </Pressable>
+          </Pressable>
+        </Modal>
       </View>
     </GlassBackground>
-    //</SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  safeArea: { flex: 1 },
   container: { flex: 1, padding: 16 },
-  darkBg: {},
   introTile: {
     marginHorizontal: 0,
     marginBottom: 14,
@@ -641,23 +819,57 @@ const styles = StyleSheet.create({
     maxWidth: 400,
     alignSelf: 'center',
   },
-  scrollContent: { 
+  scrollContent: {
     paddingBottom: 40,
     alignItems: 'center',
   },
-  navigation: { 
-    flexDirection: 'row', 
-    justifyContent: 'space-between', 
-    alignItems: 'center', 
-    marginBottom: 16,
+  navigation: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 10,
     width: '100%',
     maxWidth: 400,
     alignSelf: 'center',
   },
-  navButton: { fontSize: 16, color: '#3498db' },
-  monthTitle: { fontSize: 22, fontWeight: '600', color: UI_COLORS.text },
-  weekdayHeader: { 
-    flexDirection: 'row', 
+  navChevron: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: 'rgba(255,255,255,0.08)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.15)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  monthTitleWrap: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+  },
+  monthTitle: { fontSize: 20, fontWeight: '700', color: UI_COLORS.text },
+  todayButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    alignSelf: 'center',
+    backgroundColor: 'rgba(31,157,85,0.15)',
+    borderWidth: 1,
+    borderColor: 'rgba(31,157,85,0.35)',
+    borderRadius: 999,
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    marginBottom: 10,
+  },
+  todayButtonText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#5ddb92',
+  },
+  weekdayHeader: {
+    flexDirection: 'row',
     marginBottom: 8,
     backgroundColor: 'rgba(31,157,85,0.15)',
     paddingVertical: 8,
@@ -665,28 +877,25 @@ const styles = StyleSheet.create({
     width: '100%',
     maxWidth: 400,
   },
-  darkWeekdayHeader: {
-    backgroundColor: '#1f2d2f',
-  },
   weekdayText: { flex: 1, textAlign: 'center', fontWeight: 'bold', color: UI_COLORS.text },
   gridWrapper: {
     alignItems: 'center',
     width: '100%',
     maxWidth: 400,
   },
-  grid: { 
-    flexDirection: 'row', 
-    flexWrap: 'wrap', 
+  grid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
     width: '100%',
   },
   dayCell: {
     width: '14.2857%',
-    aspectRatio: 1,
+    aspectRatio: 0.92,
     padding: 2,
   },
   emptyCell: {
     width: '14.2857%',
-    aspectRatio: 1,
+    aspectRatio: 0.92,
     padding: 2,
   },
   dayCard: {
@@ -697,62 +906,136 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.15)',
+    paddingVertical: 3,
   },
-  darkCard: {
-    backgroundColor: 'rgba(26, 38, 52, 0.75)',
-    borderColor: 'rgba(255, 255, 255, 0.08)',
+  ramadanCell: {
+    backgroundColor: 'rgba(245,166,35,0.09)',
+    borderColor: 'rgba(245,166,35,0.22)',
   },
   fridayCell: { backgroundColor: UI_COLORS.friday },
   todayCell: { backgroundColor: UI_COLORS.primary },
   selectedCell: { borderColor: UI_COLORS.accent, borderWidth: 2 },
-  hijriDay: { fontSize: 16, fontWeight: '600', color: UI_COLORS.text },
-  gregDay: { fontSize: 12, color: UI_COLORS.textMuted, marginTop: 4 },
-  gregMonthSmall: { fontSize: 10, color: UI_COLORS.textMuted, marginTop: 2 },
+  hijriDay: { fontSize: 15, fontWeight: '700', color: UI_COLORS.text },
+  gregDay: { fontSize: 11, color: UI_COLORS.textMuted, marginTop: 2 },
   todayText: { color: UI_COLORS.white },
-  noData: { fontSize: 18, textAlign: 'center', color: UI_COLORS.textMuted, marginTop: 50 },
+  dotsRow: {
+    flexDirection: 'row',
+    gap: 3,
+    marginTop: 3,
+    height: 5,
+  },
+  dot: {
+    width: 5,
+    height: 5,
+    borderRadius: 2.5,
+  },
+  eventDot: { backgroundColor: '#f5a623' },
+  whiteDayDot: { backgroundColor: 'rgba(255,255,255,0.85)' },
+  fastDot: { backgroundColor: '#5ddb92' },
+  noData: { fontSize: 16, textAlign: 'center', color: UI_COLORS.textMuted, marginTop: 50 },
 
-  // Hadith of the Day - displayed below the calendar
-  hadithContainer: {
-    marginTop: 24,
-    padding: 16,
-    backgroundColor: 'rgba(255,255,255,0.08)',
-    borderRadius: UI_RADII.sm,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.15)',
+  legend: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    gap: 10,
+    marginTop: 12,
     width: '100%',
     maxWidth: 400,
-    ...UI_SHADOWS.card,
   },
+  legendItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+  },
+  legendColor: {
+    width: 12,
+    height: 12,
+    borderRadius: 3,
+  },
+  legendDot: {
+    width: 7,
+    height: 7,
+    borderRadius: 3.5,
+  },
+  legendText: { fontSize: 11, color: UI_COLORS.textMuted },
+
   selectedDayContainer: {
-    marginTop: 18,
-    padding: 14,
-    backgroundColor: 'rgba(31,157,85,0.15)',
-    borderRadius: UI_RADII.sm,
+    marginTop: 16,
+    padding: 16,
+    backgroundColor: 'rgba(31,157,85,0.12)',
+    borderRadius: UI_RADII.lg,
     borderWidth: 1,
     borderColor: 'rgba(31,157,85,0.3)',
     width: '100%',
     maxWidth: 400,
   },
-  darkSelectedDayContainer: {
-    backgroundColor: '#1f2d2f',
-    borderColor: '#2f474a',
+  selectedDateRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
-  selectedDayTitle: {
-    fontSize: 16,
+  selectedDateBlock: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  selectedDateLabel: {
+    fontSize: 11,
     fontWeight: '700',
-    color: '#5ddb92',
-    marginBottom: 6,
-    textAlign: 'center',
+    color: 'rgba(255,255,255,0.5)',
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+    marginBottom: 4,
   },
-  selectedDayText: {
-    fontSize: 14,
-    color: UI_COLORS.text,
-    textAlign: 'center',
-    lineHeight: 20,
+  selectedDateBig: {
+    fontSize: 30,
+    fontWeight: '800',
+    color: UI_COLORS.white,
+    lineHeight: 34,
+  },
+  selectedDateSub: {
+    fontSize: 12,
+    color: UI_COLORS.textMuted,
+    marginTop: 2,
+  },
+  selectedDateDivider: {
+    width: 1,
+    height: 48,
+    backgroundColor: 'rgba(255,255,255,0.15)',
+  },
+  badgesWrap: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    gap: 8,
+    marginTop: 14,
+  },
+  badge: {
+    borderRadius: 999,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderWidth: 1,
+  },
+  eventBadge: {
+    backgroundColor: 'rgba(245,166,35,0.12)',
+    borderColor: 'rgba(245,166,35,0.35)',
+  },
+  eventBadgeText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#f5c778',
+  },
+  fastBadge: {
+    backgroundColor: 'rgba(31,157,85,0.14)',
+    borderColor: 'rgba(31,157,85,0.35)',
+  },
+  fastBadgeText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#5ddb92',
   },
   onDateSection: {
-    marginTop: 10,
-    paddingTop: 10,
+    marginTop: 12,
+    paddingTop: 12,
     borderTopWidth: 1,
     borderTopColor: 'rgba(255,255,255,0.15)',
   },
@@ -783,6 +1066,83 @@ const styles = StyleSheet.create({
     color: UI_COLORS.textMuted,
     textAlign: 'center',
     fontStyle: 'italic',
+  },
+
+  upcomingContainer: {
+    marginTop: 16,
+    padding: 16,
+    backgroundColor: 'rgba(255,255,255,0.08)',
+    borderRadius: UI_RADII.lg,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.15)',
+    width: '100%',
+    maxWidth: 400,
+    ...UI_SHADOWS.card,
+  },
+  upcomingTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#f5c778',
+    textAlign: 'center',
+    marginBottom: 12,
+  },
+  upcomingRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 9,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: 'rgba(255,255,255,0.12)',
+    gap: 10,
+  },
+  upcomingEmoji: {
+    fontSize: 20,
+    width: 28,
+    textAlign: 'center',
+  },
+  upcomingInfo: {
+    flex: 1,
+  },
+  upcomingName: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: UI_COLORS.text,
+  },
+  upcomingDate: {
+    fontSize: 12,
+    color: UI_COLORS.textMuted,
+    marginTop: 1,
+  },
+  countdownChip: {
+    backgroundColor: 'rgba(255,255,255,0.08)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.15)',
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+  },
+  countdownChipSoon: {
+    backgroundColor: 'rgba(245,166,35,0.15)',
+    borderColor: 'rgba(245,166,35,0.4)',
+  },
+  countdownText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: UI_COLORS.textMuted,
+  },
+  countdownTextSoon: {
+    color: '#f5c778',
+  },
+
+  hadithContainer: {
+    marginTop: 16,
+    padding: 16,
+    backgroundColor: 'rgba(255,255,255,0.08)',
+    borderRadius: UI_RADII.lg,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.15)',
+    width: '100%',
+    maxWidth: 400,
+    ...UI_SHADOWS.card,
   },
   hadithTitle: {
     fontSize: 18,
@@ -842,25 +1202,79 @@ const styles = StyleSheet.create({
     color: UI_COLORS.text,
   },
 
-  // Legend at bottom
-  legend: { 
-    flexDirection: 'row', 
-    justifyContent: 'center', 
-    marginTop: 20, 
-    marginBottom: 40 
+  pickerBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(5,18,31,0.6)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 30,
   },
-  legendItem: { 
-    flexDirection: 'row', 
-    alignItems: 'center', 
-    marginHorizontal: 16 
+  pickerCard: {
+    width: '100%',
+    maxWidth: 360,
+    backgroundColor: 'rgba(18,46,63,0.97)',
+    borderRadius: UI_RADII.lg,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.15)',
+    padding: 20,
   },
-  legendColor: { 
-    width: 20, 
-    height: 20, 
-    borderRadius: 4, 
-    marginRight: 8 
+  pickerTitle: {
+    fontSize: 17,
+    fontWeight: '700',
+    color: UI_COLORS.text,
+    textAlign: 'center',
+    marginBottom: 14,
   },
-  legendText: { fontSize: 14, color: UI_COLORS.text },
-  darkText: { color: UI_COLORS.white },
-  darkMutedText: { color: '#a8b3bd' },
+  pickerYearRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 20,
+    marginBottom: 16,
+  },
+  pickerYearBtn: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: 'rgba(255,255,255,0.08)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.15)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  pickerYearText: {
+    fontSize: 20,
+    fontWeight: '800',
+    color: '#f5c778',
+    minWidth: 70,
+    textAlign: 'center',
+  },
+  pickerMonthGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    justifyContent: 'center',
+  },
+  pickerMonthCell: {
+    width: '30%',
+    paddingVertical: 10,
+    borderRadius: UI_RADII.sm,
+    backgroundColor: 'rgba(255,255,255,0.08)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.12)',
+    alignItems: 'center',
+  },
+  pickerMonthCellActive: {
+    backgroundColor: UI_COLORS.primary,
+    borderColor: UI_COLORS.primary,
+  },
+  pickerMonthText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: 'rgba(255,255,255,0.75)',
+    textAlign: 'center',
+  },
+  pickerMonthTextActive: {
+    color: UI_COLORS.white,
+  },
 });
