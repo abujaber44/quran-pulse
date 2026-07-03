@@ -292,6 +292,34 @@ export default {
   dailyAyah: 'آيتك اليومية',
   selectedForYou: 'مختارة لك',
 
+  previousBookmarks: 'السابقة',
+
+  // Stats
+  myStats: 'إحصائياتي',
+  myStatsDesc: 'رحلتك في القراءة والحفظ والختمة في نظرة واحدة',
+  last7Days: 'آخر ٧ أيام',
+  noActivityYet: 'سيظهر نشاط قراءتك هنا كلما قرأت',
+  attempts: 'إجابة',
+  quizAccuracy: 'الدقة',
+  versesMastered: 'متقنة',
+
+  // Ramadan
+  ramadan: 'رمضان',
+  ramadanMubarak: 'رمضان مبارك',
+  iftarIn: 'الإفطار بعد',
+  suhoorEndsIn: 'ينتهي السحور بعد',
+  iftarTime: 'الإفطار',
+
+  // Offline audio
+  removeDownload: 'حذف التنزيل؟',
+  downloadFailed: 'فشل التنزيل. تحقق من الاتصال.',
+
+  // Translation & Tafsir settings
+  translationSetting: 'الترجمة',
+  translationSettingDesc: 'اختر الترجمة الإنجليزية المعروضة مع كل آية',
+  tafsirSetting: 'مصدر التفسير',
+  tafsirSettingDesc: 'اختر التفسير المعروض عند شرح الآيات',
+
   // Mushaf Jump Navigation
   jumpTo: 'الانتقال إلى',
   goToPage: 'اذهب إلى صفحة',

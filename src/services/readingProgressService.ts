@@ -3,6 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 const STORAGE_KEY = '@quran_pulse_reading_progress';
 const STREAK_KEY = '@quran_pulse_reading_streak';
 const LAST_READ_KEY = '@quran_pulse_last_read';
+const DAILY_LOG_KEY = '@quran_pulse_daily_log';
 
 export interface ReadingProgress {
   surahsRead: Record<number, { lastAyah: number; completedAt?: number }>;
@@ -42,6 +43,31 @@ export async function recordAyahRead(surahId: number, ayahNum: number, totalVers
   progress.lastReadAt = Date.now();
   await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(progress));
   await updateStreak();
+  await incrementDailyLog();
+}
+
+/** Ayahs read per day, keyed by yyyy-mm-dd — feeds the stats activity chart. */
+export async function getDailyLog(): Promise<Record<string, number>> {
+  try {
+    const raw = await AsyncStorage.getItem(DAILY_LOG_KEY);
+    if (!raw) return {};
+    return JSON.parse(raw) as Record<string, number>;
+  } catch {
+    return {};
+  }
+}
+
+async function incrementDailyLog(): Promise<void> {
+  const log = await getDailyLog();
+  const today = todayKey();
+  log[today] = (log[today] ?? 0) + 1;
+
+  // Keep the log bounded to the most recent 90 days
+  const keys = Object.keys(log).sort();
+  while (keys.length > 90) {
+    delete log[keys.shift()!];
+  }
+  await AsyncStorage.setItem(DAILY_LOG_KEY, JSON.stringify(log));
 }
 
 export async function getReadingStreak(): Promise<ReadingStreak> {

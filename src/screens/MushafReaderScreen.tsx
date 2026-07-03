@@ -26,7 +26,9 @@ import { recordKhatmahPage } from '../services/khatmahService';
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const TOTAL_PAGES = 604;
 const PAGE_BOOKMARK_KEY = '@quran_pulse_page_bookmark';
+const PAGE_BOOKMARK_HISTORY_KEY = '@quran_pulse_page_bookmark_history';
 const LAST_PAGE_KEY = '@quran_pulse_last_mushaf_page';
+const BOOKMARK_HISTORY_MAX = 3;
 
 export interface PageBookmark {
   page: number;
@@ -43,7 +45,36 @@ export const getPageBookmark = async (): Promise<PageBookmark | null> => {
   }
 };
 
+export const getPageBookmarkHistory = async (): Promise<PageBookmark[]> => {
+  try {
+    const raw = await AsyncStorage.getItem(PAGE_BOOKMARK_HISTORY_KEY);
+    if (!raw) return [];
+    return JSON.parse(raw) as PageBookmark[];
+  } catch {
+    return [];
+  }
+};
+
+// Replaced bookmarks are kept in a short history so an accidental overwrite
+// doesn't lose the reader's place.
+const pushBookmarkHistory = async (replaced: PageBookmark): Promise<void> => {
+  try {
+    const history = await getPageBookmarkHistory();
+    const deduped = [replaced, ...history.filter((b) => b.page !== replaced.page)];
+    await AsyncStorage.setItem(
+      PAGE_BOOKMARK_HISTORY_KEY,
+      JSON.stringify(deduped.slice(0, BOOKMARK_HISTORY_MAX))
+    );
+  } catch {
+    // History is a convenience — losing it must not block the bookmark save
+  }
+};
+
 export const savePageBookmark = async (bookmark: PageBookmark | null): Promise<void> => {
+  const existing = await getPageBookmark();
+  if (existing && existing.page !== bookmark?.page) {
+    await pushBookmarkHistory(existing);
+  }
   if (bookmark === null) {
     await AsyncStorage.removeItem(PAGE_BOOKMARK_KEY);
   } else {

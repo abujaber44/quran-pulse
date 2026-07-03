@@ -26,6 +26,8 @@ import {
   type KhatmahPlan,
 } from '../services/khatmahService';
 import { getReviewSchedule, getDueVerseKeys } from '../services/memorizationService';
+import { refreshDailyReminder, scheduleStreakProtection } from '../services/dailyReminderService';
+import { getRamadanStatus, countdownTo, type RamadanStatus } from '../services/ramadanService';
 
 type RootStackParamList = {
   MemorizeUnderstand: undefined;
@@ -64,6 +66,7 @@ export default function LandingScreen() {
   const [showKhatmahModal, setShowKhatmahModal] = useState(false);
   const [customDaysInput, setCustomDaysInput] = useState('');
   const [dueReviewCount, setDueReviewCount] = useState(0);
+  const [ramadan, setRamadan] = useState<RamadanStatus | null>(null);
 
   const shimmerAnim = useRef(new Animated.Value(0)).current;
   const phraseFade = useRef(new Animated.Value(0)).current;
@@ -107,6 +110,7 @@ export default function LandingScreen() {
         setLastRead(lr);
       });
       getKhatmah().then(setKhatmah);
+      getRamadanStatus().then(setRamadan).catch(() => {});
       Promise.all([getBookmarks(), getReviewSchedule()]).then(([bookmarks, schedule]) => {
         const memorizeKeys = bookmarks
           .filter((b) => b.tag === 'memorize')
@@ -145,6 +149,14 @@ export default function LandingScreen() {
   useEffect(() => {
     fetchSurahs().then(setSurahs);
   }, []);
+
+  // Rotate the next week of reminder content and arm streak protection
+  useEffect(() => {
+    refreshDailyReminder(lang).catch(() => {});
+    getReadingStreak()
+      .then((s) => scheduleStreakProtection(s, lang))
+      .catch(() => {});
+  }, [lang]);
 
   useEffect(() => {
     const loadDailyAyah = async () => {
@@ -204,7 +216,11 @@ export default function LandingScreen() {
 
 
         {progress && streak && (progress.totalAyahsRead > 0 || streak.currentStreak > 0) ? (
-          <View style={styles.progressCard}>
+          <TouchableOpacity
+            style={styles.progressCard}
+            activeOpacity={0.85}
+            onPress={() => (navigation as any).navigate('Stats')}
+          >
             <Text style={styles.progressTitle}>{t.readingProgress}</Text>
             <View style={styles.progressStats}>
               <View style={styles.progressStat}>
@@ -223,8 +239,34 @@ export default function LandingScreen() {
             {streak.longestStreak > 1 && (
               <Text style={styles.progressBest}>🏆 {t.bestStreak}: {streak.longestStreak} {t.dayStreak}</Text>
             )}
-          </View>
+          </TouchableOpacity>
         ) : null}
+
+        {ramadan?.isRamadan && (
+          <TouchableOpacity
+            style={styles.ramadanCard}
+            activeOpacity={0.85}
+            onPress={() => navigation.navigate('PrayerTimes')}
+          >
+            <Text style={styles.ramadanTitle}>
+              🌙 {t.ramadan} — {t.khatmahDay} {ramadan.dayOfRamadan}
+            </Text>
+            <Text style={styles.ramadanMeta}>
+              {(() => {
+                if (ramadan.fajr) {
+                  const suhoor = countdownTo(ramadan.fajr);
+                  if (suhoor) return `${t.suhoorEndsIn} ${suhoor}`;
+                }
+                if (ramadan.maghrib) {
+                  const iftar = countdownTo(ramadan.maghrib);
+                  if (iftar) return `${t.iftarIn} ${iftar}`;
+                  return `${t.iftarTime}: ${ramadan.maghrib}`;
+                }
+                return t.ramadanMubarak;
+              })()}
+            </Text>
+          </TouchableOpacity>
+        )}
 
         {khatmahStatus ? (
           <TouchableOpacity
@@ -515,6 +557,25 @@ const styles = StyleSheet.create({
     color: 'rgba(215,239,225,0.6)',
     textAlign: 'center',
     marginTop: 10,
+  },
+  ramadanCard: {
+    backgroundColor: 'rgba(108,92,231,0.14)',
+    borderWidth: 1,
+    borderColor: 'rgba(162,155,254,0.35)',
+    borderRadius: UI_RADII.xl,
+    padding: 14,
+    marginBottom: 16,
+    alignItems: 'center',
+  },
+  ramadanTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#c9c3f7',
+    marginBottom: 4,
+  },
+  ramadanMeta: {
+    fontSize: 13,
+    color: 'rgba(220,216,248,0.85)',
   },
   khatmahCard: {
     backgroundColor: 'rgba(245,166,35,0.1)',

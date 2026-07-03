@@ -24,7 +24,7 @@ import MemorizationQuizModal from '../components/MemorizationQuizModal';
 import RevealPracticeModal from '../components/RevealPracticeModal';
 import type { BookmarkForQuiz } from '../services/aiService';
 import { useLanguage } from '../i18n';
-import { getPageBookmark, savePageBookmark, type PageBookmark } from './MushafReaderScreen';
+import { getPageBookmark, savePageBookmark, getPageBookmarkHistory, type PageBookmark } from './MushafReaderScreen';
 import { Ionicons } from '@expo/vector-icons';
 
 type RootStackParamList = {
@@ -43,6 +43,7 @@ export default function BookmarksScreen() {
   const [loading, setLoading] = useState(true);
   const [selectedTag, setSelectedTag] = useState<'all' | BookmarkTag>('all');
   const [pageBookmark, setPageBookmarkState] = useState<PageBookmark | null>(null);
+  const [bookmarkHistory, setBookmarkHistory] = useState<PageBookmark[]>([]);
   const [quizModalVisible, setQuizModalVisible] = useState(false);
   const [practiceModalVisible, setPracticeModalVisible] = useState(false);
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
@@ -65,16 +66,18 @@ export default function BookmarksScreen() {
 
   const loadData = async () => {
     try {
-      const [bookmarkData, surahData, pageBm] = await Promise.all([
+      const [bookmarkData, surahData, pageBm, history] = await Promise.all([
         getBookmarks(),
         fetchSurahs(),
         getPageBookmark(),
+        getPageBookmarkHistory(),
       ]);
 
       bookmarkData.sort((a, b) => b.timestamp - a.timestamp);
       setBookmarks(bookmarkData);
       setSurahs(surahData);
       setPageBookmarkState(pageBm);
+      setBookmarkHistory(history.filter((h) => h.page !== pageBm?.page));
     } catch (error) {
       console.error('Failed to load bookmarks or surahs', error);
       showAlert({
@@ -259,6 +262,20 @@ export default function BookmarksScreen() {
               <Text style={styles.pageBookmarkRemove}>{t.remove}</Text>
             </TouchableOpacity>
           </View>
+          {bookmarkHistory.length > 0 && (
+            <View style={styles.historyRow}>
+              <Text style={styles.historyLabel}>{t.previousBookmarks}:</Text>
+              {bookmarkHistory.map((h) => (
+                <TouchableOpacity
+                  key={`hist-${h.page}`}
+                  style={styles.historyChipSmall}
+                  onPress={() => navigation.navigate('MushafReader' as any, { juzNumber: 1, initialPage: h.page })}
+                >
+                  <Text style={styles.historyChipSmallText}>{t.page} {h.page}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          )}
         </View>
       )}
 
@@ -506,5 +523,32 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: UI_COLORS.danger,
     fontWeight: '600',
+  },
+  historyRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginTop: 12,
+    paddingTop: 10,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: 'rgba(255,255,255,0.15)',
+  },
+  historyLabel: {
+    fontSize: 12,
+    color: UI_COLORS.textMuted,
+  },
+  historyChipSmall: {
+    backgroundColor: 'rgba(255,255,255,0.08)',
+    borderWidth: 1,
+    borderColor: 'rgba(245,166,35,0.3)',
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+  },
+  historyChipSmallText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#f5c778',
   },
 });

@@ -5,6 +5,7 @@ import {
   DEFAULT_ARABIC_FONT_OPTION,
   isArabicFontOptionId,
 } from '../theme/fonts';
+import { TRANSLATION_OPTIONS, TAFSIR_OPTIONS } from '../services/quranApi';
 
 export interface Settings {
   arabicFontSize: number;
@@ -12,6 +13,8 @@ export interface Settings {
   memorizationPause: number;
   isDarkMode: boolean;
   autoPlayOnStart: boolean;
+  translationId: number;
+  tafsirSlug: string;
 }
 
 const defaultSettings: Settings = {
@@ -20,7 +23,15 @@ const defaultSettings: Settings = {
   memorizationPause: 4,
   isDarkMode: false,
   autoPlayOnStart: false,
+  translationId: 85,
+  tafsirSlug: 'ar-tafsir-muyassar',
 };
+
+const isValidTranslationId = (value: unknown): value is number =>
+  TRANSLATION_OPTIONS.some((o) => o.id === value);
+
+const isValidTafsirSlug = (value: unknown): value is string =>
+  TAFSIR_OPTIONS.some((o) => o.slug === value);
 
 const clampArabicFontSize = (value: number) => {
   if (!Number.isFinite(value)) return defaultSettings.arabicFontSize;
@@ -61,6 +72,12 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
             memorizationPause: clampMemorizationPause(Number(parsed?.memorizationPause)),
             isDarkMode: false,
             autoPlayOnStart: false,
+            translationId: isValidTranslationId(parsed?.translationId)
+              ? parsed.translationId
+              : defaultSettings.translationId,
+            tafsirSlug: isValidTafsirSlug(parsed?.tafsirSlug)
+              ? parsed.tafsirSlug
+              : defaultSettings.tafsirSlug,
           });
         }
       } catch (e) {
@@ -86,6 +103,10 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
         // Dark mode and surah auto-play are intentionally disabled.
         next.isDarkMode = false;
         next.autoPlayOnStart = false;
+      } else if (key === 'translationId') {
+        next.translationId = isValidTranslationId(value) ? value : defaultSettings.translationId;
+      } else if (key === 'tafsirSlug') {
+        next.tafsirSlug = isValidTafsirSlug(value) ? value : defaultSettings.tafsirSlug;
       }
 
       AsyncStorage.setItem('@quran_pulse_settings', JSON.stringify(next)).catch(() => {

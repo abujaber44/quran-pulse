@@ -406,7 +406,7 @@ export default function SurahScreen({ route }: any) {
       try {
         const [ayahsData, translationsData, allBookmarks, info] = await Promise.all([
           fetchAyahs(surah.id),
-          fetchTranslations(surah.id),
+          fetchTranslations(surah.id, settings.translationId),
           getBookmarks(),
           fetchSurahInfo(surah.id, lang),
         ]);
@@ -455,13 +455,20 @@ export default function SurahScreen({ route }: any) {
     return () => {
       isMounted = false;
     };
-  }, [surah.id]);
+  }, [surah.id, settings.translationId]);
 
   useEffect(() => {
     return () => {
       abortControllerRef.current?.abort();
     };
   }, []);
+
+  // Drop cached tafseer text when the tafsir source changes
+  useEffect(() => {
+    tafseerCacheRef.current = {};
+    setExpandedTafseer(null);
+    setCurrentTafseer('');
+  }, [settings.tafsirSlug]);
 
   const scrollToAyah = useCallback((ayahNum: number, animated: boolean) => {
     if (!flatListRef.current || ayahs.length === 0) return;
@@ -588,7 +595,7 @@ export default function SurahScreen({ route }: any) {
     abortControllerRef.current = controller;
 
     try {
-      const text = await fetchTafseer(surah.id, ayahNum, controller.signal);
+      const text = await fetchTafseer(surah.id, ayahNum, controller.signal, settings.tafsirSlug);
       if (!controller.signal.aborted) {
         tafseerCacheRef.current[ayahNum] = text;
         setCurrentTafseer(text);

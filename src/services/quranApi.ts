@@ -16,7 +16,9 @@ async function cacheFirst<T>(
   try {
     const raw = await AsyncStorage.getItem(fullKey);
     if (raw) return JSON.parse(raw) as T;
-  } catch {}
+  } catch {
+    // Cache read is best effort — fall through to the network
+  }
   const value = await fetcher();
   if (value !== null && value !== undefined && (!isCacheable || isCacheable(value))) {
     AsyncStorage.setItem(fullKey, JSON.stringify(value)).catch(() => {});
@@ -60,6 +62,34 @@ export const fetchAyahs = async (chapterId: number) => {
     }));
   }
 };
+
+// Quran.com translation resource ids
+export interface TranslationOption {
+  id: number;
+  label: string;
+  labelAr: string;
+}
+
+export const TRANSLATION_OPTIONS: TranslationOption[] = [
+  { id: 85, label: 'Abdel Haleem', labelAr: 'عبد الحليم' },
+  { id: 131, label: 'The Clear Quran (Khattab)', labelAr: 'القرآن الميسر (خطّاب)' },
+  { id: 20, label: 'Saheeh International', labelAr: 'صحيح إنترناشونال' },
+  { id: 84, label: 'Mufti Taqi Usmani', labelAr: 'تقي عثماني' },
+];
+
+// Tafsir slugs from the spa5k/tafsir_api CDN
+export interface TafsirOption {
+  slug: string;
+  label: string;
+  labelAr: string;
+}
+
+export const TAFSIR_OPTIONS: TafsirOption[] = [
+  { slug: 'ar-tafsir-muyassar', label: 'Al-Muyassar', labelAr: 'التفسير الميسر' },
+  { slug: 'ar-tafsir-ibn-kathir', label: 'Ibn Kathir', labelAr: 'تفسير ابن كثير' },
+  { slug: 'ar-tafseer-al-saddi', label: 'As-Saadi', labelAr: 'تفسير السعدي' },
+  { slug: 'ar-tafseer-al-qurtubi', label: 'Al-Qurtubi', labelAr: 'تفسير القرطبي' },
+];
 
 export const fetchTranslations = async (chapterId: number, translationId: number = 85) => {
   return cacheFirst(
@@ -290,7 +320,9 @@ export const fetchTafseer = async (
   try {
     const cached = await AsyncStorage.getItem(cacheKey);
     if (cached) return cached;
-  } catch {}
+  } catch {
+    // Cache read is best effort — fall through to the network
+  }
 
   try {
     const response = await fetch(

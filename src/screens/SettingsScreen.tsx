@@ -12,6 +12,7 @@ import { useSettings } from '../context/SettingsContext';
 import { useThemedAlert } from '../context/ThemedAlertContext';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ARABIC_FONT_OPTIONS, resolveArabicFontFamily } from '../theme/fonts';
+import { TRANSLATION_OPTIONS, TAFSIR_OPTIONS } from '../services/quranApi';
 import { UI_COLORS, UI_RADII, UI_SHADOWS } from '../theme/ui';
 import { UI_GLASS } from '../theme/ui';
 import GlassBackground from '../components/GlassBackground';
@@ -43,14 +44,14 @@ export default function SettingsScreen() {
   const toggleReminder = async (enabled: boolean) => {
     const updated = { ...reminder, enabled };
     setReminder(updated);
-    await saveReminderSettings(updated);
+    await saveReminderSettings(updated, lang);
   };
 
   const adjustReminderHour = async (delta: number) => {
     const newHour = (reminder.hour + delta + 24) % 24;
     const updated = { ...reminder, hour: newHour };
     setReminder(updated);
-    if (updated.enabled) await saveReminderSettings(updated);
+    if (updated.enabled) await saveReminderSettings(updated, lang);
   };
 
   const formatTime = (h: number, m: number) =>
@@ -83,6 +84,25 @@ export default function SettingsScreen() {
   const adjustMemorizationPause = (delta: number) => {
     const next = Math.max(PAUSE_MIN, Math.min(PAUSE_MAX, memorizationPause + delta));
     void updateSetting('memorizationPause', next);
+  };
+
+  const adjustTranslation = (delta: number) => {
+    const currentIndex = Math.max(
+      0,
+      TRANSLATION_OPTIONS.findIndex((option) => option.id === settings.translationId)
+    );
+    const nextIndex =
+      (currentIndex + delta + TRANSLATION_OPTIONS.length) % TRANSLATION_OPTIONS.length;
+    void updateSetting('translationId', TRANSLATION_OPTIONS[nextIndex].id);
+  };
+
+  const adjustTafsir = (delta: number) => {
+    const currentIndex = Math.max(
+      0,
+      TAFSIR_OPTIONS.findIndex((option) => option.slug === settings.tafsirSlug)
+    );
+    const nextIndex = (currentIndex + delta + TAFSIR_OPTIONS.length) % TAFSIR_OPTIONS.length;
+    void updateSetting('tafsirSlug', TAFSIR_OPTIONS[nextIndex].slug);
   };
 
   const adjustArabicFontFamily = (delta: number) => {
@@ -189,6 +209,50 @@ export default function SettingsScreen() {
             >
               بِسْمِ اللَّهِ الرَّحْمٰنِ الرَّحِيمِ
             </Text>
+          </View>
+        </View>
+
+        {/* Translation */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>{t.translationSetting}</Text>
+          <Text style={styles.helperText}>{t.translationSettingDesc}</Text>
+          <View style={styles.stepperRow}>
+            <TouchableOpacity style={styles.stepButton} onPress={() => adjustTranslation(-1)}>
+              <Text style={styles.stepButtonText}>‹</Text>
+            </TouchableOpacity>
+            <View style={styles.valuePill}>
+              <Text style={styles.valueTextSmall}>
+                {(() => {
+                  const opt = TRANSLATION_OPTIONS.find((o) => o.id === settings.translationId);
+                  return (lang === 'ar' ? opt?.labelAr : opt?.label) ?? '';
+                })()}
+              </Text>
+            </View>
+            <TouchableOpacity style={styles.stepButton} onPress={() => adjustTranslation(1)}>
+              <Text style={styles.stepButtonText}>›</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        {/* Tafseer Source */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>{t.tafsirSetting}</Text>
+          <Text style={styles.helperText}>{t.tafsirSettingDesc}</Text>
+          <View style={styles.stepperRow}>
+            <TouchableOpacity style={styles.stepButton} onPress={() => adjustTafsir(-1)}>
+              <Text style={styles.stepButtonText}>‹</Text>
+            </TouchableOpacity>
+            <View style={styles.valuePill}>
+              <Text style={styles.valueTextSmall}>
+                {(() => {
+                  const opt = TAFSIR_OPTIONS.find((o) => o.slug === settings.tafsirSlug);
+                  return (lang === 'ar' ? opt?.labelAr : opt?.label) ?? '';
+                })()}
+              </Text>
+            </View>
+            <TouchableOpacity style={styles.stepButton} onPress={() => adjustTafsir(1)}>
+              <Text style={styles.stepButtonText}>›</Text>
+            </TouchableOpacity>
           </View>
         </View>
 
