@@ -230,6 +230,7 @@ export default {
   athkarScreenDesc: 'Morning and evening athkar, Tasbeeh 33x, and the 99 Names of Allah in one place.',
   morningAthkar: 'Morning Athkar',
   eveningAthkar: 'Evening Athkar',
+  fullAudioRecitation: 'Full audio recitation',
   surahDescription: 'Memorize mode helps focused repetition using your memorization pause setting, and Repeat lets you loop a single ayah or custom range.',
   quranPlayerTitle: 'Listen to Quran',
   quranPlayerDesc: 'Listen to the beautiful recitation of the Quran with your favorite reciters. Let the words of Allah soothe your soul and bring tranquility to your heart.',

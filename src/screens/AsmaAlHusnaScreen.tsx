@@ -11,12 +11,14 @@ import {
   ScrollView,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useAudioPlayer, useAudioPlayerStatus } from 'expo-audio';
 import { useSettings } from '../context/SettingsContext';
 import { resolveArabicFontFamily } from '../theme/fonts';
 import { UI_COLORS, UI_GLASS, UI_RADII, UI_SHADOWS } from '../theme/ui';
-import { fetchAthkarContentOnline, AthkarItem } from '../services/athkarService';
+import { fetchAthkarContentOnline, AthkarItem, ATHKAR_AUDIO_URLS } from '../services/athkarService';
 import GlassBackground from '../components/GlassBackground';
 import ScreenIntroTile from '../components/ScreenIntroTile';
+import CompactPlayerCard from '../components/CompactPlayerCard';
 import { getAiInsight } from '../services/aiService';
 import { useLanguage } from '../i18n';
 
@@ -192,6 +194,50 @@ export default function AthkarScreen() {
     () => (athkarPeriod === 'morning' ? morningAthkar : eveningAthkar),
     [athkarPeriod, morningAthkar, eveningAthkar]
   );
+
+  const athkarPlayer = useAudioPlayer(null, { updateInterval: 250 });
+  const athkarPlayerStatus = useAudioPlayerStatus(athkarPlayer);
+  const [loadedAudioPeriod, setLoadedAudioPeriod] = useState<AthkarPeriod | null>(null);
+  const currentAudioUrl = ATHKAR_AUDIO_URLS[athkarPeriod];
+
+  // Stop playback when leaving the athkar tab or switching morning/evening
+  useEffect(() => {
+    if (loadedAudioPeriod && loadedAudioPeriod !== athkarPeriod) {
+      athkarPlayer.pause();
+      setLoadedAudioPeriod(null);
+    }
+  }, [athkarPeriod, loadedAudioPeriod, athkarPlayer]);
+
+  useEffect(() => {
+    return () => {
+      try {
+        athkarPlayer.pause();
+      } catch {
+        // Player may already be disposed during teardown
+      }
+    };
+  }, [athkarPlayer]);
+
+  const toggleAthkarAudio = () => {
+    if (!currentAudioUrl) return;
+    if (loadedAudioPeriod !== athkarPeriod) {
+      athkarPlayer.replace({ uri: currentAudioUrl });
+      athkarPlayer.play();
+      setLoadedAudioPeriod(athkarPeriod);
+      return;
+    }
+    if (athkarPlayerStatus.playing) {
+      athkarPlayer.pause();
+    } else {
+      athkarPlayer.play();
+    }
+  };
+
+  const seekAthkarAudio = async (value: number) => {
+    if (athkarPlayerStatus.isLoaded) {
+      await athkarPlayer.seekTo(value / 1000);
+    }
+  };
 
   useEffect(() => {
     const fetchNames = async () => {
@@ -490,6 +536,25 @@ export default function AthkarScreen() {
           </Text>
         </TouchableOpacity>
       </View>
+
+      {currentAudioUrl && (
+        <CompactPlayerCard
+          isDark={isDark}
+          badgeLabel="🔊"
+          title={athkarPeriod === 'morning' ? t.morningAthkar : t.eveningAthkar}
+          subtitle={t.fullAudioRecitation}
+          currentMs={(athkarPlayerStatus.currentTime || 0) * 1000}
+          durationMs={(athkarPlayerStatus.duration || 0) * 1000}
+          isPlaying={loadedAudioPeriod === athkarPeriod && !!athkarPlayerStatus.playing}
+          disablePrev
+          disableNext
+          onPrev={() => {}}
+          onNext={() => {}}
+          onTogglePlay={toggleAthkarAudio}
+          onSeek={(value) => void seekAthkarAudio(value)}
+          layout="inline"
+        />
+      )}
 
       <FlatList
         data={activeAthkarList}

@@ -126,6 +126,14 @@ const parseAthkarPayload = (payload: any): Omit<AthkarContent, 'source'> | null 
   return null;
 };
 
+// Direct, hosted MP3 URLs — NOT YouTube links. YouTube has no legitimate
+// audio-only URL and scraping it violates their ToS, so a track must be
+// uploaded somewhere (GitHub raw, S3, etc.) and referenced here or via env.
+export const ATHKAR_AUDIO_URLS: { morning?: string; evening?: string } = {
+  morning: process.env.EXPO_PUBLIC_ATHKAR_MORNING_AUDIO_URL || undefined,
+  evening: process.env.EXPO_PUBLIC_ATHKAR_EVENING_AUDIO_URL || undefined,
+};
+
 export async function fetchAthkarContentOnline(): Promise<AthkarContent | null> {
   for (const endpoint of ENDPOINT_CANDIDATES) {
     try {
