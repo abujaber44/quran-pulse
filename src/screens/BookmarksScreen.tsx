@@ -21,6 +21,7 @@ import { UI_GLASS } from '../theme/ui';
 import GlassBackground from '../components/GlassBackground';
 import ScreenIntroTile from '../components/ScreenIntroTile';
 import MemorizationQuizModal from '../components/MemorizationQuizModal';
+import RevealPracticeModal from '../components/RevealPracticeModal';
 import type { BookmarkForQuiz } from '../services/aiService';
 import { useLanguage } from '../i18n';
 import { getPageBookmark, savePageBookmark, type PageBookmark } from './MushafReaderScreen';
@@ -43,6 +44,7 @@ export default function BookmarksScreen() {
   const [selectedTag, setSelectedTag] = useState<'all' | BookmarkTag>('all');
   const [pageBookmark, setPageBookmarkState] = useState<PageBookmark | null>(null);
   const [quizModalVisible, setQuizModalVisible] = useState(false);
+  const [practiceModalVisible, setPracticeModalVisible] = useState(false);
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
   const { settings } = useSettings();
   const { showAlert } = useThemedAlert();
@@ -216,12 +218,20 @@ export default function BookmarksScreen() {
       </View>
 
       {selectedTag === 'memorize' && visibleBookmarks.length >= 1 && (
-        <TouchableOpacity
-          style={styles.coachButton}
-          onPress={() => setQuizModalVisible(true)}
-        >
-          <Text style={styles.coachButtonText}>{t.aiCoach}</Text>
-        </TouchableOpacity>
+        <View style={styles.memorizeActionsRow}>
+          <TouchableOpacity
+            style={[styles.coachButton, styles.memorizeActionButton]}
+            onPress={() => setQuizModalVisible(true)}
+          >
+            <Text style={styles.coachButtonText}>{t.aiCoach}</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.practiceButton, styles.memorizeActionButton]}
+            onPress={() => setPracticeModalVisible(true)}
+          >
+            <Text style={styles.coachButtonText}>🎙 {t.practice}</Text>
+          </TouchableOpacity>
+        </View>
       )}
 
       {(selectedTag === 'all' || selectedTag === 'read_recite') && pageBookmark && (
@@ -276,6 +286,12 @@ export default function BookmarksScreen() {
             ayahText: b.ayahText,
             translation: b.translation,
           }))}
+      />
+
+      <RevealPracticeModal
+        visible={practiceModalVisible}
+        onClose={() => setPracticeModalVisible(false)}
+        bookmarks={bookmarks.filter((b) => b.tag === 'memorize')}
       />
       </View>
     </GlassBackground>
@@ -416,10 +432,28 @@ const styles = StyleSheet.create({
     color: UI_COLORS.text,
     textAlign: 'center',
   },
+  memorizeActionsRow: {
+    flexDirection: 'row',
+    marginHorizontal: 16,
+    marginBottom: 12,
+    gap: 10,
+  },
+  memorizeActionButton: {
+    flex: 1,
+    marginHorizontal: 0,
+    marginBottom: 0,
+  },
   coachButton: {
     marginHorizontal: 16,
     marginBottom: 12,
     backgroundColor: UI_COLORS.accent,
+    paddingVertical: 14,
+    borderRadius: UI_RADII.sm,
+    alignItems: 'center',
+    ...UI_SHADOWS.card,
+  },
+  practiceButton: {
+    backgroundColor: UI_COLORS.primary,
     paddingVertical: 14,
     borderRadius: UI_RADII.sm,
     alignItems: 'center',

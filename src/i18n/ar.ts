@@ -291,4 +291,40 @@ export default {
   // Daily Ayah
   dailyAyah: 'آيتك اليومية',
   selectedForYou: 'مختارة لك',
+
+  // Mushaf Jump Navigation
+  jumpTo: 'الانتقال إلى',
+  goToPage: 'اذهب إلى صفحة',
+  go: 'اذهب',
+  surahTab: 'سورة',
+  pageTab: 'صفحة',
+
+  // Khatmah
+  khatmah: 'ختمة',
+  startKhatmah: 'ابدأ ختمة',
+  khatmahIntro: 'حدد هدفاً لختم القرآن الكريم',
+  khatmahChooseDays: 'ختم القرآن خلال',
+  days: 'يوم',
+  customDays: 'مخصص',
+  enterDays: 'عدد الأيام',
+  khatmahDay: 'اليوم',
+  ofWord: 'من',
+  pagesRead: 'صفحة مقروءة',
+  pagesLeftToday: 'صفحة متبقية اليوم',
+  todayGoalMet: 'أنجزت ورد اليوم، واصل!',
+  khatmahDone: 'تمت الختمة — تقبّل الله منك 🤲',
+  endKhatmah: 'إنهاء الختمة',
+  endKhatmahConfirm: 'إنهاء هذه الختمة؟ سيتم فقدان تقدمك.',
+  startNewKhatmah: 'ابدأ ختمة جديدة',
+
+  // Memorization Review
+  dueForReview: 'بحاجة للمراجعة',
+  reviewNow: 'راجع الآن',
+  practice: 'تسميع',
+  tapToReveal: 'اضغط لإظهار الآية',
+  knewIt: 'أتقنتها',
+  stillLearning: 'ما زلت أحفظ',
+  practiceComplete: 'اكتمل التسميع!',
+  practiceStats: 'متقنة في هذه الجولة',
+  noVersesToPractice: 'احفظ آيات من وضع التعلّم لتسميعها هنا',
 } as const;

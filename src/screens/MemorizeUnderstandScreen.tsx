@@ -14,7 +14,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import axios from 'axios';
 import { fetchSurahs } from '../services/quranApi';
 import { searchVerses, type SearchResult } from '../services/aiService';
-import { getPageBookmark, type PageBookmark } from './MushafReaderScreen';
+import { getPageBookmark, getLastViewedPage, type PageBookmark } from './MushafReaderScreen';
 import { Ionicons } from '@expo/vector-icons';
 import { getSearchHistory, addSearchHistory, clearSearchHistory, type SearchHistoryItem } from '../services/searchHistoryService';
 import { Surah } from '../types';
@@ -38,6 +38,7 @@ export default function MemorizeUnderstandScreen({ navigation }: any) {
   const [browseMode, setBrowseMode] = useState<'surah' | 'juz'>('surah');
   const [juzData, setJuzData] = useState<any[]>([]);
   const [savedBookmark, setSavedBookmark] = useState<PageBookmark | null>(null);
+  const [lastViewedPage, setLastViewedPage] = useState<number | null>(null);
   const abortRef = useRef<AbortController | null>(null);
 
   const { settings } = useSettings();
@@ -50,6 +51,7 @@ export default function MemorizeUnderstandScreen({ navigation }: any) {
   useEffect(() => {
     const unsub = navigation.addListener('focus', () => {
       getPageBookmark().then(setSavedBookmark);
+      getLastViewedPage().then(setLastViewedPage);
     });
     return unsub;
   }, [navigation]);
@@ -261,18 +263,27 @@ export default function MemorizeUnderstandScreen({ navigation }: any) {
               )}
             </View>
           </View>
-        ) : savedBookmark ? (
+        ) : savedBookmark || lastViewedPage ? (
           <TouchableOpacity
             style={styles.continueReadingCard}
             activeOpacity={0.8}
-            onPress={() => navigation.navigate('MushafReader', { juzNumber: 1, initialPage: savedBookmark.page })}
+            onPress={() =>
+              navigation.navigate('MushafReader', {
+                juzNumber: 1,
+                initialPage: savedBookmark?.page ?? lastViewedPage,
+              })
+            }
           >
-            <Ionicons name="bookmark" size={20} color="#f5a623" />
+            <Ionicons
+              name={savedBookmark ? 'bookmark' : 'time-outline'}
+              size={20}
+              color={savedBookmark ? '#f5a623' : 'rgba(255,255,255,0.55)'}
+            />
             <View style={styles.continueReadingContent}>
               <Text style={styles.continueReadingLabel}>{t.continueFrom}</Text>
               <Text style={styles.continueReadingTitle}>
-                {t.page} {savedBookmark.page}
-                {savedBookmark.ayahNumber ? ` · ${t.ayah} ${savedBookmark.ayahNumber}` : ''}
+                {t.page} {savedBookmark?.page ?? lastViewedPage}
+                {savedBookmark?.ayahNumber ? ` · ${t.ayah} ${savedBookmark.ayahNumber}` : ''}
               </Text>
             </View>
             <Ionicons name="chevron-forward" size={18} color="rgba(255,255,255,0.3)" />

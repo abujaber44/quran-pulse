@@ -291,4 +291,40 @@ export default {
   // Daily Ayah
   dailyAyah: 'Your Daily Ayah',
   selectedForYou: 'Selected for you',
+
+  // Mushaf Jump Navigation
+  jumpTo: 'Jump to',
+  goToPage: 'Go to page',
+  go: 'Go',
+  surahTab: 'Surah',
+  pageTab: 'Page',
+
+  // Khatmah
+  khatmah: 'Khatmah',
+  startKhatmah: 'Start a Khatmah',
+  khatmahIntro: 'Set a goal to complete the entire Quran',
+  khatmahChooseDays: 'Complete the Quran in',
+  days: 'days',
+  customDays: 'Custom',
+  enterDays: 'Number of days',
+  khatmahDay: 'Day',
+  ofWord: 'of',
+  pagesRead: 'pages read',
+  pagesLeftToday: 'pages left today',
+  todayGoalMet: "Today's goal complete, keep going!",
+  khatmahDone: 'Khatmah completed — may Allah accept it 🤲',
+  endKhatmah: 'End Khatmah',
+  endKhatmahConfirm: 'End this khatmah? Your progress will be lost.',
+  startNewKhatmah: 'Start a new Khatmah',
+
+  // Memorization Review
+  dueForReview: 'due for review',
+  reviewNow: 'Review',
+  practice: 'Practice',
+  tapToReveal: 'Tap to reveal the ayah',
+  knewIt: 'I knew it',
+  stillLearning: 'Still learning',
+  practiceComplete: 'Practice complete!',
+  practiceStats: 'known this round',
+  noVersesToPractice: 'Bookmark ayahs in Learn mode to practice them here',
 } as const;
