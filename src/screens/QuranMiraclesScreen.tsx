@@ -6,19 +6,22 @@ import {
   RefreshControl,
   StyleSheet,
   Text,
+  TextInput,
   ScrollView,
   TouchableOpacity,
+  TouchableWithoutFeedback,
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
+import { Ionicons } from '@expo/vector-icons';
 import ScreenIntroTile from '../components/ScreenIntroTile';
 import { useSettings } from '../context/SettingsContext';
 import { useThemedAlert } from '../context/ThemedAlertContext';
 import { fetchSurahs } from '../services/quranApi';
 import { fetchQuranMiraclesContent, MiraclesContentResult } from '../services/miraclesService';
+import { normalizeArabicForSearch } from '../utils/arabicSearch';
 import { UI_COLORS, UI_RADII, UI_SHADOWS } from '../theme/ui';
-import { UI_GLASS } from '../theme/ui';
 import GlassBackground from '../components/GlassBackground';
 import { MiracleCategory, MiracleItem, Surah } from '../types';
 import AskMiracleModal from '../components/AskMiracleModal';
@@ -43,6 +46,7 @@ const CATEGORY_ICONS: Record<string, string> = {
   'Cosmology & Natural World': '🌍',
   'Human Development': '🧬',
   'Water & Seas': '🌊',
+  'Earth & Geology': '⛰️',
   'History & Prophecy': '📜',
   'Law, Society & Civilization': '⚖️',
 };
@@ -108,13 +112,11 @@ export default function QuranMiraclesScreen() {
 
   const [items, setItems] = useState<MiracleItem[]>([]);
   const [surahs, setSurahs] = useState<Surah[]>([]);
-  const [selectedLanguage, setSelectedLanguage] = useState<LanguageFilter>(lang as LanguageFilter);
   const [selectedCategory, setSelectedCategory] = useState<CategoryFilter>('all');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [expandedId, setExpandedId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [sourceType, setSourceType] = useState<'cms' | 'fallback'>('fallback');
-  const [updatedAt, setUpdatedAt] = useState<string | undefined>(undefined);
-  const [warning, setWarning] = useState<string | undefined>(undefined);
   const [selectedMiracle, setSelectedMiracle] = useState<MiracleItem | null>(null);
 
   const loadMiracles = useCallback(async (isRefresh: boolean) => {
@@ -127,9 +129,6 @@ export default function QuranMiraclesScreen() {
     try {
       const result: MiraclesContentResult = await fetchQuranMiraclesContent();
       setItems(result.items);
-      setSourceType(result.source);
-      setUpdatedAt(result.updatedAt);
-      setWarning(result.warning);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -160,10 +159,12 @@ export default function QuranMiraclesScreen() {
     };
   }, []);
 
+  // Follows the app language live; falls back to all items when no
+  // translated variants exist for the selected language.
   const languageItems = useMemo(() => {
-    const filtered = items.filter((item) => getItemLanguage(item) === selectedLanguage);
+    const filtered = items.filter((item) => getItemLanguage(item) === (lang as LanguageFilter));
     return filtered.length > 0 ? filtered : items;
-  }, [items, selectedLanguage]);
+  }, [items, lang]);
 
   const availableCategories = useMemo(() => {
     const unique = [
@@ -172,12 +173,25 @@ export default function QuranMiraclesScreen() {
     return unique.sort((a, b) => a.localeCompare(b));
   }, [languageItems]);
 
-  const categoryFilters = useMemo<Array<{ key: CategoryFilter; label: string }>>(
-    () => [{ key: 'all', label: t.allCategories }, ...availableCategories.map((category) => ({
-      key: category,
-      label: formatCategoryLabel(category),
-    }))],
-    [availableCategories]
+  const categoryCounts = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const item of languageItems) {
+      const key = item.category.trim();
+      counts.set(key, (counts.get(key) ?? 0) + 1);
+    }
+    return counts;
+  }, [languageItems]);
+
+  const categoryFilters = useMemo<Array<{ key: CategoryFilter; label: string; count: number }>>(
+    () => [
+      { key: 'all' as const, label: t.allCategories, count: languageItems.length },
+      ...availableCategories.map((category) => ({
+        key: category,
+        label: formatCategoryLabel(category),
+        count: categoryCounts.get(category) ?? 0,
+      })),
+    ],
+    [availableCategories, categoryCounts, languageItems.length, t.allCategories]
   );
 
   useEffect(() => {
@@ -187,10 +201,34 @@ export default function QuranMiraclesScreen() {
     }
   }, [availableCategories, selectedCategory]);
 
+  const isSearching = searchQuery.trim().length > 0;
+
   const filteredItems = useMemo(() => {
-    if (selectedCategory === 'all') return languageItems;
-    return languageItems.filter((item) => item.category === selectedCategory);
-  }, [languageItems, selectedCategory]);
+    let result = selectedCategory === 'all'
+      ? languageItems
+      : languageItems.filter((item) => item.category === selectedCategory);
+
+    if (isSearching) {
+      const query = normalizeArabicForSearch(searchQuery.trim());
+      result = result.filter((item) => {
+        const haystack = normalizeArabicForSearch(
+          `${item.title} ${item.summary} ${item.detail} ${item.tags.join(' ')}`
+        );
+        return haystack.includes(query);
+      });
+    }
+
+    return result;
+  }, [languageItems, selectedCategory, searchQuery, isSearching]);
+
+  // Deterministic daily pick, stable for the whole day
+  const miracleOfTheDay = useMemo<MiracleItem | null>(() => {
+    if (languageItems.length === 0) return null;
+    const daysSinceEpoch = Math.floor(Date.now() / 86400000);
+    return languageItems[daysSinceEpoch % languageItems.length];
+  }, [languageItems]);
+
+  const showFeatured = selectedCategory === 'all' && !isSearching && miracleOfTheDay !== null;
 
   const openSourceUrl = useCallback(async (url: string) => {
     try {
@@ -245,111 +283,158 @@ export default function QuranMiraclesScreen() {
     [navigation, showAlert, surahs]
   );
 
-  const renderMiracleCard = ({ item }: { item: MiracleItem }) => {
-    const badge = getCategoryBadge(item.category);
+  const renderExpandedBody = (item: MiracleItem) => (
+    <>
+      <Text style={styles.cardDetail}>{item.detail}</Text>
 
-    return (
-      <View style={[styles.card]}>
-        <View style={styles.cardHeaderRow}>
-          <View style={[styles.categoryPill, { backgroundColor: badge.bg }]}>
-            <Text style={[styles.categoryPillText, { color: badge.text }]}>{formatCategoryLabel(item.category)}</Text>
+      {item.ayahRefs.length > 0 ? (
+        <View style={styles.ayahRefsWrap}>
+          <Text style={styles.ayahRefsTitle}>{t.ayahReferences}</Text>
+          <View style={styles.ayahRefsRow}>
+            {item.ayahRefs.map((ref) => (
+              <TouchableOpacity
+                key={`${item.id}-${ref}`}
+                style={styles.ayahRefChip}
+                onPress={() => navigateToAyahRef(ref)}
+              >
+                <Text style={styles.ayahRefChipText}>{ref}</Text>
+              </TouchableOpacity>
+            ))}
           </View>
         </View>
+      ) : null}
 
-        <Text style={[styles.cardTitle]}>{item.title}</Text>
-        <Text style={[styles.cardSummary]}>{item.summary}</Text>
-        <Text style={[styles.cardDetail]}>{item.detail}</Text>
-
-        {item.ayahRefs.length > 0 ? (
-          <View style={styles.ayahRefsWrap}>
-            <Text style={[styles.ayahRefsTitle]}>Ayah refs</Text>
-            <View style={styles.ayahRefsRow}>
-              {item.ayahRefs.map((ref) => (
-                <TouchableOpacity
-                  key={`${item.id}-${ref}`}
-                  style={[styles.ayahRefChip]}
-                  onPress={() => navigateToAyahRef(ref)}
-                >
-                  <Text style={styles.ayahRefChipText}>{ref}</Text>
-                </TouchableOpacity>
-              ))}
+      {item.tags.length > 0 ? (
+        <View style={styles.tagsRow}>
+          {item.tags.slice(0, 6).map((tag) => (
+            <View key={`${item.id}-${tag}`} style={styles.tagChip}>
+              <Text style={styles.tagChipText}>{tag}</Text>
             </View>
-          </View>
-        ) : null}
+          ))}
+        </View>
+      ) : null}
 
-        {item.tags.length > 0 ? (
-          <View style={styles.tagsRow}>
-            {item.tags.slice(0, 6).map((tag) => (
-              <View key={`${item.id}-${tag}`} style={[styles.tagChip]}>
-                <Text style={[styles.tagChipText]}>{tag}</Text>
-              </View>
-            ))}
-          </View>
-        ) : null}
-
-        {item.examples && item.examples.length > 0 ? (
-          <View style={[styles.examplesBox]}>
-            <Text style={[styles.examplesTitle]}>Examples</Text>
-            {item.examples.slice(0, 2).map((example, index) => (
-              <View key={`${item.id}-example-${index}`} style={styles.exampleItem}>
-                <Text style={[styles.exampleItemTitle]}>{example.title}</Text>
-                <Text style={[styles.exampleItemText]}>{example.description}</Text>
-                {example.ayahRef ? (
-                  <Text style={[styles.exampleMeta]}>Ayah: {example.ayahRef}</Text>
-                ) : null}
-                {(() => {
-                  const sourceUrl = example.sourceUrl;
-                  if (!sourceUrl) return null;
-
-                  return (
-                  <TouchableOpacity
-                    style={[styles.exampleSourceButton]}
-                    onPress={() => {
-                      void openSourceUrl(sourceUrl);
-                    }}
-                  >
-                    <Text style={styles.sourceButtonText}>Open Example Source</Text>
-                  </TouchableOpacity>
-                  );
-                })()}
-              </View>
-            ))}
-          </View>
-        ) : null}
-
-        {item.caution ? (
-          <View style={[styles.cautionBox]}>
-            <Text style={[styles.cautionLabel]}>{t.note}</Text>
-            <Text style={[styles.cautionText]}>{item.caution}</Text>
-          </View>
-        ) : null}
-
-        <TouchableOpacity
-          style={styles.aiInsightButton}
-          onPress={() => setSelectedMiracle(item)}
-        >
-          <Text style={styles.aiInsightButtonText}>{t.askAiExplainMiracle}</Text>
-        </TouchableOpacity>
-
-        {item.sources.length > 0 ? (
-          <View style={styles.sourcesWrap}>
-            <Text style={[styles.sourcesTitle]}>{t.sources}</Text>
-            <View style={styles.sourcesRow}>
-              {item.sources.slice(0, 3).map((source) => (
+      {item.examples && item.examples.length > 0 ? (
+        <View style={styles.examplesBox}>
+          <Text style={styles.examplesTitle}>{t.examplesLabel}</Text>
+          {item.examples.slice(0, 2).map((example, index) => (
+            <View key={`${item.id}-example-${index}`} style={styles.exampleItem}>
+              <Text style={styles.exampleItemTitle}>{example.title}</Text>
+              <Text style={styles.exampleItemText}>{example.description}</Text>
+              {example.ayahRef ? (
+                <Text style={styles.exampleMeta}>{t.ayah}: {example.ayahRef}</Text>
+              ) : null}
+              {example.sourceUrl ? (
                 <TouchableOpacity
-                  key={`${item.id}-${source.url}`}
-                  style={[styles.sourceButton]}
+                  style={styles.exampleSourceButton}
                   onPress={() => {
-                    void openSourceUrl(source.url);
+                    void openSourceUrl(example.sourceUrl as string);
                   }}
                 >
-                  <Text style={styles.sourceButtonText}>{source.label}</Text>
+                  <Text style={styles.sourceButtonText}>{t.openSourceLink}</Text>
                 </TouchableOpacity>
-              ))}
+              ) : null}
             </View>
+          ))}
+        </View>
+      ) : null}
+
+      {item.caution ? (
+        <View style={styles.cautionBox}>
+          <Text style={styles.cautionLabel}>{t.note}</Text>
+          <Text style={styles.cautionText}>{item.caution}</Text>
+        </View>
+      ) : null}
+
+      <TouchableOpacity
+        style={styles.aiInsightButton}
+        onPress={() => setSelectedMiracle(item)}
+      >
+        <Text style={styles.aiInsightButtonText}>{t.askAiExplainMiracle}</Text>
+      </TouchableOpacity>
+
+      {item.sources.length > 0 ? (
+        <View style={styles.sourcesWrap}>
+          <Text style={styles.sourcesTitle}>{t.sources}</Text>
+          <View style={styles.sourcesRow}>
+            {item.sources.slice(0, 3).map((source) => (
+              <TouchableOpacity
+                key={`${item.id}-${source.url}`}
+                style={styles.sourceButton}
+                onPress={() => {
+                  void openSourceUrl(source.url);
+                }}
+              >
+                <Text style={styles.sourceButtonText}>{source.label}</Text>
+              </TouchableOpacity>
+            ))}
           </View>
-        ) : null}
-      </View>
+        </View>
+      ) : null}
+    </>
+  );
+
+  const renderMiracleCard = ({ item }: { item: MiracleItem }) => {
+    const badge = getCategoryBadge(item.category);
+    const isExpanded = expandedId === item.id;
+
+    return (
+      <TouchableOpacity
+        style={styles.card}
+        activeOpacity={0.85}
+        onPress={() => setExpandedId((prev) => (prev === item.id ? null : item.id))}
+      >
+        <View style={styles.cardHeaderRow}>
+          <View style={[styles.categoryPill, { backgroundColor: badge.bg }]}>
+            <Text style={[styles.categoryPillText, { color: badge.text }]}>
+              {getCategoryIcon(item.category)} {formatCategoryLabel(item.category)}
+            </Text>
+          </View>
+          <Ionicons
+            name={isExpanded ? 'chevron-up' : 'chevron-down'}
+            size={16}
+            color="rgba(255,255,255,0.4)"
+          />
+        </View>
+
+        <Text style={styles.cardTitle}>{item.title}</Text>
+        <Text style={styles.cardSummary} numberOfLines={isExpanded ? undefined : 3}>
+          {item.summary}
+        </Text>
+
+        {isExpanded && renderExpandedBody(item)}
+      </TouchableOpacity>
+    );
+  };
+
+  const renderFeaturedCard = () => {
+    if (!miracleOfTheDay) return null;
+    const isExpanded = expandedId === `featured-${miracleOfTheDay.id}`;
+
+    return (
+      <TouchableOpacity
+        style={styles.featuredCard}
+        activeOpacity={0.9}
+        onPress={() =>
+          setExpandedId((prev) =>
+            prev === `featured-${miracleOfTheDay.id}` ? null : `featured-${miracleOfTheDay.id}`
+          )
+        }
+      >
+        <View style={styles.featuredHeader}>
+          <Text style={styles.featuredLabel}>⭐ {t.miracleOfTheDay}</Text>
+          <Ionicons
+            name={isExpanded ? 'chevron-up' : 'chevron-down'}
+            size={16}
+            color="rgba(245,199,120,0.7)"
+          />
+        </View>
+        <Text style={styles.featuredTitle}>{miracleOfTheDay.title}</Text>
+        <Text style={styles.featuredSummary} numberOfLines={isExpanded ? undefined : 2}>
+          {miracleOfTheDay.summary}
+        </Text>
+        {isExpanded && renderExpandedBody(miracleOfTheDay)}
+      </TouchableOpacity>
     );
   };
 
@@ -358,7 +443,7 @@ export default function QuranMiraclesScreen() {
       <GlassBackground isDark={isDark}>
         <View style={styles.loaderContainer}>
           <ActivityIndicator size="large" color={UI_COLORS.primary} />
-          <Text style={[styles.loaderText]}>Loading miracle insights...</Text>
+          <Text style={styles.loaderText}>{t.loadingMiracles}</Text>
         </View>
       </GlassBackground>
     );
@@ -370,11 +455,31 @@ export default function QuranMiraclesScreen() {
       <View style={styles.container}>
         <ScreenIntroTile
           title={t.miraclesTitle}
-          subtitle="Dynamic Categories with Sources"
           description={t.miraclesDescription}
           isDark={isDark}
           style={styles.introTile}
         />
+
+        <View style={styles.searchContainer}>
+          <View style={styles.searchWrapper}>
+            <TextInput
+              style={styles.searchInput}
+              placeholder={t.searchMiracles}
+              placeholderTextColor="rgba(255,255,255,0.35)"
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+              autoCapitalize="none"
+              autoCorrect={false}
+            />
+            {searchQuery.length > 0 && (
+              <TouchableWithoutFeedback onPress={() => setSearchQuery('')}>
+                <View style={styles.clearButton}>
+                  <Text style={styles.clearIcon}>×</Text>
+                </View>
+              </TouchableWithoutFeedback>
+            )}
+          </View>
+        </View>
 
         <ScrollView
           horizontal
@@ -399,13 +504,14 @@ export default function QuranMiraclesScreen() {
                   style={[
                     styles.categoryLabel,
                     selected && styles.categoryLabelActive,
-                    selected && styles.categoryLabelActive,
                   ]}
                   numberOfLines={1}
                 >
                   {filter.label}
                 </Text>
-                {selected && <View style={styles.categoryDot} />}
+                <Text style={[styles.categoryCount, selected && styles.categoryCountActive]}>
+                  {filter.count}
+                </Text>
               </TouchableOpacity>
             );
           })}
@@ -417,6 +523,7 @@ export default function QuranMiraclesScreen() {
           renderItem={renderMiracleCard}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.list}
+          ListHeaderComponent={showFeatured ? renderFeaturedCard() : null}
           refreshControl={
             <RefreshControl
               refreshing={refreshing}
@@ -427,9 +534,7 @@ export default function QuranMiraclesScreen() {
             />
           }
           ListEmptyComponent={
-            <Text style={[styles.emptyText]}>
-              No items found in this category.
-            </Text>
+            <Text style={styles.emptyText}>{t.noMiraclesFound}</Text>
           }
         />
       </View>
@@ -453,20 +558,39 @@ export default function QuranMiraclesScreen() {
 const styles = StyleSheet.create({
   safeArea: { flex: 1 },
   container: { flex: 1 },
-  darkCard: { backgroundColor: 'rgba(26, 38, 52, 0.75)', borderColor: 'rgba(255, 255, 255, 0.08)' },
-  darkText: { color: UI_COLORS.white },
-  darkMutedText: { color: '#a8b3bd' },
   introTile: { marginBottom: 8 },
   loaderContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   loaderText: { marginTop: 10, color: UI_COLORS.text, fontSize: 14 },
+  searchContainer: {
+    paddingHorizontal: 16,
+    paddingBottom: 10,
+  },
+  searchWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255,255,255,0.08)',
+    borderRadius: UI_RADII.md,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.15)',
+    ...UI_SHADOWS.input,
+  },
+  searchInput: {
+    flex: 1,
+    paddingHorizontal: 16,
+    paddingVertical: 11,
+    fontSize: 15,
+    color: UI_COLORS.text,
+  },
+  clearButton: { paddingHorizontal: 16 },
+  clearIcon: { fontSize: 20, color: UI_COLORS.textMuted },
   categoryScroll: {
     paddingHorizontal: 16,
-    paddingBottom: 14,
+    paddingBottom: 12,
     gap: 10,
   },
   categoryTab: {
     alignItems: 'center',
-    paddingVertical: 12,
+    paddingVertical: 10,
     paddingHorizontal: 14,
     borderRadius: UI_RADII.lg,
     borderWidth: 1,
@@ -478,17 +602,9 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(31, 157, 85, 0.12)',
     borderColor: UI_COLORS.primary,
   },
-  darkCategoryTab: {
-    backgroundColor: 'rgba(26, 38, 52, 0.75)',
-    borderColor: 'rgba(255, 255, 255, 0.08)',
-  },
-  darkCategoryTabActive: {
-    backgroundColor: 'rgba(31, 157, 85, 0.2)',
-    borderColor: UI_COLORS.primary,
-  },
   categoryIcon: {
-    fontSize: 22,
-    marginBottom: 4,
+    fontSize: 20,
+    marginBottom: 3,
   },
   categoryLabel: {
     fontSize: 11,
@@ -499,43 +615,51 @@ const styles = StyleSheet.create({
   categoryLabelActive: {
     color: UI_COLORS.primary,
   },
-  categoryDot: {
-    width: 5,
-    height: 5,
-    borderRadius: 3,
-    backgroundColor: UI_COLORS.primary,
-    marginTop: 4,
+  categoryCount: {
+    marginTop: 3,
+    fontSize: 10,
+    fontWeight: '700',
+    color: 'rgba(255,255,255,0.35)',
   },
-  statusCard: {
-    marginHorizontal: 16,
-    marginBottom: 8,
-    borderRadius: UI_RADII.md,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.15)',
-    backgroundColor: 'rgba(255,255,255,0.08)',
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    ...UI_SHADOWS.input,
-  },
-  statusText: {
-    fontSize: 13,
-    color: UI_COLORS.textMuted,
-    fontWeight: '600',
-  },
-  statusSubText: {
-    marginTop: 2,
-    fontSize: 12,
-    color: UI_COLORS.textMuted,
-  },
-  warningText: {
-    marginTop: 4,
-    fontSize: 12,
-    color: '#8a6d1b',
-    lineHeight: 17,
+  categoryCountActive: {
+    color: '#5ddb92',
   },
   list: {
     paddingHorizontal: 16,
     paddingBottom: 26,
+  },
+  featuredCard: {
+    backgroundColor: 'rgba(245,166,35,0.1)',
+    borderRadius: UI_RADII.lg,
+    borderWidth: 1,
+    borderColor: 'rgba(245,166,35,0.35)',
+    padding: 14,
+    marginVertical: 7,
+    ...UI_SHADOWS.card,
+  },
+  featuredHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  featuredLabel: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: '#f5c778',
+    letterSpacing: 0.4,
+    textTransform: 'uppercase',
+  },
+  featuredTitle: {
+    fontSize: 19,
+    fontWeight: '700',
+    color: UI_COLORS.white,
+  },
+  featuredSummary: {
+    marginTop: 6,
+    fontSize: 14,
+    color: 'rgba(240,228,205,0.85)',
+    lineHeight: 20,
   },
   card: {
     backgroundColor: 'rgba(255,255,255,0.08)',
@@ -549,6 +673,7 @@ const styles = StyleSheet.create({
   cardHeaderRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    alignItems: 'center',
     marginBottom: 8,
   },
   categoryPill: {
@@ -561,7 +686,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   cardTitle: {
-    fontSize: 19,
+    fontSize: 18,
     fontWeight: '700',
     color: UI_COLORS.text,
   },
@@ -572,13 +697,13 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   cardDetail: {
-    marginTop: 7,
+    marginTop: 10,
     fontSize: 14,
     color: UI_COLORS.text,
     lineHeight: 21,
   },
   ayahRefsWrap: {
-    marginTop: 8,
+    marginTop: 10,
   },
   ayahRefsTitle: {
     color: UI_COLORS.textMuted,
@@ -599,10 +724,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 6,
   },
-  darkAyahRefChip: {
-    borderColor: '#4d6376',
-    backgroundColor: '#213241',
-  },
   ayahRefChipText: {
     color: UI_COLORS.accent,
     fontSize: 12,
@@ -622,10 +743,6 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
     backgroundColor: 'rgba(255,255,255,0.06)',
   },
-  darkTagChip: {
-    backgroundColor: '#1e2a36',
-    borderColor: '#354252',
-  },
   tagChipText: {
     fontSize: 11,
     color: UI_COLORS.textMuted,
@@ -638,10 +755,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(224,185,0,0.25)',
     padding: 10,
-  },
-  darkCautionBox: {
-    backgroundColor: '#3d3222',
-    borderColor: '#745c39',
   },
   cautionLabel: {
     fontSize: 12,
@@ -661,10 +774,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(45,127,184,0.25)',
     padding: 10,
-  },
-  darkExamplesBox: {
-    backgroundColor: '#1f2f40',
-    borderColor: '#3e5468',
   },
   examplesTitle: {
     fontSize: 12,
@@ -736,10 +845,6 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(45,127,184,0.15)',
     paddingHorizontal: 10,
     paddingVertical: 7,
-  },
-  darkSourceButton: {
-    borderColor: '#4d6376',
-    backgroundColor: '#213241',
   },
   sourceButtonText: {
     fontSize: 12,
