@@ -628,8 +628,8 @@ export default function AthkarScreen() {
             badgeLabel="🔊"
             title={athkarPeriod === 'morning' ? t.morningAthkar : t.eveningAthkar}
             subtitle={t.fullAudioRecitation}
-            currentMs={(athkarPlayerStatus.currentTime || 0) * 1000}
-            durationMs={(athkarPlayerStatus.duration || 0) * 1000}
+            currentMs={loadedAudioPeriod === athkarPeriod ? (athkarPlayerStatus.currentTime || 0) * 1000 : 0}
+            durationMs={loadedAudioPeriod === athkarPeriod ? (athkarPlayerStatus.duration || 0) * 1000 : 0}
             isPlaying={loadedAudioPeriod === athkarPeriod && !!athkarPlayerStatus.playing}
             disablePrev
             disableNext
