@@ -353,15 +353,17 @@ export default function SurahScreen({ route }: any) {
   }, [ayahs.length]);
 
   const toggleExpandAyah = useCallback((ayahNum: number) => {
-    setExpandedAyahNum(prev => {
-      if (prev === ayahNum) {
-        setExpandedTranslation(null);
-        setExpandedTafseer(null);
-        return null;
-      }
-      return ayahNum;
-    });
-  }, []);
+    if (expandedAyahNum === ayahNum) {
+      setExpandedTranslation(null);
+      setExpandedTafseer(null);
+      setExpandedAyahNum(null);
+      return;
+    }
+    // Expanding an ayah to study it counts toward progress, same as playing it
+    void recordAyahRead(surah.id, ayahNum, surah.verses_count);
+    void saveLastRead({ surahId: surah.id, surahName: surah.name_simple, ayahNum, timestamp: Date.now() });
+    setExpandedAyahNum(ayahNum);
+  }, [expandedAyahNum, surah.id, surah.name_simple, surah.verses_count]);
 
   const flatListRef = useRef<FlatList<any>>(null);
   const initialAyahScrollInProgressRef = useRef(false);
