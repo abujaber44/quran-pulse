@@ -242,7 +242,7 @@ export default {
   // Reading Progress
   readingProgress: 'Your Progress',
   dayStreak: 'day streak',
-  ayahsRead: 'ayahs read',
+  ayahsRead: 'ayahs studied',
   surahsCompleted: 'surahs done',
   bestStreak: 'best streak',
   keepReading: 'Start reading to build your streak!',

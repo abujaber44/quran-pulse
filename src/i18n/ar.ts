@@ -242,7 +242,7 @@ export default {
   // Reading Progress
   readingProgress: 'رحلتك مع القرآن',
   dayStreak: 'يوم متواصل',
-  ayahsRead: 'آية',
+  ayahsRead: 'آية مدروسة',
   surahsCompleted: 'سورة',
   bestStreak: 'أطول مداومة',
   keepReading: 'ابدأ رحلتك مع كتاب الله!',
