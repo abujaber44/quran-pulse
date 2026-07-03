@@ -547,9 +547,13 @@ const styles = StyleSheet.create({
   clearButton: { paddingHorizontal: 16 },
   clearIcon: { fontSize: 20, color: UI_COLORS.textMuted },
   // flexGrow: 0 stops the horizontal ScrollView from absorbing leftover
-  // vertical space (which stretched the tabs when the list below shrank)
+  // vertical space (which stretched the tabs when the list below shrank).
+  // zIndex/elevation keeps the tabs painted above the list below it so the
+  // featured "Miracle of the Day" card can never visually overlap them.
   categoryScrollView: {
     flexGrow: 0,
+    zIndex: 10,
+    elevation: 10,
   },
   categoryScroll: {
     paddingHorizontal: 16,
