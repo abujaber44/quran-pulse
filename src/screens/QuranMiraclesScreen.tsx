@@ -442,6 +442,7 @@ export default function QuranMiraclesScreen() {
           keyExtractor={(item) => item.id}
           renderItem={renderMiracleCard}
           showsVerticalScrollIndicator={false}
+          style={styles.flatList}
           contentContainerStyle={styles.list}
           refreshControl={
             <RefreshControl
@@ -548,6 +549,12 @@ const styles = StyleSheet.create({
   },
   categoryCountActive: {
     color: '#5ddb92',
+  },
+  // flex: 1 constrains the list to the remaining space so it scrolls
+  // internally. Without it the list sized to its full content height and,
+  // with many items ("All"), overflowed and overlapped the category tabs.
+  flatList: {
+    flex: 1,
   },
   list: {
     paddingHorizontal: 16,
