@@ -307,7 +307,6 @@ export default {
   versesMastered: 'متقنة',
 
   // Quran Miracles overhaul
-  miracleOfTheDay: 'معجزة اليوم',
   searchMiracles: 'ابحث في المعجزات...',
   loadingMiracles: 'جاري تحميل المعجزات...',
   noMiraclesFound: 'لا توجد نتائج.',

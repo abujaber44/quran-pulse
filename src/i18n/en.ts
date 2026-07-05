@@ -307,7 +307,6 @@ export default {
   versesMastered: 'mastered',
 
   // Quran Miracles overhaul
-  miracleOfTheDay: 'Miracle of the Day',
   searchMiracles: 'Search miracles...',
   loadingMiracles: 'Loading miracle insights...',
   noMiraclesFound: 'No miracles found.',

@@ -221,15 +221,6 @@ export default function QuranMiraclesScreen() {
     return result;
   }, [languageItems, selectedCategory, searchQuery, isSearching]);
 
-  // Deterministic daily pick, stable for the whole day
-  const miracleOfTheDay = useMemo<MiracleItem | null>(() => {
-    if (languageItems.length === 0) return null;
-    const daysSinceEpoch = Math.floor(Date.now() / 86400000);
-    return languageItems[daysSinceEpoch % languageItems.length];
-  }, [languageItems]);
-
-  const showFeatured = selectedCategory === 'all' && !isSearching && miracleOfTheDay !== null;
-
   const openSourceUrl = useCallback(async (url: string) => {
     try {
       const supported = await Linking.canOpenURL(url);
@@ -366,40 +357,6 @@ export default function QuranMiraclesScreen() {
     );
   };
 
-  const renderFeaturedCard = () => {
-    if (!miracleOfTheDay) return null;
-    const isExpanded = expandedId === `featured-${miracleOfTheDay.id}`;
-
-    return (
-      <TouchableOpacity
-        style={styles.featuredCard}
-        activeOpacity={0.9}
-        onPress={() =>
-          setExpandedId((prev) =>
-            prev === `featured-${miracleOfTheDay.id}` ? null : `featured-${miracleOfTheDay.id}`
-          )
-        }
-      >
-        <View style={styles.featuredHeader}>
-          <Text style={styles.featuredLabel}>⭐ {t.miracleOfTheDay}</Text>
-          <Ionicons
-            name={isExpanded ? 'chevron-up' : 'chevron-down'}
-            size={16}
-            color="rgba(245,199,120,0.7)"
-          />
-        </View>
-        <Text style={[styles.featuredTitle, isArabic && styles.rtlText]}>{miracleOfTheDay.title}</Text>
-        <Text
-          style={[styles.featuredSummary, isArabic && styles.rtlText]}
-          numberOfLines={isExpanded ? undefined : 2}
-        >
-          {miracleOfTheDay.summary}
-        </Text>
-        {isExpanded && renderExpandedBody(miracleOfTheDay)}
-      </TouchableOpacity>
-    );
-  };
-
   if (loading) {
     return (
       <GlassBackground isDark={isDark}>
@@ -486,7 +443,6 @@ export default function QuranMiraclesScreen() {
           renderItem={renderMiracleCard}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.list}
-          ListHeaderComponent={showFeatured ? renderFeaturedCard() : null}
           refreshControl={
             <RefreshControl
               refreshing={refreshing}
@@ -548,12 +504,8 @@ const styles = StyleSheet.create({
   clearIcon: { fontSize: 20, color: UI_COLORS.textMuted },
   // flexGrow: 0 stops the horizontal ScrollView from absorbing leftover
   // vertical space (which stretched the tabs when the list below shrank).
-  // zIndex/elevation keeps the tabs painted above the list below it so the
-  // featured "Miracle of the Day" card can never visually overlap them.
   categoryScrollView: {
     flexGrow: 0,
-    zIndex: 10,
-    elevation: 10,
   },
   categoryScroll: {
     paddingHorizontal: 16,
@@ -601,40 +553,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingTop: 6,
     paddingBottom: 26,
-  },
-  featuredCard: {
-    backgroundColor: 'rgba(245,166,35,0.1)',
-    borderRadius: UI_RADII.lg,
-    borderWidth: 1,
-    borderColor: 'rgba(245,166,35,0.35)',
-    padding: 14,
-    marginTop: 8,
-    marginBottom: 10,
-    ...UI_SHADOWS.card,
-  },
-  featuredHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  featuredLabel: {
-    fontSize: 12,
-    fontWeight: '800',
-    color: '#f5c778',
-    letterSpacing: 0.4,
-    textTransform: 'uppercase',
-  },
-  featuredTitle: {
-    fontSize: 19,
-    fontWeight: '700',
-    color: UI_COLORS.white,
-  },
-  featuredSummary: {
-    marginTop: 6,
-    fontSize: 14,
-    color: 'rgba(240,228,205,0.85)',
-    lineHeight: 20,
   },
   card: {
     backgroundColor: 'rgba(255,255,255,0.08)',
