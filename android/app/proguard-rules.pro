@@ -20,4 +20,16 @@
 -keep class expo.modules.notifications.** { *; }
 -keep class androidx.work.** { *; }
 
+# expo-audio / expo-av: background playback, lock-screen controls, and the
+# foreground media-playback service rely on similar reflection/serialization
+# patterns (MediaSession, AndroidX media). Unlike expo-notifications, these
+# modules ship no ProGuard protection of their own at all, so without these
+# rules R8 could silently break background/lock-screen audio the same way it
+# broke athan scheduling — with no crash, just a feature that quietly stops
+# working.
+-keep class expo.modules.audio.** { *; }
+-keep class expo.modules.av.** { *; }
+-keep class androidx.media.** { *; }
+-keep class androidx.media3.** { *; }
+
 # Add any project specific keep options here:
