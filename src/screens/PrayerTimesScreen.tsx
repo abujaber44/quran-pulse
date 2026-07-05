@@ -1025,6 +1025,7 @@ export default function PrayerTimesScreen({ navigation }: any) {
         {todaySchedule && (todaySchedule.timings.Midnight || todaySchedule.timings.Lastthird) ? (
           <View style={styles.nightCard}>
             <Text style={styles.nightTitle}>🌌 {t.nightTimes}</Text>
+            <Text style={styles.nightSubtitle}>{t.nightTimesSubtitle}</Text>
             <View style={styles.nightRow}>
               {todaySchedule.timings.Midnight ? (
                 <View style={styles.nightPill}>
@@ -1379,6 +1380,12 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '700',
     color: '#b0a0f0',
+    textAlign: 'center',
+    marginBottom: 2,
+  },
+  nightSubtitle: {
+    fontSize: 11,
+    color: 'rgba(255,255,255,0.45)',
     textAlign: 'center',
     marginBottom: 10,
   },

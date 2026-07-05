@@ -317,6 +317,7 @@ export default {
   midnightLabel: 'Midnight',
   lastThirdLabel: 'Last Third of Night',
   nightTimes: 'Night Worship Times',
+  nightTimesSubtitle: 'Based on sunset-to-dawn, not the 24-hour clock',
   weeklyTimetable: 'Weekly Timetable',
   offlineTimesNotice: 'Showing saved times — reconnect to refresh',
   athanScheduleNote: 'Athan is scheduled for the next 7 days, with a reminder to reopen Prayer Times before expiry. After a phone restart, open Prayer Times once to refresh schedules.',
