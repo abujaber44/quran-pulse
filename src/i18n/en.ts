@@ -306,6 +306,11 @@ export default {
   quizAccuracy: 'accuracy',
   versesMastered: 'mastered',
 
+  // Quran Miracles overhaul
+  searchMiracles: 'Search miracles...',
+  loadingMiracles: 'Loading miracle insights...',
+  noMiraclesFound: 'No miracles found.',
+
   // Islamic Calendar overhaul
   hijriLabel: 'Hijri',
   gregorianLabel: 'Gregorian',

@@ -306,6 +306,11 @@ export default {
   quizAccuracy: 'الدقة',
   versesMastered: 'متقنة',
 
+  // Quran Miracles overhaul
+  searchMiracles: 'ابحث في المعجزات...',
+  loadingMiracles: 'جاري تحميل المعجزات...',
+  noMiraclesFound: 'لا توجد نتائج.',
+
   // Islamic Calendar overhaul
   hijriLabel: 'هجري',
   gregorianLabel: 'ميلادي',

@@ -1,14 +1,39 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { MIRACLES_FALLBACK } from '../data/miraclesFallback';
 import { MiracleCategory, MiracleExample, MiracleItem, MiracleSourceLink } from '../types';
 
 export type MiraclesContentResult = {
   items: MiracleItem[];
-  source: 'cms' | 'fallback';
+  source: 'cms' | 'cache' | 'fallback';
   updatedAt?: string;
   warning?: string;
 };
 
 const CMS_TIMEOUT_MS = 9000;
+const CMS_CACHE_KEY = '@qp_miracles_cms_cache';
+
+type CachedCmsContent = {
+  items: MiracleItem[];
+  updatedAt?: string;
+  fetchedAt: number;
+};
+
+const readCmsCache = async (): Promise<CachedCmsContent | null> => {
+  try {
+    const raw = await AsyncStorage.getItem(CMS_CACHE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as CachedCmsContent;
+    if (!Array.isArray(parsed.items) || parsed.items.length === 0) return null;
+    return parsed;
+  } catch {
+    return null;
+  }
+};
+
+const writeCmsCache = (items: MiracleItem[], updatedAt?: string): void => {
+  const payload: CachedCmsContent = { items, updatedAt, fetchedAt: Date.now() };
+  AsyncStorage.setItem(CMS_CACHE_KEY, JSON.stringify(payload)).catch(() => {});
+};
 
 const getCmsUrl = (): string => {
   const raw = process.env.EXPO_PUBLIC_MIRACLES_CMS_URL;
@@ -203,6 +228,7 @@ export const fetchQuranMiraclesContent = async (): Promise<MiraclesContentResult
       throw new Error('CMS payload is invalid or empty.');
     }
 
+    writeCmsCache(parsed.items, parsed.updatedAt);
     return {
       items: parsed.items,
       source: 'cms',
@@ -210,6 +236,17 @@ export const fetchQuranMiraclesContent = async (): Promise<MiraclesContentResult
     };
   } catch (error) {
     const reason = error instanceof Error ? error.message : 'Unknown CMS error';
+
+    // Offline / CMS down: prefer the last successful CMS payload over the
+    // smaller bundled fallback.
+    const cached = await readCmsCache();
+    if (cached) {
+      return {
+        items: cached.items.map(ensureExamples),
+        source: 'cache',
+        updatedAt: cached.updatedAt,
+      };
+    }
 
     return {
       items: MIRACLES_FALLBACK.map(ensureExamples),
