@@ -31,6 +31,7 @@ import {
   downloadSurahAudio,
   deleteSurahAudio,
 } from '../services/audioDownloadService';
+import { logAudioEvent } from '../services/audioDebugService';
 
 interface Surah {
   id: number;
@@ -226,6 +227,7 @@ export default function QuranPlayerScreen() {
   const loadAndPlayAudio = async () => {
     if (!selectedSurah) return;
 
+    logAudioEvent('surah', 'load_start', `surah=${selectedSurah.id} reciter=${selectedReciter.id}`);
     setIsLoading(true);
     try {
       const localUri = await getLocalSurahAudioUri(selectedReciter.id, selectedSurah.id);
@@ -235,6 +237,8 @@ export default function QuranPlayerScreen() {
       // Re-apply metadata after replacing track to keep lock screen controls active on auto-next.
       applyLockScreenControls(selectedSurah);
     } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      logAudioEvent('surah', 'load_error', message);
       console.error('Audio error:', error);
       showAlert({
         title: 'Error',
@@ -282,9 +286,27 @@ export default function QuranPlayerScreen() {
   // Auto-advance to next surah when playback finishes
   useEffect(() => {
     if (playerStatus.didJustFinish) {
+      logAudioEvent('surah', 'finished', selectedSurah ? `surah=${selectedSurah.id}` : undefined);
       handleNext();
     }
-  }, [playerStatus.didJustFinish, handleNext]);
+  }, [playerStatus.didJustFinish, handleNext, selectedSurah]);
+
+  // Track playing/paused transitions to help diagnose silent background stops
+  const lastLoggedSurahPlayingRef = useRef<boolean | null>(null);
+  useEffect(() => {
+    if (!selectedSurah) {
+      lastLoggedSurahPlayingRef.current = null;
+      return;
+    }
+    if (playerStatus.playing !== lastLoggedSurahPlayingRef.current) {
+      lastLoggedSurahPlayingRef.current = playerStatus.playing;
+      logAudioEvent(
+        'surah',
+        playerStatus.playing ? 'playing' : 'paused',
+        `surah=${selectedSurah.id} loaded=${playerStatus.isLoaded}`
+      );
+    }
+  }, [playerStatus.playing, playerStatus.isLoaded, selectedSurah]);
 
   const seekTo = async (value: number) => {
     if (playerStatus.isLoaded) {

@@ -32,6 +32,7 @@ import QiblaCompassScreen from './src/screens/QiblaCompassScreen';
 import QuranMiraclesScreen from './src/screens/QuranMiraclesScreen';
 import MushafReaderScreen from './src/screens/MushafReaderScreen';
 import StatsScreen from './src/screens/StatsScreen';
+import AudioDiagnosticsScreen from './src/screens/AudioDiagnosticsScreen';
 
 const Stack = createNativeStackNavigator();
 const isExpoGo = Constants.appOwnership === 'expo';
@@ -233,6 +234,11 @@ export default function App() {
             <Stack.Screen
               name="Stats"
               component={StatsScreen}
+              options={({ navigation }) => getSharedHeaderOptions(navigation)}
+            />
+            <Stack.Screen
+              name="AudioDiagnostics"
+              component={AudioDiagnosticsScreen}
               options={({ navigation }) => getSharedHeaderOptions(navigation)}
             />
             <Stack.Screen

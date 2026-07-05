@@ -28,7 +28,7 @@ const PAUSE_MIN = 3;
 const PAUSE_MAX = 8;
 const PAUSE_STEP = 1;
 
-export default function SettingsScreen() {
+export default function SettingsScreen({ navigation }: any) {
   const { settings, updateSetting } = useSettings();
   const { showAlert } = useThemedAlert();
   const { lang, t, setLanguage } = useLanguage();
@@ -119,11 +119,18 @@ export default function SettingsScreen() {
     <GlassBackground isDark={isDark}>
     <SafeAreaView style={styles.container} edges={['left', 'right', 'bottom']}>
       <ScrollView contentContainerStyle={styles.scroll}>
+        {/* Long-press the title to reach the hidden Audio Diagnostics screen */}
+        <TouchableOpacity
+          activeOpacity={1}
+          delayLongPress={1500}
+          onLongPress={() => navigation?.navigate?.('AudioDiagnostics')}
+        >
         <ScreenIntroTile
           title="Settings"
           description="Adjust Arabic font style and size across Quran screens, and set the memorization pause between repeated ayahs."
           style={styles.introTile}
         />
+        </TouchableOpacity>
 
         {/* Arabic Font Family */}
         <View style={styles.section}>

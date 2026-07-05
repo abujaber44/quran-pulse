@@ -5,6 +5,7 @@ import { getGlobalAyahNumber } from '../utils/quranUtils';
 import { getLocalAyahAudioUri, cacheAyahAudio } from '../services/audioDownloadService';
 import { useSettings } from './SettingsContext';
 import { useThemedAlert } from './ThemedAlertContext';
+import { logAudioEvent } from '../services/audioDebugService';
 
 interface Reciter {
   id: string;
@@ -97,6 +98,8 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
       await sound.unloadAsync();
     }
 
+    logAudioEvent('ayah', 'play_start', `surah=${surah} ayah=${ayah} reciter=${selectedReciter.id}`);
+
     try {
       const remoteUri = `${BASE_URL}/${selectedReciter.id}/${global}.mp3`;
       // Play from the local cache when available; otherwise stream and cache
@@ -112,13 +115,20 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
         { shouldPlay: true }
       );
 
+      let lastLoggedPlaying: boolean | null = null;
       newSound.setOnPlaybackStatusUpdate((status) => {
         if (status.isLoaded) {
           setPositionMillis(status.positionMillis ?? 0);
           setDurationMillis(status.durationMillis ?? 0);
           setIsPlaying(status.isPlaying);
 
+          if (status.isPlaying !== lastLoggedPlaying) {
+            lastLoggedPlaying = status.isPlaying;
+            logAudioEvent('ayah', status.isPlaying ? 'playing' : 'paused', `surah=${surah} ayah=${ayah}`);
+          }
+
           if (status.didJustFinish) {
+            logAudioEvent('ayah', 'finished', `surah=${surah} ayah=${ayah}`);
             if (repeatMode === 'single') {
               newSound.replayAsync();
             } else if (memorizationMode) {
@@ -128,12 +138,16 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
               }, settings.memorizationPause * 1000);
             }
           }
+        } else if ((status as { error?: string }).error) {
+          logAudioEvent('ayah', 'unloaded_with_error', (status as { error?: string }).error);
         }
       });
 
       setSound(newSound);
       setCurrentAyah({ surah, ayah, global });
     } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      logAudioEvent('ayah', 'play_error', message);
       console.error('Failed to play ayah:', error);
       showAlert({
         title: 'Audio Error',
@@ -178,6 +192,7 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
 
   // New: Stop listening and clear state
   const stopListening = useCallback(async () => {
+    logAudioEvent('ayah', 'stop_listening');
     if (sound) {
       await sound.stopAsync();
       await sound.unloadAsync();
@@ -192,6 +207,7 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     return () => {
       if (sound) {
+        logAudioEvent('ayah', 'context_cleanup_unload');
         sound.unloadAsync();
       }
     };
