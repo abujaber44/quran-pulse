@@ -663,15 +663,23 @@ export default function PrayerTimesScreen({ navigation }: any) {
             const content: Notifications.NotificationContentInput = {
               title: `${ATHAN_NOTIFICATION_TITLE_PREFIX} ${prayer.name}`,
               body: '🕌 اللَّهُمَّ رَبَّ هَذِهِ الدَّعْوَةِ التَّامَّةِ، وَالصَّلَاةِ الْقَائِمَةِ، آتِ مُحَمَّداً الْوَسِيلَةَ وَالْفَضِيلَةَ، وَابْعَثْهُ مَقَاماً مَحْمُوداً الَّذِي وَعَدْتَهُ، إَنَّكَ لَا تُخْلِفُ الْمِيعَادَ',
-              sound: 'athan_v2.mp3',
               priority: Notifications.AndroidNotificationPriority.HIGH,
               vibrate: [0, 250, 250, 250],
               data: { source: 'athan', prayerName: prayer.name },
             };
 
             if (Platform.OS === 'ios') {
+              // iOS has no notification channels — the sound must be set
+              // per-notification here (bundled via the expo-notifications
+              // config plugin's "sounds" array in app.json).
+              content.sound = 'athan_v2.mp3';
               content.interruptionLevel = 'timeSensitive';
             }
+            // On Android, sound comes from the channel (ATHAN_CHANNEL_ID),
+            // configured in setupAndroidNotificationChannels(). Setting
+            // content.sound here as well throws android.net.Uri$HierarchicalUri
+            // inside scheduleNotificationAsync, silently failing every
+            // scheduled athan notification.
 
             const trigger: Notifications.NotificationTriggerInput =
               Platform.OS === 'android'
