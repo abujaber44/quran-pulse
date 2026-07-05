@@ -11,4 +11,13 @@
 -keep class com.swmansion.reanimated.** { *; }
 -keep class com.facebook.react.turbomodule.** { *; }
 
+# expo-notifications: local notification scheduling relies on reflection and
+# serialization of trigger/content classes (including WorkManager, used
+# internally for scheduled/date-based triggers). Without these keep rules,
+# R8 can strip or rename members those internals depend on, which surfaces
+# as opaque scheduling failures (e.g. android.net.Uri$HierarchicalUri cast
+# exceptions) with no code-level change on our side.
+-keep class expo.modules.notifications.** { *; }
+-keep class androidx.work.** { *; }
+
 # Add any project specific keep options here:
