@@ -45,6 +45,7 @@ import {
   saveCalculationMethod,
   parsePrayerTime,
   toLocalDateKey,
+  dateKeyToLocalDate,
   type PrayerName,
   type PrayerScheduleDay,
 } from '../services/prayerTimesService';
@@ -638,8 +639,7 @@ export default function PrayerTimesScreen({ navigation }: any) {
             continue;
           }
 
-          const triggerDate = new Date(`${daySchedule.dateKey}T00:00:00`);
-          triggerDate.setHours(parsed.hour, parsed.minute, 0, 0);
+          const triggerDate = dateKeyToLocalDate(daySchedule.dateKey, parsed.hour, parsed.minute);
 
           if (triggerDate <= now) continue;
 
@@ -1066,7 +1066,7 @@ export default function PrayerTimesScreen({ navigation }: any) {
                   ))}
                 </View>
                 {prayerScheduleWindow.map((day) => {
-                  const date = new Date(`${day.dateKey}T00:00:00`);
+                  const date = dateKeyToLocalDate(day.dateKey);
                   const isToday = day.dateKey === toLocalDateKey(new Date());
                   const weekday = date.toLocaleDateString(lang === 'ar' ? 'ar' : 'en', { weekday: 'short' });
                   return (

@@ -69,6 +69,18 @@ export const toLocalDateKey = (date: Date): string => {
   return `${year}-${month}-${day}`;
 };
 
+/**
+ * Builds a local-time Date from a "yyyy-mm-dd" key using numeric components,
+ * not string parsing. `new Date(dateKey + 'THH:MM:SS')` is unreliable on
+ * Hermes (RN's JS engine) — it can silently produce an Invalid Date or treat
+ * the string as UTC, which shifts triggers by hours or fails scheduling
+ * outright depending on device timezone.
+ */
+export const dateKeyToLocalDate = (dateKey: string, hour: number = 0, minute: number = 0): Date => {
+  const [year, month, day] = dateKey.split('-').map(Number);
+  return new Date(year, (month || 1) - 1, day || 1, hour, minute, 0, 0);
+};
+
 export const parsePrayerTime = (raw: string): { hour: number; minute: number } | null => {
   const match = raw.match(/(\d{1,2}):(\d{2})/);
   if (!match) return null;
