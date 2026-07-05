@@ -26,6 +26,7 @@ import ScreenIntroTile from '../components/ScreenIntroTile';
 import { canScheduleExactAlarms, openExactAlarmSettings } from '../services/exactAlarmService';
 import {
   ATHAN_CHANNEL_ID,
+  STALE_ATHAN_CHANNEL_IDS,
   ATHAN_REMINDER_CHANNEL_ID,
   ATHAN_NOTIFICATION_ID_PREFIX,
   ATHAN_NOTIFICATION_TITLE_PREFIX,
@@ -252,6 +253,13 @@ export default function PrayerTimesScreen({ navigation }: any) {
 
   const setupAndroidNotificationChannels = async () => {
     if (Platform.OS !== 'android') return;
+
+    // Remove superseded athan channels (created by older builds, possibly
+    // with a broken sound URI) so only the current one appears in Android
+    // notification settings.
+    for (const staleId of STALE_ATHAN_CHANNEL_IDS) {
+      await Notifications.deleteNotificationChannelAsync(staleId).catch(() => {});
+    }
 
     await Notifications.setNotificationChannelAsync(ATHAN_CHANNEL_ID, {
       name: 'Athan Alerts',

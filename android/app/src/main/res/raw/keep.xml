@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  The athan notification sounds are referenced only from JavaScript (the
+  notification channel is configured with sound: 'athan_v2.mp3' at runtime),
+  so the R8 resource shrinker sees them as unused and strips them from
+  release builds — the athan notification then fires silently. Keep them
+  explicitly.
+-->
+<resources xmlns:tools="http://schemas.android.com/tools"
+    tools:keep="@raw/athan,@raw/athan_v2" />
