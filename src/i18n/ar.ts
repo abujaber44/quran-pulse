@@ -400,4 +400,22 @@ export default {
   practiceComplete: 'اكتمل التسميع!',
   practiceStats: 'متقنة في هذه الجولة',
   noVersesToPractice: 'احفظ آيات من وضع التعلّم لتسميعها هنا',
+
+  // Onboarding
+  onboardingWelcome: 'مرحباً بك في نبض القرآن',
+  onboardingLanguageTitle: 'اختر لغتك',
+  onboardingLanguageDesc: 'يمكنك تغييرها في أي وقت من الإعدادات.',
+  onboardingCityTitle: 'أين تصلي؟',
+  onboardingCityDesc: 'تُستخدم مدينتك لحساب مواقيت الصلاة واتجاه القبلة بدقة. يمكنك التخطي وضبطها لاحقاً من شاشة مواقيت الصلاة.',
+  onboardingCityPlaceholder: 'اكتب اسم مدينتك...',
+  onboardingDetectLocation: 'استخدم موقعي',
+  onboardingNotifTitle: 'الأذان والتذكيرات',
+  onboardingNotifDesc: 'اسمح بالإشعارات ليصدح الأذان في وقت الصلاة وتصلك تذكيرات لطيفة للقراءة. يمكن التحكم بكل تنبيه لاحقاً من الإعدادات وشاشة مواقيت الصلاة.',
+  onboardingEnableNotifs: 'تفعيل الإشعارات',
+  onboardingSkip: 'تخطَّ الآن',
+  onboardingContinue: 'متابعة',
+
+  // Friday Al-Kahf reminder
+  kahfReminder: 'تذكير سورة الكهف يوم الجمعة',
+  kahfReminderDesc: 'تذكير أسبوعي بقراءة سورة الكهف كل جمعة',
 } as const;

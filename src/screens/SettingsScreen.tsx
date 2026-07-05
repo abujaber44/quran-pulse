@@ -19,6 +19,7 @@ import GlassBackground from '../components/GlassBackground';
 import ScreenIntroTile from '../components/ScreenIntroTile';
 import { useLanguage } from '../i18n';
 import { getReminderSettings, saveReminderSettings, type ReminderSettings } from '../services/dailyReminderService';
+import { getKahfReminderSettings, saveKahfReminderSettings, type KahfReminderSettings } from '../services/fridayKahfService';
 
 const FONT_MIN = 24;
 const FONT_MAX = 48;
@@ -36,10 +37,25 @@ export default function SettingsScreen({ navigation }: any) {
   const { arabicFontSize, memorizationPause, arabicFontFamily } = settings;
 
   const [reminder, setReminder] = useState<ReminderSettings>({ enabled: false, hour: 20, minute: 0 });
+  const [kahfReminder, setKahfReminder] = useState<KahfReminderSettings>({ enabled: true, hour: 9, minute: 0 });
 
   useEffect(() => {
     getReminderSettings().then(setReminder);
+    getKahfReminderSettings().then(setKahfReminder);
   }, []);
+
+  const toggleKahfReminder = async (enabled: boolean) => {
+    const updated = { ...kahfReminder, enabled };
+    setKahfReminder(updated);
+    await saveKahfReminderSettings(updated, lang);
+  };
+
+  const adjustKahfHour = async (delta: number) => {
+    const newHour = (kahfReminder.hour + delta + 24) % 24;
+    const updated = { ...kahfReminder, hour: newHour };
+    setKahfReminder(updated);
+    if (updated.enabled) await saveKahfReminderSettings(updated, lang);
+  };
 
   const toggleReminder = async (enabled: boolean) => {
     const updated = { ...reminder, enabled };
@@ -318,6 +334,36 @@ export default function SettingsScreen({ navigation }: any) {
                 <Text style={styles.valueText}>{formatTime(reminder.hour, reminder.minute)}</Text>
               </View>
               <TouchableOpacity style={styles.stepButton} onPress={() => adjustReminderHour(1)}>
+                <Text style={styles.stepButtonText}>+</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+        </View>
+
+        {/* Friday Al-Kahf Reminder */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>{t.kahfReminder}</Text>
+          <Text style={styles.helperText}>{t.kahfReminderDesc}</Text>
+          <View style={styles.reminderRow}>
+            <Switch
+              value={kahfReminder.enabled}
+              onValueChange={toggleKahfReminder}
+              trackColor={{ false: '#ccc', true: '#27ae60' }}
+              thumbColor={kahfReminder.enabled ? '#fff' : '#f4f3f4'}
+            />
+            <Text style={[styles.reminderStatus]}>
+              {kahfReminder.enabled ? t.reminderEnabled : t.reminderDisabled}
+            </Text>
+          </View>
+          {kahfReminder.enabled && (
+            <View style={styles.stepperRow}>
+              <TouchableOpacity style={styles.stepButton} onPress={() => adjustKahfHour(-1)}>
+                <Text style={styles.stepButtonText}>−</Text>
+              </TouchableOpacity>
+              <View style={styles.valuePill}>
+                <Text style={styles.valueText}>{formatTime(kahfReminder.hour, kahfReminder.minute)}</Text>
+              </View>
+              <TouchableOpacity style={styles.stepButton} onPress={() => adjustKahfHour(1)}>
                 <Text style={styles.stepButtonText}>+</Text>
               </TouchableOpacity>
             </View>

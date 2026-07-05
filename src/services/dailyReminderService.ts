@@ -87,6 +87,7 @@ async function scheduleReminder(settings: ReminderSettings, lang: Lang): Promise
         body: msg.body,
         sound: true,
         priority: Notifications.AndroidNotificationPriority.DEFAULT,
+        data: { source: 'daily-reminder' },
       },
       trigger: {
         type: Notifications.SchedulableTriggerInputTypes.DATE,
@@ -133,7 +134,7 @@ export async function scheduleStreakProtection(streak: ReadingStreak, lang: Lang
 
   await Notifications.scheduleNotificationAsync({
     identifier: STREAK_NOTIFICATION_ID,
-    content: { ...content, sound: true },
+    content: { ...content, sound: true, data: { source: 'streak' } },
     trigger: {
       type: Notifications.SchedulableTriggerInputTypes.DATE,
       date: fireAt,

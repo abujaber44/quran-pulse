@@ -10,6 +10,10 @@ import { TouchableOpacity, Text, View } from 'react-native';
 import * as Font from 'expo-font';
 import * as Notifications from 'expo-notifications';
 import Constants from 'expo-constants';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+import { navigationRef, flushPendingNavigation } from './src/navigation/navigationRef';
+import { handleNotificationResponse } from './src/services/notificationDeepLink';
 
 import { AudioProvider } from './src/context/AudioContext';
 import { SettingsProvider } from './src/context/SettingsContext';
@@ -33,6 +37,7 @@ import QuranMiraclesScreen from './src/screens/QuranMiraclesScreen';
 import MushafReaderScreen from './src/screens/MushafReaderScreen';
 import StatsScreen from './src/screens/StatsScreen';
 import AudioDiagnosticsScreen from './src/screens/AudioDiagnosticsScreen';
+import OnboardingScreen, { ONBOARDING_DONE_KEY } from './src/screens/OnboardingScreen';
 
 const Stack = createNativeStackNavigator();
 const isExpoGo = Constants.appOwnership === 'expo';
@@ -126,6 +131,7 @@ const getSharedHeaderOptions = (navigation: NavigationProp<ParamListBase>) => ({
 
 export default function App() {
   const [fontsLoaded, setFontsLoaded] = useState(false);
+  const [initialRoute, setInitialRoute] = useState<string | null>(null);
 
   useEffect(() => {
     async function loadFonts() {
@@ -135,7 +141,46 @@ export default function App() {
     loadFonts();
   }, []);
 
-  if (!fontsLoaded) {
+  useEffect(() => {
+    async function resolveInitialRoute() {
+      try {
+        const done = await AsyncStorage.getItem(ONBOARDING_DONE_KEY);
+        if (done) {
+          setInitialRoute('Landing');
+          return;
+        }
+        // Existing users (updating from an older version) already have a
+        // saved city — don't show them first-launch onboarding.
+        const existingCity = await AsyncStorage.getItem('prayer_city');
+        if (existingCity) {
+          await AsyncStorage.setItem(ONBOARDING_DONE_KEY, '1').catch(() => {});
+          setInitialRoute('Landing');
+          return;
+        }
+        setInitialRoute('Onboarding');
+      } catch {
+        setInitialRoute('Landing');
+      }
+    }
+    resolveInitialRoute();
+  }, []);
+
+  // Deep-link notification taps to the screen they are about. The listener
+  // covers taps while the app is alive; the cold-start check covers taps
+  // that launched the app (deduped inside handleNotificationResponse).
+  useEffect(() => {
+    const subscription = Notifications.addNotificationResponseReceivedListener(
+      handleNotificationResponse
+    );
+    Notifications.getLastNotificationResponseAsync()
+      .then((response) => {
+        if (response) handleNotificationResponse(response);
+      })
+      .catch(() => {});
+    return () => subscription.remove();
+  }, []);
+
+  if (!fontsLoaded || !initialRoute) {
     return null; // Loading screen
   }
 
@@ -144,11 +189,19 @@ export default function App() {
     <SettingsProvider>
       <ThemedAlertProvider>
         <AudioProvider>
-          <NavigationContainer>
+          <NavigationContainer ref={navigationRef} onReady={flushPendingNavigation}>
             <Stack.Navigator
-              initialRouteName="Landing"
+              initialRouteName={initialRoute}
               screenOptions={isExpoGo ? undefined : { statusBarStyle: 'light' as const }}
             >
+            <Stack.Screen
+              name="Onboarding"
+              component={OnboardingScreen}
+              options={{
+                headerShown: false,
+                ...(isExpoGo ? {} : { statusBarStyle: 'light' as const }),
+              } as any}
+            />
             <Stack.Screen
               name="Landing"
               component={LandingScreen}

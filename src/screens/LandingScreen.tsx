@@ -27,6 +27,7 @@ import {
 } from '../services/khatmahService';
 import { getReviewSchedule, getDueVerseKeys } from '../services/memorizationService';
 import { refreshDailyReminder, scheduleStreakProtection } from '../services/dailyReminderService';
+import { refreshFridayKahfReminder } from '../services/fridayKahfService';
 import { getRamadanStatus, countdownTo, type RamadanStatus } from '../services/ramadanService';
 
 type RootStackParamList = {
@@ -153,6 +154,7 @@ export default function LandingScreen() {
   // Rotate the next week of reminder content and arm streak protection
   useEffect(() => {
     refreshDailyReminder(lang).catch(() => {});
+    refreshFridayKahfReminder(lang).catch(() => {});
     getReadingStreak()
       .then((s) => scheduleStreakProtection(s, lang))
       .catch(() => {});

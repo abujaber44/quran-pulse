@@ -400,4 +400,22 @@ export default {
   practiceComplete: 'Practice complete!',
   practiceStats: 'known this round',
   noVersesToPractice: 'Bookmark ayahs in Learn mode to practice them here',
+
+  // Onboarding
+  onboardingWelcome: 'Welcome to Quran Pulse',
+  onboardingLanguageTitle: 'Choose your language',
+  onboardingLanguageDesc: 'You can change this anytime in Settings.',
+  onboardingCityTitle: 'Where do you pray?',
+  onboardingCityDesc: 'Your city is used to calculate accurate prayer times and the Qibla direction. You can skip this and set it later on the Prayer Times screen.',
+  onboardingCityPlaceholder: 'Type your city...',
+  onboardingDetectLocation: 'Use my location',
+  onboardingNotifTitle: 'Athan & reminders',
+  onboardingNotifDesc: 'Allow notifications so Quran Pulse can play the athan at prayer times and send gentle reading reminders. Every alert can be turned on or off later in Settings and the Prayer Times screen.',
+  onboardingEnableNotifs: 'Enable Notifications',
+  onboardingSkip: 'Skip for now',
+  onboardingContinue: 'Continue',
+
+  // Friday Al-Kahf reminder
+  kahfReminder: 'Friday Al-Kahf Reminder',
+  kahfReminderDesc: 'A weekly reminder to read Surah Al-Kahf every Friday',
 } as const;
