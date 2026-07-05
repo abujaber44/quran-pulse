@@ -22,6 +22,7 @@ import {
   ATHAN_NOTIFICATION_TITLE_PREFIX,
   buildAthanNotificationId,
 } from '../utils/athanNotifications';
+import { getAthanDebugTrace, type AthanDebugTrace } from '../services/prayerTimesService';
 
 type Prayer = {
   name: string;
@@ -262,6 +263,7 @@ export default function AthanDiagnosticsScreen({ route }: any) {
   const [notificationsEnabled, setNotificationsEnabled] = useState<boolean | null>(null);
   const [batteryOptimizationIgnored, setBatteryOptimizationIgnored] = useState<boolean | null>(null);
   const [lastRefreshAt, setLastRefreshAt] = useState<Date | null>(null);
+  const [debugTrace, setDebugTrace] = useState<AthanDebugTrace | null>(null);
 
   const expectedUpcoming = useMemo<UpcomingPrayer[]>(() => {
     if (prayers.length === 0) return [];
@@ -351,6 +353,9 @@ export default function AthanDiagnosticsScreen({ route }: any) {
 
       setScheduledAthans(sortedAthans);
 
+      const trace = await getAthanDebugTrace();
+      setDebugTrace(trace);
+
       const permissions = await Notifications.getPermissionsAsync();
       setNotificationsEnabled(permissions.status === 'granted');
 
@@ -416,6 +421,28 @@ export default function AthanDiagnosticsScreen({ route }: any) {
             <Text style={styles.refreshButtonText}>Refresh Diagnostics</Text>
           </TouchableOpacity>
         </View>
+
+        {debugTrace ? (
+          <View style={[styles.statusCard, debugTrace.failed > 0 && styles.statusCardWarn]}>
+            <Text style={styles.statusTitle}>Last Scheduling Attempt</Text>
+            <Text style={styles.statusText}>
+              Ran: {new Date(debugTrace.ranAt).toLocaleString()}
+            </Text>
+            <Text style={styles.statusText}>
+              Attempted: {debugTrace.attempted} · Succeeded: {debugTrace.succeeded} · Failed: {debugTrace.failed}
+            </Text>
+            {debugTrace.outerError ? (
+              <Text style={styles.errorText}>Fatal error: {debugTrace.outerError}</Text>
+            ) : null}
+            {debugTrace.errors.length > 0 ? (
+              <View style={{ marginTop: 6 }}>
+                {debugTrace.errors.map((err, idx) => (
+                  <Text key={idx} style={styles.rowMeta}>• {err}</Text>
+                ))}
+              </View>
+            ) : null}
+          </View>
+        ) : null}
 
         {loading ? (
           <View style={styles.loadingWrap}>
@@ -537,6 +564,10 @@ const styles = StyleSheet.create({
     padding: 16,
     marginBottom: 14,
     ...UI_SHADOWS.card,
+  },
+  statusCardWarn: {
+    borderColor: '#c98200',
+    backgroundColor: 'rgba(224,185,0,0.1)',
   },
   statusTitle: {
     fontSize: 18,

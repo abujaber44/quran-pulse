@@ -46,8 +46,10 @@ import {
   parsePrayerTime,
   toLocalDateKey,
   dateKeyToLocalDate,
+  saveAthanDebugTrace,
   type PrayerName,
   type PrayerScheduleDay,
+  type AthanDebugTrace,
 } from '../services/prayerTimesService';
 
 interface Prayer {
@@ -575,6 +577,19 @@ export default function PrayerTimesScreen({ navigation }: any) {
 
     const isStaleRun = () => runId !== scheduleRunIdRef.current;
 
+    const trace: AthanDebugTrace = {
+      ranAt: Date.now(),
+      attempted: 0,
+      succeeded: 0,
+      failed: 0,
+      errors: [],
+      outerError: null,
+    };
+    const recordError = (message: string) => {
+      trace.errors.push(message);
+      if (trace.errors.length > 8) trace.errors.shift();
+    };
+
     try {
       const existingScheduled = await Notifications.getAllScheduledNotificationsAsync();
       if (isStaleRun()) return;
@@ -643,6 +658,7 @@ export default function PrayerTimesScreen({ navigation }: any) {
 
           if (triggerDate <= now) continue;
 
+          trace.attempted += 1;
           try {
             const content: Notifications.NotificationContentInput = {
               title: `${ATHAN_NOTIFICATION_TITLE_PREFIX} ${prayer.name}`,
@@ -674,7 +690,11 @@ export default function PrayerTimesScreen({ navigation }: any) {
               content,
               trigger,
             });
+            trace.succeeded += 1;
           } catch (error) {
+            trace.failed += 1;
+            const message = error instanceof Error ? error.message : String(error);
+            recordError(`${prayer.name} @ ${triggerDate.toISOString()}: ${message}`);
             console.error(`Failed to schedule ${prayer.name} on ${triggerDate.toISOString()}:`, error);
           }
         }
@@ -718,7 +738,13 @@ export default function PrayerTimesScreen({ navigation }: any) {
         console.error('Failed to schedule athan refresh reminder:', reminderError);
       }
     } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      trace.outerError = message;
       console.error('Failed to refresh athan schedules:', error);
+    } finally {
+      if (!isStaleRun()) {
+        void saveAthanDebugTrace(trace);
+      }
     }
   };
 

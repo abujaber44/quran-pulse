@@ -47,6 +47,37 @@ export const DEFAULT_METHOD_ID = 2; // preserves the app's historical behavior
 export const isValidMethodId = (value: unknown): value is number =>
   CALCULATION_METHODS.some((m) => m.id === value);
 
+// --- Athan scheduling debug trace ---
+// scheduleNotificationAsync failures on a real device are otherwise
+// invisible in a preview/production build (no attached debugger), so we
+// persist a summary of the last scheduling run for the Athan Diagnostics
+// screen to display.
+const ATHAN_DEBUG_KEY = '@qp_athan_debug_trace';
+
+export interface AthanDebugTrace {
+  ranAt: number;
+  attempted: number;
+  succeeded: number;
+  failed: number;
+  /** Most recent failures, newest last, capped to a handful */
+  errors: string[];
+  outerError: string | null;
+}
+
+export async function saveAthanDebugTrace(trace: AthanDebugTrace): Promise<void> {
+  await AsyncStorage.setItem(ATHAN_DEBUG_KEY, JSON.stringify(trace)).catch(() => {});
+}
+
+export async function getAthanDebugTrace(): Promise<AthanDebugTrace | null> {
+  try {
+    const raw = await AsyncStorage.getItem(ATHAN_DEBUG_KEY);
+    if (!raw) return null;
+    return JSON.parse(raw) as AthanDebugTrace;
+  } catch {
+    return null;
+  }
+}
+
 export async function getCalculationMethod(): Promise<number> {
   try {
     const raw = await AsyncStorage.getItem(METHOD_STORAGE_KEY);
