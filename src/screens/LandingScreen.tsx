@@ -29,13 +29,13 @@ import { refreshFridayKahfReminder } from '../services/fridayKahfService';
 import { getRamadanStatus, countdownTo, type RamadanStatus } from '../services/ramadanService';
 import { getHijriToday, getHijriMonthName } from '../services/islamicEventsService';
 import NextPrayerHero from '../components/NextPrayerHero';
+import MemorizationQuizModal from '../components/MemorizationQuizModal';
+import type { BookmarkForQuiz } from '../services/aiService';
 
 type RootStackParamList = {
   MemorizeUnderstand: undefined;
   Athkar: { period?: 'morning' | 'evening'; nonce?: number } | undefined;
-  Bookmarks:
-    | { initialTag?: 'memorize' | 'read'; autoOpen?: 'quiz' | 'practice'; nonce?: number }
-    | undefined;
+  Bookmarks: { initialTag?: 'memorize' | 'read'; nonce?: number } | undefined;
   PrayerTimes: undefined;
   QuranMiracles: undefined;
   QuranPlayer: undefined;
@@ -75,6 +75,8 @@ export default function LandingScreen() {
   const [showKhatmahModal, setShowKhatmahModal] = useState(false);
   const [customDaysInput, setCustomDaysInput] = useState('');
   const [dueReviewCount, setDueReviewCount] = useState(0);
+  const [memorizeBookmarks, setMemorizeBookmarks] = useState<BookmarkForQuiz[]>([]);
+  const [quizVisible, setQuizVisible] = useState(false);
   const [ramadan, setRamadan] = useState<RamadanStatus | null>(null);
   const [hijriLine, setHijriLine] = useState<string | null>(null);
   const [dailyAyahExpanded, setDailyAyahExpanded] = useState(false);
@@ -134,10 +136,19 @@ export default function LandingScreen() {
       getKhatmah().then(setKhatmah);
       getRamadanStatus().then(setRamadan).catch(() => {});
       Promise.all([getBookmarks(), getReviewSchedule()]).then(([bookmarks, schedule]) => {
-        const memorizeKeysList = bookmarks
-          .filter((b) => b.tag === 'memorize')
-          .map((b) => `${b.surahId}:${b.ayahNum}`);
-        setDueReviewCount(getDueVerseKeys(memorizeKeysList, schedule).length);
+        const memorizeList = bookmarks.filter((b) => b.tag === 'memorize');
+        setMemorizeBookmarks(
+          memorizeList.map((b): BookmarkForQuiz => ({
+            surahId: b.surahId,
+            surahName: b.surahName,
+            ayahNum: b.ayahNum,
+            ayahText: b.ayahText,
+            translation: b.translation,
+          }))
+        );
+        setDueReviewCount(
+          getDueVerseKeys(memorizeList.map((b) => `${b.surahId}:${b.ayahNum}`), schedule).length
+        );
       });
     }, [])
   );
@@ -219,8 +230,7 @@ export default function LandingScreen() {
     chips.push({
       key: 'quiz',
       label: `✏️ ${t.quizMeChip}`,
-      onPress: () =>
-        navigation.navigate('Bookmarks', { initialTag: 'memorize', autoOpen: 'quiz', nonce: Date.now() }),
+      onPress: () => setQuizVisible(true),
     });
     if (khatmahStatus && !khatmahStatus.completed && khatmahStatus.leftToday > 0) {
       chips.push({
@@ -471,6 +481,12 @@ export default function LandingScreen() {
           </TouchableOpacity>
         </View>
       </ScrollView>
+
+      <MemorizationQuizModal
+        visible={quizVisible}
+        onClose={() => setQuizVisible(false)}
+        bookmarks={memorizeBookmarks}
+      />
 
       <Modal
         visible={showKhatmahModal}

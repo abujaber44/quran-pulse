@@ -17,9 +17,10 @@ function getSystemPrompt(lang: string) {
 - اكتب السؤال في prompt بالعربية الكاملة
 
 أنواع الأسئلة:
-1. "identify_surah" — اعرض جزءاً من آية واسأل من أي سورة (٤ خيارات)
+1. "identify_surah" — اعرض جزءاً من آية واسأل من أي سورة (٤ خيارات). لا تستخدم هذا النوع أبداً إذا كانت جميع الآيات من سورة واحدة — الإجابة معروفة سلفاً
 2. "next_ayah" — اعرض آية واسأل ماذا يأتي بعدها (إن وُجدت آيات متتالية)
 3. "fill_blank" — اعرض آية مع كلمة محذوفة "___" وأعطِ ٤ خيارات
+4. "correct_wording" — اعرض ٤ صيغ كاملة للآية، واحدة فقط مطابقة تماماً للنص المعطى والباقي بتغييرات دقيقة في كلمة أو كلمتين (على غرار المتشابهات) — ضع صيغ الآية في options واترك ayahText فارغاً لهذا النوع
 
 كل سؤال يجب أن يحتوي:
 - type: "identify_surah" | "next_ayah" | "fill_blank"
@@ -46,9 +47,10 @@ RULES:
 - Mix question types for variety
 
 Question types:
-1. "identify_surah" — Show part of a verse in Arabic, ask which surah it's from (4 options, 1 correct)
+1. "identify_surah" — Show part of a verse in Arabic, ask which surah it's from (4 options, 1 correct). NEVER use this type when all verses are from a single surah — the answer is already known
 2. "next_ayah" — Show a verse in Arabic, ask what comes next in Arabic (if consecutive verses exist in the list)
 3. "fill_blank" — Show the Arabic verse with a key word replaced by "___", give 4 Arabic word options
+4. "correct_wording" — Give 4 full Arabic versions of an ayah; exactly one matches the provided text, the others differ subtly by one or two words (mutashabihat-style). Put the versions in options and leave ayahText empty for this type
 
 Each question must have:
 - type: "identify_surah" | "next_ayah" | "fill_blank"
@@ -101,7 +103,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(429).json({ error: 'Too many requests. Please try again later.' });
   }
 
-  const { bookmarks, history, lang } = req.body as { bookmarks?: BookmarkInput[]; history?: HistoryInput[]; lang?: string };
+  const { bookmarks, history, lang, scope } = req.body as {
+    bookmarks?: BookmarkInput[];
+    history?: HistoryInput[];
+    lang?: string;
+    scope?: { type?: string; surahCount?: number };
+  };
 
   if (!bookmarks || bookmarks.length < 1) {
     return res.status(400).json({ error: 'At least 1 memorized ayah is needed for a quiz.' });
@@ -110,6 +117,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const versesContext = bookmarks
     .map((b) => `- ${b.surahName} ${b.surahId}:${b.ayahNum} — "${b.ayahText}" (${b.translation})`)
     .join('\n');
+
+  let scopeContext = '';
+  if (scope?.surahCount === 1) {
+    scopeContext =
+      lang === 'ar'
+        ? '\n\nجميع الآيات من سورة واحدة — لا تستخدم أسئلة "identify_surah" إطلاقاً؛ ركّز على fill_blank و next_ayah و correct_wording.'
+        : '\n\nAll verses are from a SINGLE surah — do NOT use any "identify_surah" questions; focus on fill_blank, next_ayah, and correct_wording instead.';
+  }
 
   let historyContext = '';
   if (history && history.length > 0) {
@@ -130,8 +145,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         {
           role: 'user',
           content: lang === 'ar'
-            ? `هذه الآيات التي أحفظها:\n${versesContext}${historyContext}\n\nأنشئ اختباراً لي باللغة العربية.`
-            : `Here are the verses I'm memorizing:\n${versesContext}${historyContext}\n\nGenerate a quiz for me.`,
+            ? `هذه الآيات التي أحفظها:\n${versesContext}${scopeContext}${historyContext}\n\nأنشئ اختباراً لي باللغة العربية.`
+            : `Here are the verses I'm memorizing:\n${versesContext}${scopeContext}${historyContext}\n\nGenerate a quiz for me.`,
         },
       ],
     });

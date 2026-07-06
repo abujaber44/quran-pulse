@@ -39,8 +39,14 @@ export interface SearchResult {
   relevance: string;
 }
 
+export interface QuizScopeInfo {
+  type: 'bookmarks' | 'surah' | 'juz';
+  /** Distinct surahs in the verse pool — 1 means identify_surah is pointless */
+  surahCount: number;
+}
+
 export interface QuizQuestion {
-  type: 'identify_surah' | 'next_ayah' | 'fill_blank';
+  type: 'identify_surah' | 'next_ayah' | 'fill_blank' | 'correct_wording';
   prompt: string;
   /** Arabic verse text/excerpt, rendered on its own line under the prompt */
   ayahText?: string;
@@ -126,11 +132,12 @@ export async function getMemorizationQuiz(
   history: QuizHistoryEntry[],
   signal?: AbortSignal,
   lang?: string,
+  scope?: QuizScopeInfo,
 ): Promise<QuizQuestion[]> {
   const response = await fetch(`${AI_API_BASE}/api/memorization-coach`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ bookmarks, history, lang: lang ?? 'en' }),
+    body: JSON.stringify({ bookmarks, history, lang: lang ?? 'en', scope }),
     signal,
   });
 

@@ -21,6 +21,10 @@ import {
   type ReviewSchedule,
 } from '../services/memorizationService';
 import { getKhatmah, getKhatmahStatus, getKhatmahInsights, type KhatmahStatus, type KhatmahInsights } from '../services/khatmahService';
+import { getBookmarks, type Bookmark } from '../services/bookmarkService';
+import MemorizationQuizModal from '../components/MemorizationQuizModal';
+import RevealPracticeModal from '../components/RevealPracticeModal';
+import type { BookmarkForQuiz } from '../services/aiService';
 
 const dateKeyOffset = (daysAgo: number): string => {
   const d = new Date();
@@ -44,6 +48,9 @@ export default function StatsScreen() {
   const [schedule, setSchedule] = useState<ReviewSchedule>({});
   const [khatmahStatus, setKhatmahStatus] = useState<KhatmahStatus | null>(null);
   const [khatmahInsights, setKhatmahInsights] = useState<KhatmahInsights | null>(null);
+  const [memorizeBookmarks, setMemorizeBookmarks] = useState<Bookmark[]>([]);
+  const [quizVisible, setQuizVisible] = useState(false);
+  const [practiceVisible, setPracticeVisible] = useState(false);
 
   useFocusEffect(
     useCallback(() => {
@@ -52,6 +59,9 @@ export default function StatsScreen() {
       getDailyLog().then(setDailyLog);
       getQuizHistory().then(setQuizHistory);
       getReviewSchedule().then(setSchedule);
+      getBookmarks()
+        .then((bookmarks) => setMemorizeBookmarks(bookmarks.filter((b) => b.tag === 'memorize')))
+        .catch(() => {});
       getKhatmah().then((plan) => {
         if (!plan) {
           setKhatmahStatus(null);
@@ -156,18 +166,14 @@ export default function StatsScreen() {
               <TouchableOpacity
                 style={styles.memorizeActionBtn}
                 activeOpacity={0.8}
-                onPress={() =>
-                  (navigation as any).navigate('Bookmarks', { initialTag: 'memorize', autoOpen: 'quiz', nonce: Date.now() })
-                }
+                onPress={() => setQuizVisible(true)}
               >
                 <Text style={styles.memorizeActionText}>✏️ {t.takeQuiz}</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={styles.memorizeActionBtn}
                 activeOpacity={0.8}
-                onPress={() =>
-                  (navigation as any).navigate('Bookmarks', { initialTag: 'memorize', autoOpen: 'practice', nonce: Date.now() })
-                }
+                onPress={() => setPracticeVisible(true)}
               >
                 <Text style={styles.memorizeActionText}>🎙 {t.practice}</Text>
               </TouchableOpacity>
@@ -237,6 +243,24 @@ export default function StatsScreen() {
             </View>
           )}
         </ScrollView>
+
+        <MemorizationQuizModal
+          visible={quizVisible}
+          onClose={() => setQuizVisible(false)}
+          bookmarks={memorizeBookmarks.map((b): BookmarkForQuiz => ({
+            surahId: b.surahId,
+            surahName: b.surahName,
+            ayahNum: b.ayahNum,
+            ayahText: b.ayahText,
+            translation: b.translation,
+          }))}
+        />
+
+        <RevealPracticeModal
+          visible={practiceVisible}
+          onClose={() => setPracticeVisible(false)}
+          bookmarks={memorizeBookmarks}
+        />
       </SafeAreaView>
     </GlassBackground>
   );

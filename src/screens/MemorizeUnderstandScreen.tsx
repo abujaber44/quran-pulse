@@ -17,8 +17,11 @@ import { searchVerses, type SearchResult } from '../services/aiService';
 import { getPageBookmark, getLastViewedPage, type PageBookmark } from './MushafReaderScreen';
 import { Ionicons } from '@expo/vector-icons';
 import { getSearchHistory, addSearchHistory, clearSearchHistory, type SearchHistoryItem } from '../services/searchHistoryService';
-import { getBookmarks } from '../services/bookmarkService';
+import { getBookmarks, type Bookmark } from '../services/bookmarkService';
 import { getReviewSchedule, getDueVerseKeys } from '../services/memorizationService';
+import MemorizationQuizModal from '../components/MemorizationQuizModal';
+import RevealPracticeModal from '../components/RevealPracticeModal';
+import type { BookmarkForQuiz } from '../services/aiService';
 import { Surah } from '../types';
 import { useSettings } from '../context/SettingsContext';
 import { useThemedAlert } from '../context/ThemedAlertContext';
@@ -42,6 +45,9 @@ export default function MemorizeUnderstandScreen({ navigation }: any) {
   const [juzData, setJuzData] = useState<any[]>([]);
   const [savedBookmark, setSavedBookmark] = useState<PageBookmark | null>(null);
   const [dueReviewCount, setDueReviewCount] = useState(0);
+  const [memorizeBookmarks, setMemorizeBookmarks] = useState<Bookmark[]>([]);
+  const [quizVisible, setQuizVisible] = useState(false);
+  const [practiceVisible, setPracticeVisible] = useState(false);
   const [lastViewedPage, setLastViewedPage] = useState<number | null>(null);
   const abortRef = useRef<AbortController | null>(null);
 
@@ -58,10 +64,11 @@ export default function MemorizeUnderstandScreen({ navigation }: any) {
       getLastViewedPage().then(setLastViewedPage);
       Promise.all([getBookmarks(), getReviewSchedule()])
         .then(([bookmarks, schedule]) => {
-          const memorizeKeys = bookmarks
-            .filter((b) => b.tag === 'memorize')
-            .map((b) => `${b.surahId}:${b.ayahNum}`);
-          setDueReviewCount(getDueVerseKeys(memorizeKeys, schedule).length);
+          const memorizeList = bookmarks.filter((b) => b.tag === 'memorize');
+          setMemorizeBookmarks(memorizeList);
+          setDueReviewCount(
+            getDueVerseKeys(memorizeList.map((b) => `${b.surahId}:${b.ayahNum}`), schedule).length
+          );
         })
         .catch(() => {});
     });
@@ -276,20 +283,29 @@ export default function MemorizeUnderstandScreen({ navigation }: any) {
           </TouchableOpacity>
         </View>
 
-        <TouchableOpacity
-          style={styles.practiceRow}
-          activeOpacity={0.8}
-          onPress={() => navigation.navigate('Bookmarks', { initialTag: 'memorize', nonce: Date.now() })}
-        >
-          <Text style={styles.practiceRowText}>🧠 {t.practiceQuizRow}</Text>
-          {dueReviewCount > 0 ? (
-            <View style={styles.practiceBadge}>
-              <Text style={styles.practiceBadgeText}>{dueReviewCount} {t.dueForReview}</Text>
-            </View>
-          ) : (
-            <Ionicons name="chevron-forward" size={16} color="rgba(255,255,255,0.4)" />
-          )}
-        </TouchableOpacity>
+        {browseMode === 'surah' && (
+          <View style={styles.practiceRow}>
+            <TouchableOpacity
+              style={styles.practiceRowButton}
+              activeOpacity={0.8}
+              onPress={() => setQuizVisible(true)}
+            >
+              <Text style={styles.practiceRowText}>✏️ {t.takeQuiz}</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.practiceRowButton}
+              activeOpacity={0.8}
+              onPress={() => setPracticeVisible(true)}
+            >
+              <Text style={styles.practiceRowText}>🎙 {t.practice}</Text>
+              {dueReviewCount > 0 && (
+                <View style={styles.practiceBadge}>
+                  <Text style={styles.practiceBadgeText}>{dueReviewCount}</Text>
+                </View>
+              )}
+            </TouchableOpacity>
+          </View>
+        )}
 
         {browseMode === 'surah' ? (
           <View style={styles.searchContainer}>
@@ -474,6 +490,24 @@ export default function MemorizeUnderstandScreen({ navigation }: any) {
           />
         )}
       </View>
+
+      <MemorizationQuizModal
+        visible={quizVisible}
+        onClose={() => setQuizVisible(false)}
+        bookmarks={memorizeBookmarks.map((b): BookmarkForQuiz => ({
+          surahId: b.surahId,
+          surahName: b.surahName,
+          ayahNum: b.ayahNum,
+          ayahText: b.ayahText,
+          translation: b.translation,
+        }))}
+      />
+
+      <RevealPracticeModal
+        visible={practiceVisible}
+        onClose={() => setPracticeVisible(false)}
+        bookmarks={memorizeBookmarks}
+      />
       </SafeAreaView>
     </GlassBackground>
   );
@@ -489,12 +523,17 @@ const styles = StyleSheet.create({
   },
   practiceRow: {
     flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    gap: 10,
     marginHorizontal: 16,
     marginBottom: 12,
+  },
+  practiceRowButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
     paddingVertical: 11,
-    paddingHorizontal: 14,
     backgroundColor: 'rgba(155,89,182,0.12)',
     borderWidth: 1,
     borderColor: 'rgba(155,89,182,0.3)',
@@ -506,10 +545,12 @@ const styles = StyleSheet.create({
     color: UI_COLORS.text,
   },
   practiceBadge: {
-    backgroundColor: 'rgba(155,89,182,0.3)',
+    backgroundColor: 'rgba(155,89,182,0.4)',
     borderRadius: UI_RADII.xl,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
+    minWidth: 22,
+    alignItems: 'center',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
   },
   practiceBadgeText: {
     fontSize: 11.5,

@@ -181,7 +181,11 @@ export default function MemorizationQuizModal({
       }
 
       const history = await getQuizHistory();
-      const quizQuestions = await getMemorizationQuiz(verses, history, controller.signal, lang);
+      const surahCount = new Set(verses.map((v) => v.surahId)).size;
+      const quizQuestions = await getMemorizationQuiz(verses, history, controller.signal, lang, {
+        type: scope,
+        surahCount,
+      });
 
       if (controller.signal.aborted) return;
       if (quizQuestions.length === 0) {
@@ -372,7 +376,9 @@ export default function MemorizationQuizModal({
                       ? t.identifySurah
                       : currentQuestion.type === 'next_ayah'
                         ? t.whatComesNext
-                        : t.fillInBlank}
+                        : currentQuestion.type === 'correct_wording'
+                          ? t.chooseWording
+                          : t.fillInBlank}
                   </Text>
                   <Text style={styles.questionPrompt}>{currentQuestion.prompt}</Text>
                   {currentQuestion.ayahText ? (

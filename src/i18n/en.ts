@@ -278,7 +278,7 @@ export default {
 
   // Juz Browser
   juz: 'Juz',
-  browseBySurah: 'Learn',
+  browseBySurah: 'Learn & Memorize',
   browseByJuz: 'Mushaf',
 
   // Last Read
@@ -456,4 +456,5 @@ export default {
   quizBookmarksHint: 'Each surah from its start up to your bookmarked ayah',
   quizChooseScope: 'Or pick a surah or juz',
   startQuiz: 'Start Quiz',
+  chooseWording: '🔍 Choose the Exact Wording',
 } as const;

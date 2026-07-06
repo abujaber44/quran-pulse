@@ -64,18 +64,14 @@ export default function BookmarksScreen({ route }: any) {
     return unsubscribe;
   }, [navigation]);
 
-  // Deep link from Home chips / Learn / Stats: land on a specific tag and
-  // optionally auto-open the quiz or practice modal (nonce re-applies on
-  // repeated navigations while the screen stays mounted).
+  // Deep link (e.g. the home review chip): land on a specific tag
+  // (nonce re-applies on repeated navigations while the screen stays mounted).
   useEffect(() => {
     const tag = route?.params?.initialTag;
     if (tag === 'memorize' || tag === 'read') {
       setSelectedTag(tag);
     }
-    const autoOpen = route?.params?.autoOpen;
-    if (autoOpen === 'quiz') setQuizModalVisible(true);
-    else if (autoOpen === 'practice') setPracticeModalVisible(true);
-  }, [route?.params?.initialTag, route?.params?.autoOpen, route?.params?.nonce]);
+  }, [route?.params?.initialTag, route?.params?.nonce]);
 
   const loadData = async () => {
     try {
