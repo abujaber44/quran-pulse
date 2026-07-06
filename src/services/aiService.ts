@@ -42,6 +42,8 @@ export interface SearchResult {
 export interface QuizQuestion {
   type: 'identify_surah' | 'next_ayah' | 'fill_blank';
   prompt: string;
+  /** Arabic verse text/excerpt, rendered on its own line under the prompt */
+  ayahText?: string;
   options: string[];
   correctAnswer: string;
   verseKey: string;

@@ -21,6 +21,8 @@ import {
   type QuizAttempt,
 } from '../services/memorizationService';
 import { useLanguage } from '../i18n';
+import { useSettings } from '../context/SettingsContext';
+import { resolveArabicFontFamily } from '../theme/fonts';
 
 interface MemorizationQuizModalProps {
   visible: boolean;
@@ -36,6 +38,8 @@ export default function MemorizationQuizModal({
   bookmarks,
 }: MemorizationQuizModalProps) {
   const { t, lang } = useLanguage();
+  const { settings } = useSettings();
+  const arabicFontFamily = resolveArabicFontFamily(settings.arabicFontFamily);
   const [state, setState] = useState<QuizState>('loading');
   const [questions, setQuestions] = useState<QuizQuestion[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -164,6 +168,16 @@ export default function MemorizationQuizModal({
                         : t.fillInBlank}
                   </Text>
                   <Text style={styles.questionPrompt}>{currentQuestion.prompt}</Text>
+                  {currentQuestion.ayahText ? (
+                    <Text
+                      style={[
+                        styles.questionAyah,
+                        arabicFontFamily ? { fontFamily: arabicFontFamily } : null,
+                      ]}
+                    >
+                      {currentQuestion.ayahText}
+                    </Text>
+                  ) : null}
                 </View>
 
                 <View style={styles.optionsWrap}>
@@ -311,6 +325,14 @@ const styles = StyleSheet.create({
   },
   questionType: { fontSize: 13, color: UI_COLORS.accent, fontWeight: '700', marginBottom: 10, textAlign: 'center' },
   questionPrompt: { fontSize: 16, lineHeight: 26, color: UI_COLORS.text, textAlign: 'center' },
+  questionAyah: {
+    fontSize: 21,
+    lineHeight: 38,
+    color: UI_COLORS.text,
+    textAlign: 'center',
+    writingDirection: 'rtl',
+    marginTop: 12,
+  },
   optionsWrap: { gap: 10 },
   optionButton: {
     backgroundColor: UI_COLORS.surface,

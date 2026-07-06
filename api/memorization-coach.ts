@@ -23,7 +23,8 @@ function getSystemPrompt(lang: string) {
 
 كل سؤال يجب أن يحتوي:
 - type: "identify_surah" | "next_ayah" | "fill_blank"
-- prompt: نص السؤال بالعربية
+- prompt: صيغة السؤال فقط بالعربية — لا تضع نص الآية داخل prompt أبداً
+- ayahText: نص الآية أو مقتطفها بالعربية فقط (مع "___" في أسئلة إكمال الفراغ) — يُعرض في سطر مستقل
 - options: مصفوفة من ٤ نصوص بالعربية
 - correctAnswer: الخيار الصحيح (يجب أن يطابق أحد الخيارات تماماً)
 - verseKey: مفتاح الآية (مثل "2:255")
@@ -31,7 +32,7 @@ function getSystemPrompt(lang: string) {
 - ayahNumber: رقم الآية
 
 مثال:
-[{"type":"identify_surah","prompt":"في أي سورة وردت هذه الآية: 'اللَّهُ لَا إِلَٰهَ إِلَّا هُوَ الْحَيُّ الْقَيُّومُ'؟","options":["البقرة","آل عمران","النساء","المائدة"],"correctAnswer":"البقرة","verseKey":"2:255","surahId":2,"ayahNumber":255}]`;
+[{"type":"identify_surah","prompt":"في أي سورة وردت هذه الآية؟","ayahText":"اللَّهُ لَا إِلَٰهَ إِلَّا هُوَ الْحَيُّ الْقَيُّومُ","options":["البقرة","آل عمران","النساء","المائدة"],"correctAnswer":"البقرة","verseKey":"2:255","surahId":2,"ayahNumber":255}]`;
   }
 
   return `You are a Quran memorization coach. Given a list of verses the user is memorizing and their quiz history, generate 3-5 quiz questions to test their knowledge.
@@ -51,7 +52,8 @@ Question types:
 
 Each question must have:
 - type: "identify_surah" | "next_ayah" | "fill_blank"
-- prompt: the question text (English wording, Arabic verse text)
+- prompt: ONLY the question wording in English — never put Arabic verse text inside prompt (mixed-direction text renders badly)
+- ayahText: ONLY the Arabic verse text or excerpt (with "___" for fill_blank questions) — it is displayed on its own line
 - options: array of 4 strings
 - correctAnswer: the correct option string (must match one of the options exactly)
 - verseKey: which verse this tests (e.g. "2:255")
@@ -59,7 +61,7 @@ Each question must have:
 - ayahNumber: number
 
 Examples:
-[{"type":"identify_surah","prompt":"Which surah contains this ayah: 'اللَّهُ لَا إِلَٰهَ إِلَّا هُوَ الْحَيُّ الْقَيُّومُ'?","options":["Al-Baqarah","Al-Imran","An-Nisa","Al-Maidah"],"correctAnswer":"Al-Baqarah","verseKey":"2:255","surahId":2,"ayahNumber":255},{"type":"fill_blank","prompt":"Complete the ayah: 'اللَّهُ لَا إِلَٰهَ إِلَّا هُوَ الْحَيُّ ___'","options":["الْقَيُّومُ","الْعَظِيمُ","الْكَرِيمُ","الْحَكِيمُ"],"correctAnswer":"الْقَيُّومُ","verseKey":"2:255","surahId":2,"ayahNumber":255}]`;
+[{"type":"identify_surah","prompt":"Which surah contains this ayah?","ayahText":"اللَّهُ لَا إِلَٰهَ إِلَّا هُوَ الْحَيُّ الْقَيُّومُ","options":["Al-Baqarah","Al-Imran","An-Nisa","Al-Maidah"],"correctAnswer":"Al-Baqarah","verseKey":"2:255","surahId":2,"ayahNumber":255},{"type":"fill_blank","prompt":"Complete the ayah:","ayahText":"اللَّهُ لَا إِلَٰهَ إِلَّا هُوَ الْحَيُّ ___","options":["الْقَيُّومُ","الْعَظِيمُ","الْكَرِيمُ","الْحَكِيمُ"],"correctAnswer":"الْقَيُّومُ","verseKey":"2:255","surahId":2,"ayahNumber":255}]`;
 }
 
 interface BookmarkInput {
