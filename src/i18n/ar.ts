@@ -436,4 +436,12 @@ export default {
   fridayKahfChip: 'اقرأ سورة الكهف — الجمعة',
   dailyAyahMore: 'لماذا هذه الآية',
   dailyAyahLess: 'إخفاء',
+
+  // Khatmah stats details
+  khatmahDailyPlan: 'الخطة اليومية',
+  khatmahNeededNow: 'المطلوب يومياً للإنجاز في الموعد',
+  khatmahYesterday: 'أمس',
+  khatmahRolledOver: 'مُرحّلة إلى اليوم',
+  khatmahYesterdayMet: 'أنجزت ورد الأمس',
+  khatmahProjection: 'الإنجاز المتوقع بوتيرتك الحالية',
 } as const;

@@ -20,7 +20,7 @@ import {
   type QuizAttempt,
   type ReviewSchedule,
 } from '../services/memorizationService';
-import { getKhatmah, getKhatmahStatus, type KhatmahStatus } from '../services/khatmahService';
+import { getKhatmah, getKhatmahStatus, getKhatmahInsights, type KhatmahStatus, type KhatmahInsights } from '../services/khatmahService';
 
 const dateKeyOffset = (daysAgo: number): string => {
   const d = new Date();
@@ -42,6 +42,7 @@ export default function StatsScreen() {
   const [quizHistory, setQuizHistory] = useState<QuizAttempt[]>([]);
   const [schedule, setSchedule] = useState<ReviewSchedule>({});
   const [khatmahStatus, setKhatmahStatus] = useState<KhatmahStatus | null>(null);
+  const [khatmahInsights, setKhatmahInsights] = useState<KhatmahInsights | null>(null);
 
   useFocusEffect(
     useCallback(() => {
@@ -50,7 +51,16 @@ export default function StatsScreen() {
       getDailyLog().then(setDailyLog);
       getQuizHistory().then(setQuizHistory);
       getReviewSchedule().then(setSchedule);
-      getKhatmah().then((plan) => setKhatmahStatus(plan ? getKhatmahStatus(plan) : null));
+      getKhatmah().then((plan) => {
+        if (!plan) {
+          setKhatmahStatus(null);
+          setKhatmahInsights(null);
+          return;
+        }
+        const status = getKhatmahStatus(plan);
+        setKhatmahStatus(status);
+        setKhatmahInsights(getKhatmahInsights(plan, status));
+      });
     }, [])
   );
 
@@ -155,6 +165,54 @@ export default function StatsScreen() {
               <Text style={styles.khatmahMeta}>
                 {khatmahStatus.pagesRead}/{khatmahStatus.totalPages} {t.pagesRead} · {khatmahStatus.percent}%
               </Text>
+
+              {khatmahStatus.completed ? (
+                <Text style={styles.khatmahDetailOk}>{t.khatmahDone}</Text>
+              ) : khatmahInsights ? (
+                <>
+                  <View style={styles.khatmahDetailRow}>
+                    <View style={styles.khatmahDetailBox}>
+                      <Text style={styles.khatmahDetailValue}>{khatmahStatus.leftToday}</Text>
+                      <Text style={styles.khatmahDetailLabel}>{t.pagesLeftToday}</Text>
+                    </View>
+                    <View style={styles.khatmahDetailBox}>
+                      <Text style={styles.khatmahDetailValue}>{khatmahStatus.pagesPerDay}</Text>
+                      <Text style={styles.khatmahDetailLabel}>{t.khatmahDailyPlan}</Text>
+                    </View>
+                    <View style={styles.khatmahDetailBox}>
+                      <Text
+                        style={[
+                          styles.khatmahDetailValue,
+                          khatmahInsights.requiredPace > khatmahStatus.pagesPerDay && styles.khatmahDetailWarnValue,
+                        ]}
+                      >
+                        {khatmahInsights.requiredPace}
+                      </Text>
+                      <Text style={styles.khatmahDetailLabel}>{t.khatmahNeededNow}</Text>
+                    </View>
+                  </View>
+
+                  {khatmahStatus.dayNumber > 1 && (
+                    khatmahInsights.carriedOver > 0 ? (
+                      <Text style={styles.khatmahDetailWarn}>
+                        {t.khatmahYesterday}: {khatmahInsights.yesterdayRead}/{khatmahStatus.pagesPerDay} {t.pagesRead} — {khatmahInsights.carriedOver} {t.khatmahRolledOver}
+                      </Text>
+                    ) : (
+                      <Text style={styles.khatmahDetailOk}>✅ {t.khatmahYesterdayMet}</Text>
+                    )
+                  )}
+
+                  {khatmahInsights.projectedFinishDays !== null && (
+                    <Text style={styles.khatmahDetailMuted}>
+                      {t.khatmahProjection}: ~{khatmahInsights.projectedFinishDays} {t.days} ({(() => {
+                        const d = new Date();
+                        d.setDate(d.getDate() + khatmahInsights.projectedFinishDays);
+                        return d.toLocaleDateString(lang === 'ar' ? 'ar' : 'en', { day: 'numeric', month: 'short' });
+                      })()})
+                    </Text>
+                  )}
+                </>
+              ) : null}
             </View>
           )}
         </ScrollView>
@@ -251,6 +309,54 @@ const styles = StyleSheet.create({
     height: '100%',
     borderRadius: 4,
     backgroundColor: '#f5a623',
+  },
+  khatmahDetailRow: {
+    flexDirection: 'row',
+    gap: 8,
+    marginTop: 12,
+  },
+  khatmahDetailBox: {
+    flex: 1,
+    alignItems: 'center',
+    backgroundColor: 'rgba(255,255,255,0.06)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.12)',
+    borderRadius: UI_RADII.md,
+    paddingVertical: 10,
+    paddingHorizontal: 6,
+  },
+  khatmahDetailValue: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: UI_COLORS.white,
+  },
+  khatmahDetailWarnValue: {
+    color: '#f5a623',
+  },
+  khatmahDetailLabel: {
+    fontSize: 10.5,
+    color: 'rgba(240,228,205,0.75)',
+    textAlign: 'center',
+    marginTop: 3,
+  },
+  khatmahDetailWarn: {
+    fontSize: 12.5,
+    color: '#f5c778',
+    textAlign: 'center',
+    marginTop: 10,
+    lineHeight: 18,
+  },
+  khatmahDetailOk: {
+    fontSize: 12.5,
+    color: 'rgba(147,222,180,0.9)',
+    textAlign: 'center',
+    marginTop: 10,
+  },
+  khatmahDetailMuted: {
+    fontSize: 12,
+    color: 'rgba(240,228,205,0.65)',
+    textAlign: 'center',
+    marginTop: 6,
   },
   khatmahMeta: {
     fontSize: 12,

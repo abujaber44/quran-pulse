@@ -71,6 +71,53 @@ export interface KhatmahStatus {
   completed: boolean;
 }
 
+export interface KhatmahInsights {
+  /** New pages read yesterday */
+  yesterdayRead: number;
+  /** Pages short of yesterday's cumulative quota (0 = met) */
+  yesterdayMissed: number;
+  /** Backlog carried into today on top of the base daily plan */
+  carriedOver: number;
+  /** Pages/day needed from today to still finish on the target date */
+  requiredPace: number;
+  remainingDays: number;
+  remainingPages: number;
+  /** Days until finish at the reader's actual average pace so far; null when no pages read yet */
+  projectedFinishDays: number | null;
+}
+
+/** Pace analysis for the Stats screen — all derived from the daily log, no network. */
+export function getKhatmahInsights(plan: KhatmahPlan, status: KhatmahStatus): KhatmahInsights {
+  const yesterday = new Date();
+  yesterday.setDate(yesterday.getDate() - 1);
+  const yesterdayKey = `${yesterday.getFullYear()}-${String(yesterday.getMonth() + 1).padStart(2, '0')}-${String(yesterday.getDate()).padStart(2, '0')}`;
+  const yesterdayRead = plan.dailyLog[yesterdayKey] ?? 0;
+
+  // How far behind the cumulative quota the reader was at the end of yesterday —
+  // this is exactly what rolls into today's requirement.
+  const readBeforeToday = status.pagesRead - status.readToday;
+  const quotaByYesterday = Math.min(TOTAL_MUSHAF_PAGES, (status.dayNumber - 1) * status.pagesPerDay);
+  const carriedOver = Math.max(0, quotaByYesterday - readBeforeToday);
+  const yesterdayMissed = Math.min(carriedOver, Math.max(0, status.pagesPerDay - yesterdayRead));
+
+  const remainingPages = Math.max(0, TOTAL_MUSHAF_PAGES - status.pagesRead);
+  const remainingDays = Math.max(1, status.targetDays - status.dayNumber + 1);
+  const requiredPace = Math.ceil(remainingPages / remainingDays);
+
+  const averagePace = status.pagesRead / Math.max(1, status.dayNumber);
+  const projectedFinishDays = averagePace > 0 ? Math.ceil(remainingPages / averagePace) : null;
+
+  return {
+    yesterdayRead,
+    yesterdayMissed,
+    carriedOver,
+    requiredPace,
+    remainingDays,
+    remainingPages,
+    projectedFinishDays,
+  };
+}
+
 export function getKhatmahStatus(plan: KhatmahPlan): KhatmahStatus {
   const start = new Date(plan.startedAt + 'T00:00:00');
   const now = new Date();
