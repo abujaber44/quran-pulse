@@ -449,4 +449,11 @@ export default {
   quizMeChip: 'اختبرني',
   practiceQuizRow: 'التسميع والاختبار',
   takeQuiz: 'ابدأ اختباراً',
+
+  // Quiz setup
+  quizSetupTitle: 'على ماذا تريد أن تُختبر؟',
+  quizMyBookmarks: 'آياتي المحفوظة',
+  quizBookmarksHint: 'كل سورة من بدايتها حتى آيتك المحفوظة',
+  quizChooseScope: 'أو اختر سورة أو جزءاً',
+  startQuiz: 'ابدأ الاختبار',
 } as const;
