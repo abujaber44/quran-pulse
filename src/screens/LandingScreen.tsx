@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState, useMemo } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Animated, ScrollView, Platform, Easing, Modal, Pressable, TextInput, Alert } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Animated, ScrollView, Platform, Easing, Modal, Pressable, TextInput, Alert, AppState } from 'react-native';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import type { StackNavigationProp } from '@react-navigation/stack';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -29,10 +29,12 @@ import { getReviewSchedule, getDueVerseKeys } from '../services/memorizationServ
 import { refreshDailyReminder, scheduleStreakProtection } from '../services/dailyReminderService';
 import { refreshFridayKahfReminder } from '../services/fridayKahfService';
 import { getRamadanStatus, countdownTo, type RamadanStatus } from '../services/ramadanService';
+import { getHijriToday, getHijriMonthName } from '../services/islamicEventsService';
+import NextPrayerHero from '../components/NextPrayerHero';
 
 type RootStackParamList = {
   MemorizeUnderstand: undefined;
-  Athkar: undefined;
+  Athkar: { period?: 'morning' | 'evening'; nonce?: number } | undefined;
   PrayerTimes: undefined;
   QuranMiracles: undefined;
   Bookmarks: undefined;
@@ -50,6 +52,13 @@ const ICONS: Record<string, string> = {
   QuranMiracles: '✨',
   Bookmarks: '🔖',
   Settings: '⚙️',
+  Stats: '📊',
+};
+
+type SmartChip = {
+  key: string;
+  label: string;
+  onPress: () => void;
 };
 
 export default function LandingScreen() {
@@ -68,6 +77,19 @@ export default function LandingScreen() {
   const [customDaysInput, setCustomDaysInput] = useState('');
   const [dueReviewCount, setDueReviewCount] = useState(0);
   const [ramadan, setRamadan] = useState<RamadanStatus | null>(null);
+  const [hijriLine, setHijriLine] = useState<string | null>(null);
+  const [dailyAyahExpanded, setDailyAyahExpanded] = useState(false);
+  // Bumped on focus and on returning from background so time-of-day chips
+  // recompute — without this, a chip built the previous evening survives
+  // an overnight backgrounded app.
+  const [lastActiveAt, setLastActiveAt] = useState(() => Date.now());
+
+  useEffect(() => {
+    const subscription = AppState.addEventListener('change', (state) => {
+      if (state === 'active') setLastActiveAt(Date.now());
+    });
+    return () => subscription.remove();
+  }, []);
 
   const shimmerAnim = useRef(new Animated.Value(0)).current;
   const phraseFade = useRef(new Animated.Value(0)).current;
@@ -105,6 +127,7 @@ export default function LandingScreen() {
 
   useFocusEffect(
     useCallback(() => {
+      setLastActiveAt(Date.now());
       Promise.all([getReadingProgress(), getReadingStreak(), getLastRead()]).then(([p, s, lr]) => {
         setProgress(p);
         setStreak(s);
@@ -147,9 +170,96 @@ export default function LandingScreen() {
     ? Math.min(604, Math.max(...khatmah.readPages) + 1)
     : 1;
 
+  const openSurahById = useCallback((surahId: number, initialAyah?: number) => {
+    const surah = surahs.find((s: any) => Number(s.id) === surahId);
+    if (surah) {
+      (navigation as any).navigate('Surah', {
+        surah,
+        surahs,
+        ...(initialAyah ? { initialAyah, scrollNonce: Date.now() } : {}),
+      });
+    } else {
+      navigation.navigate('MemorizeUnderstand');
+    }
+  }, [navigation, surahs]);
+
+  // Contextual suggestions: what the user most likely wants right now.
+  // Priority-ordered, capped at 4, changes with time of day / weekday / activity.
+  const smartChips: SmartChip[] = (() => {
+    const chips: SmartChip[] = [];
+    const nowDate = new Date(lastActiveAt);
+
+    if (ramadan?.isRamadan) {
+      const suhoor = ramadan.fajr ? countdownTo(ramadan.fajr) : null;
+      const iftar = ramadan.maghrib ? countdownTo(ramadan.maghrib) : null;
+      const label = suhoor
+        ? `🌙 ${t.suhoorEndsIn} ${suhoor}`
+        : iftar
+          ? `🌙 ${t.iftarIn} ${iftar}`
+          : `🌙 ${t.ramadanMubarak}`;
+      chips.push({
+        key: 'ramadan',
+        label,
+        onPress: () => navigation.navigate('PrayerTimes'),
+      });
+    }
+    if (nowDate.getDay() === 5) {
+      chips.push({
+        key: 'kahf',
+        label: `📖 ${t.fridayKahfChip}`,
+        onPress: () => openSurahById(18),
+      });
+    }
+    if (dueReviewCount > 0) {
+      chips.push({
+        key: 'review',
+        label: `🧠 ${dueReviewCount} ${t.dueForReview}`,
+        onPress: () => navigation.navigate('Bookmarks'),
+      });
+    }
+    if (lastRead) {
+      chips.push({
+        key: 'continue',
+        label: `▶️ ${lastRead.surahName} · ${t.ayah} ${lastRead.ayahNum}`,
+        onPress: () => openSurahById(lastRead.surahId, lastRead.ayahNum),
+      });
+    }
+    if (khatmahStatus && !khatmahStatus.completed && khatmahStatus.leftToday > 0) {
+      chips.push({
+        key: 'khatmah-today',
+        label: `📿 ${khatmahStatus.leftToday} ${t.pagesLeftToday}`,
+        onPress: () => (navigation as any).navigate('MushafReader', { juzNumber: 1, initialPage: khatmahNextPage }),
+      });
+    }
+    // Morning athkar from pre-dawn through early afternoon; evening athkar
+    // from mid-afternoon (Asr time) through the night.
+    const hour = nowDate.getHours();
+    const athkarPeriod: 'morning' | 'evening' = hour >= 4 && hour < 15 ? 'morning' : 'evening';
+    chips.push({
+      key: 'athkar',
+      label: athkarPeriod === 'morning' ? `🌅 ${t.morningAthkar}` : `🌇 ${t.eveningAthkar}`,
+      onPress: () => navigation.navigate('Athkar', { period: athkarPeriod, nonce: Date.now() }),
+    });
+
+    return chips.slice(0, 4);
+  })();
+
   useEffect(() => {
     fetchSurahs().then(setSurahs);
   }, []);
+
+  // Hijri date line under the app name, e.g. "Fri · 16 Muharram 1448"
+  useEffect(() => {
+    getHijriToday()
+      .then((hijri) => {
+        if (!hijri) return;
+        const weekdays = [t.sun, t.mon, t.tue, t.wed, t.thu, t.fri, t.sat];
+        setHijriLine(
+          `${weekdays[new Date().getDay()]} · ${hijri.day} ${getHijriMonthName(hijri.month, lang)} ${hijri.year}`
+        );
+      })
+      .catch(() => {});
+  }, [lang, t]);
 
   // Rotate the next week of reminder content and arm streak protection
   useEffect(() => {
@@ -211,115 +321,21 @@ export default function LandingScreen() {
         showsVerticalScrollIndicator={false}
       >
         <Animated.View style={[styles.hero, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
-          <Text style={styles.eyebrow}>{t.bismillah}</Text>
           <Text style={styles.title}>{t.appName}</Text>
-          <Text style={styles.subtitle}>{t.appTagline}</Text>
+          {hijriLine ? <Text style={styles.hijriLine}>{hijriLine}</Text> : (
+            <Text style={styles.subtitle}>{t.appTagline}</Text>
+          )}
         </Animated.View>
 
+        <NextPrayerHero onPress={() => navigation.navigate('PrayerTimes')} />
 
-        {progress && streak && (progress.totalAyahsRead > 0 || streak.currentStreak > 0) ? (
-          <TouchableOpacity
-            style={styles.progressCard}
-            activeOpacity={0.85}
-            onPress={() => (navigation as any).navigate('Stats')}
-          >
-            <Text style={styles.progressTitle}>{t.readingProgress}</Text>
-            <View style={styles.progressStats}>
-              <View style={styles.progressStat}>
-                <Text style={styles.progressStatValue}>🔥 {streak.currentStreak}</Text>
-                <Text style={styles.progressStatLabel}>{t.dayStreak}</Text>
-              </View>
-              <View style={styles.progressStat}>
-                <Text style={styles.progressStatValue}>📖 {progress.totalAyahsRead}</Text>
-                <Text style={styles.progressStatLabel}>{t.ayahsRead}</Text>
-              </View>
-              <View style={styles.progressStat}>
-                <Text style={styles.progressStatValue}>✅ {getCompletedSurahCount(progress)}</Text>
-                <Text style={styles.progressStatLabel}>{t.surahsCompleted}</Text>
-              </View>
-            </View>
-            {streak.longestStreak > 1 && (
-              <Text style={styles.progressBest}>🏆 {t.bestStreak}: {streak.longestStreak} {t.dayStreak}</Text>
-            )}
-          </TouchableOpacity>
-        ) : null}
-
-        {ramadan?.isRamadan && (
-          <TouchableOpacity
-            style={styles.ramadanCard}
-            activeOpacity={0.85}
-            onPress={() => navigation.navigate('PrayerTimes')}
-          >
-            <Text style={styles.ramadanTitle}>
-              🌙 {t.ramadan} — {t.khatmahDay} {ramadan.dayOfRamadan}
-            </Text>
-            <Text style={styles.ramadanMeta}>
-              {(() => {
-                if (ramadan.fajr) {
-                  const suhoor = countdownTo(ramadan.fajr);
-                  if (suhoor) return `${t.suhoorEndsIn} ${suhoor}`;
-                }
-                if (ramadan.maghrib) {
-                  const iftar = countdownTo(ramadan.maghrib);
-                  if (iftar) return `${t.iftarIn} ${iftar}`;
-                  return `${t.iftarTime}: ${ramadan.maghrib}`;
-                }
-                return t.ramadanMubarak;
-              })()}
-            </Text>
-          </TouchableOpacity>
-        )}
-
-        {khatmahStatus ? (
-          <TouchableOpacity
-            style={styles.khatmahCard}
-            activeOpacity={0.85}
-            onPress={() => (navigation as any).navigate('MushafReader', { juzNumber: 1, initialPage: khatmahNextPage })}
-          >
-            <View style={styles.khatmahHeader}>
-              <Text style={styles.khatmahTitle}>
-                📿 {t.khatmah} — {t.khatmahDay} {khatmahStatus.dayNumber} {t.ofWord} {khatmahStatus.targetDays}
-              </Text>
-              <TouchableOpacity onPress={handleEndKhatmah} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-                <Text style={styles.khatmahEnd}>✕</Text>
-              </TouchableOpacity>
-            </View>
-            <View style={styles.khatmahBarTrack}>
-              <View style={[styles.khatmahBarFill, { width: `${khatmahStatus.percent}%` }]} />
-            </View>
-            <Text style={styles.khatmahMeta}>
-              {khatmahStatus.completed
-                ? t.khatmahDone
-                : `${khatmahStatus.pagesRead}/${khatmahStatus.totalPages} ${t.pagesRead} · ${
-                    khatmahStatus.leftToday > 0
-                      ? `${khatmahStatus.leftToday} ${t.pagesLeftToday}`
-                      : t.todayGoalMet
-                  }`}
-            </Text>
-          </TouchableOpacity>
-        ) : (
-          <TouchableOpacity
-            style={styles.khatmahStartCard}
-            activeOpacity={0.85}
-            onPress={() => setShowKhatmahModal(true)}
-          >
-            <Text style={styles.khatmahStartTitle}>📿 {t.startKhatmah}</Text>
-            <Text style={styles.khatmahStartSubtitle}>{t.khatmahIntro}</Text>
-          </TouchableOpacity>
-        )}
-
-        {dueReviewCount > 0 && (
-          <TouchableOpacity
-            style={styles.reviewCard}
-            activeOpacity={0.85}
-            onPress={() => navigation.navigate('Bookmarks')}
-          >
-            <Text style={styles.reviewCardText}>
-              🧠 {dueReviewCount} {t.verses} {t.dueForReview}
-            </Text>
-            <Text style={styles.reviewCardAction}>{t.reviewNow} ›</Text>
-          </TouchableOpacity>
-        )}
+        <View style={styles.chipsRow}>
+          {smartChips.map((chip) => (
+            <TouchableOpacity key={chip.key} style={styles.chip} activeOpacity={0.8} onPress={chip.onPress}>
+              <Text style={styles.chipText} numberOfLines={1}>{chip.label}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
 
         {(dailyAyah || loadingDailyAyah) && (
           <View style={styles.dailyAyahCard}>
@@ -337,97 +353,124 @@ export default function LandingScreen() {
                 </Animated.Text>
               </View>
             ) : dailyAyah ? (
-              <TouchableOpacity
-                activeOpacity={0.85}
-                onPress={() => {
-                  const surah = surahs.find((s: any) => s.id === dailyAyah.surahId);
-                  if (surah) {
-                    (navigation as any).navigate('Surah', { surah, surahs, initialAyah: dailyAyah.ayahNumber, scrollNonce: Date.now() });
-                  }
-                }}
-              >
-                <Text style={styles.dailyAyahArabic}>{dailyAyah.arabicText}</Text>
-                <View style={styles.dailyAyahFooter}>
-                  <Text style={styles.dailyAyahRef}>{dailyAyah.surahName} — {dailyAyah.verseKey}</Text>
-                  <Text style={styles.dailyAyahBadge}>{t.selectedForYou}</Text>
-                </View>
-                <Text style={styles.dailyAyahReason}>✦ {dailyAyah.reason}</Text>
-              </TouchableOpacity>
+              <View>
+                <TouchableOpacity
+                  activeOpacity={0.85}
+                  onPress={() => setDailyAyahExpanded((prev) => !prev)}
+                >
+                  <Text
+                    style={styles.dailyAyahArabic}
+                    numberOfLines={dailyAyahExpanded ? undefined : 3}
+                  >
+                    {dailyAyah.arabicText}
+                  </Text>
+                  <View style={styles.dailyAyahFooter}>
+                    <TouchableOpacity
+                      onPress={() => openSurahById(dailyAyah.surahId, dailyAyah.ayahNumber)}
+                      hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+                    >
+                      <Text style={styles.dailyAyahRef}>{dailyAyah.surahName} — {dailyAyah.verseKey} ›</Text>
+                    </TouchableOpacity>
+                    <Text style={styles.dailyAyahBadge}>{t.selectedForYou}</Text>
+                  </View>
+                  {dailyAyahExpanded && (
+                    <Text style={styles.dailyAyahReason}>✦ {dailyAyah.reason}</Text>
+                  )}
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.dailyAyahToggle}
+                  activeOpacity={0.7}
+                  onPress={() => setDailyAyahExpanded((prev) => !prev)}
+                >
+                  <Text style={styles.dailyAyahToggleText}>
+                    {dailyAyahExpanded ? `▲ ${t.dailyAyahLess}` : `▼ ${t.dailyAyahMore}`}
+                  </Text>
+                </TouchableOpacity>
+              </View>
             ) : null}
           </View>
         )}
 
-        {lastRead && surahs.length > 0 && (
-          <TouchableOpacity
-            style={styles.continueCard}
-            activeOpacity={0.8}
-            onPress={() => {
-              const surah = surahs.find((s: any) => s.id === lastRead.surahId);
-              if (surah) {
-                (navigation as any).navigate('Surah', { surah, surahs, initialAyah: lastRead.ayahNum, scrollNonce: Date.now() });
-              }
-            }}
-          >
-            <Text style={styles.continueLabel}>{t.continueLearning}</Text>
-            <Text style={styles.continueTitle}>📖 {lastRead.surahName} — {t.ayah} {lastRead.ayahNum}</Text>
-          </TouchableOpacity>
-        )}
+        {progress && streak ? (
+          <View style={styles.journeyCard}>
+            <TouchableOpacity
+              style={styles.journeyStats}
+              activeOpacity={0.85}
+              onPress={() => (navigation as any).navigate('Stats')}
+            >
+              <View style={styles.journeyStat}>
+                <Text style={styles.journeyStatValue}>🔥 {streak.currentStreak}</Text>
+                <Text style={styles.journeyStatLabel}>{t.dayStreak}</Text>
+              </View>
+              <View style={styles.journeyStat}>
+                <Text style={styles.journeyStatValue}>📖 {progress.totalAyahsRead}</Text>
+                <Text style={styles.journeyStatLabel}>{t.ayahsRead}</Text>
+              </View>
+              <View style={styles.journeyStat}>
+                <Text style={styles.journeyStatValue}>✅ {getCompletedSurahCount(progress)}</Text>
+                <Text style={styles.journeyStatLabel}>{t.surahsCompleted}</Text>
+              </View>
+            </TouchableOpacity>
+            {khatmahStatus ? (
+              <TouchableOpacity
+                style={styles.khatmahPill}
+                activeOpacity={0.85}
+                onPress={() => (navigation as any).navigate('MushafReader', { juzNumber: 1, initialPage: khatmahNextPage })}
+                onLongPress={handleEndKhatmah}
+              >
+                <Text style={styles.khatmahPillTitle}>📿 {khatmahStatus.percent}%</Text>
+                <View style={styles.khatmahPillTrack}>
+                  <View style={[styles.khatmahPillFill, { width: `${khatmahStatus.percent}%` }]} />
+                </View>
+                <Text style={styles.khatmahPillLabel}>{t.khatmah}</Text>
+              </TouchableOpacity>
+            ) : (
+              <TouchableOpacity
+                style={styles.khatmahPill}
+                activeOpacity={0.85}
+                onPress={() => setShowKhatmahModal(true)}
+              >
+                <Text style={styles.khatmahPillTitle}>📿</Text>
+                <Text style={styles.khatmahPillLabel}>{t.startKhatmah}</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        ) : null}
 
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>{t.coreFeatures}</Text>
           <Text style={styles.sectionSubtitle}>{t.dailyJourney}</Text>
         </View>
 
-        <View style={styles.primaryStack}>
-          <TouchableOpacity style={styles.primaryCard} onPress={() => navigation.navigate('MemorizeUnderstand')} activeOpacity={0.8}>
-            <LinearGradient colors={['rgba(31,157,85,0.2)', 'rgba(31,157,85,0.05)']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.primaryCardGradient}>
-              <Text style={styles.cardIcon}>{ICONS.MemorizeUnderstand}</Text>
-              <View style={styles.cardContent}>
-                <Text style={styles.primaryCardTitle}>{t.memorizeUnderstand}</Text>
-                <Text style={styles.primaryCardSubtitle}>{t.memorizeUnderstandDesc}</Text>
-              </View>
-            </LinearGradient>
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.primaryCard} onPress={() => navigation.navigate('QuranPlayer')} activeOpacity={0.8}>
-            <LinearGradient colors={['rgba(45,127,184,0.2)', 'rgba(45,127,184,0.05)']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.primaryCardGradient}>
-              <Text style={styles.cardIcon}>{ICONS.QuranPlayer}</Text>
-              <View style={styles.cardContent}>
-                <Text style={styles.primaryCardTitle}>{t.listenToQuran}</Text>
-                <Text style={styles.primaryCardSubtitle}>{t.listenToQuranDesc}</Text>
-              </View>
-            </LinearGradient>
-          </TouchableOpacity>
-        </View>
-
-        <View style={styles.secondaryGrid}>
+        <View style={styles.featureGrid}>
           {([
-            { route: 'PrayerTimes' as const, title: t.prayerTimes, sub: t.prayerTimesDesc },
-            { route: 'Calendar' as const, title: t.islamicCalendar, sub: t.islamicCalendarDesc },
-            { route: 'Athkar' as const, title: t.athkar, sub: t.athkarDesc },
-            { route: 'QuranMiracles' as const, title: t.quranMiracles, sub: t.quranMiraclesDesc },
+            { route: 'MemorizeUnderstand' as const, title: t.memorizeUnderstand },
+            { route: 'QuranPlayer' as const, title: t.listenToQuran },
+            { route: 'PrayerTimes' as const, title: t.prayerTimes },
+            { route: 'Calendar' as const, title: t.islamicCalendar },
+            { route: 'Athkar' as const, title: t.athkar },
+            { route: 'QuranMiracles' as const, title: t.quranMiracles },
           ]).map((item) => (
-            <TouchableOpacity key={item.route} style={styles.secondaryCard} onPress={() => navigation.navigate(item.route)} activeOpacity={0.8}>
-              <Text style={styles.secondaryIcon}>{ICONS[item.route]}</Text>
-              <Text style={styles.secondaryCardTitle}>{item.title}</Text>
-              <Text style={styles.secondaryCardSubtitle}>{item.sub}</Text>
+            <TouchableOpacity key={item.route} style={styles.featureTile} onPress={() => navigation.navigate(item.route)} activeOpacity={0.8}>
+              <Text style={styles.featureIcon}>{ICONS[item.route]}</Text>
+              <Text style={styles.featureTitle}>{item.title}</Text>
             </TouchableOpacity>
           ))}
         </View>
 
-        <View style={styles.utilitySection}>
-          <Text style={styles.utilityTitle}>{t.quickAccess}</Text>
-          <View style={styles.utilityRow}>
-            <TouchableOpacity style={styles.utilityButton} onPress={() => navigation.navigate('Bookmarks')} activeOpacity={0.8}>
-              <Text style={styles.utilityIcon}>{ICONS.Bookmarks}</Text>
-              <Text style={styles.utilityButtonTitle}>{t.myBookmarks}</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity style={styles.utilityButton} onPress={() => navigation.navigate('Settings')} activeOpacity={0.8}>
-              <Text style={styles.utilityIcon}>{ICONS.Settings}</Text>
-              <Text style={styles.utilityButtonTitle}>{t.settings}</Text>
-            </TouchableOpacity>
-          </View>
+        <View style={styles.utilityRow}>
+          <TouchableOpacity style={styles.utilityButton} onPress={() => navigation.navigate('Bookmarks')} activeOpacity={0.8}>
+            <Text style={styles.utilityIcon}>{ICONS.Bookmarks}</Text>
+            <Text style={styles.utilityButtonTitle}>{t.myBookmarks}</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.utilityButton} onPress={() => (navigation as any).navigate('Stats')} activeOpacity={0.8}>
+            <Text style={styles.utilityIcon}>{ICONS.Stats}</Text>
+            <Text style={styles.utilityButtonTitle}>{t.myStats}</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.utilityButton} onPress={() => navigation.navigate('Settings')} activeOpacity={0.8}>
+            <Text style={styles.utilityIcon}>{ICONS.Settings}</Text>
+            <Text style={styles.utilityButtonTitle}>{t.settings}</Text>
+          </TouchableOpacity>
         </View>
       </ScrollView>
 
@@ -483,28 +526,110 @@ const styles = StyleSheet.create({
   },
   hero: {
     alignItems: 'center',
-    marginBottom: 16,
-  },
-  eyebrow: {
-    fontSize: 13,
-    color: UI_COLORS.primarySoft,
-    textTransform: 'uppercase',
-    letterSpacing: 3,
-    marginBottom: 10,
-    opacity: 0.9,
+    marginBottom: 14,
   },
   title: {
-    fontSize: 52,
+    fontSize: 38,
     fontWeight: 'bold',
     color: UI_COLORS.white,
     fontFamily: 'AmiriQuran',
     letterSpacing: 0.5,
-    marginBottom: 4,
   },
   subtitle: {
-    fontSize: 17,
+    fontSize: 14,
     color: 'rgba(214,228,238,0.9)',
     letterSpacing: 1,
+    marginTop: 2,
+  },
+  hijriLine: {
+    fontSize: 13,
+    color: 'rgba(214,228,238,0.75)',
+    marginTop: 2,
+  },
+  chipsRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    gap: 8,
+    marginBottom: 14,
+  },
+  chip: {
+    maxWidth: '100%',
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.18)',
+    borderRadius: 20,
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+  },
+  chipText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: 'rgba(234,242,248,0.95)',
+  },
+  journeyCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(31,157,85,0.12)',
+    borderWidth: 1,
+    borderColor: 'rgba(31,157,85,0.25)',
+    borderRadius: UI_RADII.xl,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    marginBottom: 20,
+    gap: 10,
+  },
+  journeyStats: {
+    flex: 1,
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+  },
+  journeyStat: {
+    alignItems: 'center',
+  },
+  journeyStatValue: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: UI_COLORS.white,
+    marginBottom: 2,
+  },
+  journeyStatLabel: {
+    fontSize: 10.5,
+    color: 'rgba(215,239,225,0.7)',
+  },
+  khatmahPill: {
+    minWidth: 86,
+    alignItems: 'center',
+    backgroundColor: 'rgba(245,166,35,0.12)',
+    borderWidth: 1,
+    borderColor: 'rgba(245,166,35,0.3)',
+    borderRadius: UI_RADII.lg,
+    paddingVertical: 8,
+    paddingHorizontal: 10,
+  },
+  khatmahPillTitle: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: '#f5c778',
+  },
+  khatmahPillTrack: {
+    width: '100%',
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: 'rgba(255,255,255,0.12)',
+    overflow: 'hidden',
+    marginTop: 5,
+  },
+  khatmahPillFill: {
+    height: '100%',
+    borderRadius: 2,
+    backgroundColor: '#f5a623',
+  },
+  khatmahPillLabel: {
+    fontSize: 10,
+    color: 'rgba(240,228,205,0.8)',
+    marginTop: 4,
+    textAlign: 'center',
   },
   introCard: {
     width: '100%',
@@ -521,147 +646,6 @@ const styles = StyleSheet.create({
     color: 'rgba(234,242,248,0.9)',
     textAlign: 'center',
     lineHeight: 24,
-  },
-  progressCard: {
-    backgroundColor: 'rgba(31,157,85,0.12)',
-    borderWidth: 1,
-    borderColor: 'rgba(31,157,85,0.25)',
-    borderRadius: UI_RADII.xl,
-    padding: 16,
-    marginBottom: 20,
-  },
-  progressTitle: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: UI_COLORS.primarySoft,
-    marginBottom: 12,
-    textAlign: 'center',
-  },
-  progressStats: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-  },
-  progressStat: {
-    alignItems: 'center',
-  },
-  progressStatValue: {
-    fontSize: 18,
-    fontWeight: '800',
-    color: UI_COLORS.white,
-    marginBottom: 2,
-  },
-  progressStatLabel: {
-    fontSize: 11,
-    color: 'rgba(215,239,225,0.7)',
-  },
-  progressBest: {
-    fontSize: 12,
-    color: 'rgba(215,239,225,0.6)',
-    textAlign: 'center',
-    marginTop: 10,
-  },
-  ramadanCard: {
-    backgroundColor: 'rgba(108,92,231,0.14)',
-    borderWidth: 1,
-    borderColor: 'rgba(162,155,254,0.35)',
-    borderRadius: UI_RADII.xl,
-    padding: 14,
-    marginBottom: 16,
-    alignItems: 'center',
-  },
-  ramadanTitle: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: '#c9c3f7',
-    marginBottom: 4,
-  },
-  ramadanMeta: {
-    fontSize: 13,
-    color: 'rgba(220,216,248,0.85)',
-  },
-  khatmahCard: {
-    backgroundColor: 'rgba(245,166,35,0.1)',
-    borderWidth: 1,
-    borderColor: 'rgba(245,166,35,0.3)',
-    borderRadius: UI_RADII.xl,
-    padding: 16,
-    marginBottom: 16,
-  },
-  khatmahHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 10,
-  },
-  khatmahTitle: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: '#f5c778',
-  },
-  khatmahEnd: {
-    fontSize: 14,
-    color: 'rgba(255,255,255,0.35)',
-    fontWeight: '600',
-  },
-  khatmahBarTrack: {
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: 'rgba(255,255,255,0.12)',
-    overflow: 'hidden',
-    marginBottom: 10,
-  },
-  khatmahBarFill: {
-    height: '100%',
-    borderRadius: 4,
-    backgroundColor: '#f5a623',
-  },
-  khatmahMeta: {
-    fontSize: 12,
-    color: 'rgba(240,228,205,0.85)',
-    textAlign: 'center',
-  },
-  khatmahStartCard: {
-    backgroundColor: 'rgba(245,166,35,0.08)',
-    borderWidth: 1,
-    borderColor: 'rgba(245,166,35,0.25)',
-    borderRadius: UI_RADII.xl,
-    padding: 16,
-    marginBottom: 16,
-    alignItems: 'center',
-  },
-  khatmahStartTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#f5c778',
-    marginBottom: 4,
-  },
-  khatmahStartSubtitle: {
-    fontSize: 12,
-    color: 'rgba(240,228,205,0.7)',
-    textAlign: 'center',
-  },
-  reviewCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: 'rgba(155,89,182,0.12)',
-    borderWidth: 1,
-    borderColor: 'rgba(155,89,182,0.3)',
-    borderRadius: UI_RADII.lg,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    marginBottom: 16,
-  },
-  reviewCardText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: UI_COLORS.white,
-    flex: 1,
-  },
-  reviewCardAction: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#c39bd3',
   },
   khatmahModalBackdrop: {
     flex: 1,
@@ -825,26 +809,14 @@ const styles = StyleSheet.create({
     fontStyle: 'italic',
     textAlign: 'center',
   },
-  continueCard: {
-    backgroundColor: 'rgba(45,127,184,0.15)',
-    borderWidth: 1,
-    borderColor: 'rgba(45,127,184,0.3)',
-    borderRadius: UI_RADII.lg,
-    padding: 14,
-    marginBottom: 16,
+  dailyAyahToggle: {
+    alignItems: 'center',
+    paddingTop: 8,
   },
-  continueLabel: {
+  dailyAyahToggleText: {
     fontSize: 12,
-    color: 'rgba(214,228,238,0.7)',
     fontWeight: '600',
-    marginBottom: 4,
-    textAlign: 'center',
-  },
-  continueTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: UI_COLORS.white,
-    textAlign: 'center',
+    color: 'rgba(215,239,225,0.75)',
   },
   sectionHeader: {
     marginBottom: 14,
@@ -863,96 +835,34 @@ const styles = StyleSheet.create({
     color: 'rgba(198,211,222,0.8)',
     textAlign: 'center',
   },
-  primaryStack: {
-    marginBottom: 16,
-    gap: 12,
-  },
-  primaryCard: {
-    borderRadius: UI_RADII.lg,
-    overflow: 'hidden',
-    backgroundColor: 'rgba(255,255,255,0.08)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.15)',
-    ...(Platform.OS === 'android'
-      ? { elevation: 0 }
-      : UI_SHADOWS.card),
-  },
-  primaryCardGradient: {
-    alignItems: 'center',
-    paddingVertical: 18,
-    paddingHorizontal: 16,
-    gap: 6,
-  },
-  cardIcon: {
-    fontSize: 28,
-    marginBottom: 2,
-  },
-  cardContent: {},
-  primaryCardTitle: {
-    fontSize: 17,
-    fontWeight: '700',
-    color: UI_COLORS.white,
-    textAlign: 'center',
-  },
-  primaryCardSubtitle: {
-    marginTop: 4,
-    fontSize: 13,
-    color: 'rgba(208,221,232,0.85)',
-    lineHeight: 18,
-    textAlign: 'center',
-  },
-  secondaryGrid: {
+  featureGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'space-between',
-    marginBottom: 22,
+    marginBottom: 18,
     gap: 10,
   },
-  secondaryCard: {
+  featureTile: {
     width: '48%',
     backgroundColor: 'rgba(255,255,255,0.08)',
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.15)',
     borderRadius: UI_RADII.lg,
     paddingVertical: 16,
-    paddingHorizontal: 14,
+    paddingHorizontal: 12,
     alignItems: 'center',
     ...(Platform.OS === 'android'
       ? { elevation: 0 }
       : UI_SHADOWS.input),
   },
-  secondaryIcon: {
-    fontSize: 22,
+  featureIcon: {
+    fontSize: 26,
     marginBottom: 8,
   },
-  secondaryCardTitle: {
-    fontSize: 15,
+  featureTitle: {
+    fontSize: 14.5,
     fontWeight: '700',
     color: UI_COLORS.white,
-    textAlign: 'center',
-  },
-  secondaryCardSubtitle: {
-    marginTop: 4,
-    fontSize: 12,
-    color: 'rgba(208,221,232,0.75)',
-    lineHeight: 17,
-    textAlign: 'center',
-  },
-  utilitySection: {
-    backgroundColor: 'rgba(18,59,54,0.55)',
-    borderRadius: UI_RADII.xl,
-    borderWidth: 1,
-    borderColor: 'rgba(215,239,225,0.2)',
-    padding: 16,
-    ...(Platform.OS === 'android'
-      ? { elevation: 0 }
-      : UI_SHADOWS.card),
-  },
-  utilityTitle: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: UI_COLORS.primarySoft,
-    marginBottom: 12,
     textAlign: 'center',
   },
   utilityRow: {

@@ -165,9 +165,19 @@ const getLocalDateKey = () => {
   return `${year}-${month}-${day}`;
 };
 
-export default function AthkarScreen() {
+export default function AthkarScreen({ route }: any) {
   const [activeFeature, setActiveFeature] = useState<FeatureTab>('athkar');
   const [athkarPeriod, setAthkarPeriod] = useState<AthkarPeriod>('morning');
+
+  // Deep link from home smart chips: open directly on the requested
+  // morning/evening tab (nonce lets repeated taps re-apply the same period).
+  useEffect(() => {
+    const period = route?.params?.period;
+    if (period === 'morning' || period === 'evening') {
+      setActiveFeature('athkar');
+      setAthkarPeriod(period);
+    }
+  }, [route?.params?.period, route?.params?.nonce]);
   const [morningAthkar, setMorningAthkar] = useState<AthkarItem[]>(MORNING_ATHKAR);
   const [eveningAthkar, setEveningAthkar] = useState<AthkarItem[]>(EVENING_ATHKAR);
   const [athkarLoading, setAthkarLoading] = useState(true);
@@ -202,6 +212,9 @@ export default function AthkarScreen() {
   const athkarPlayer = useAudioPlayer(null, { updateInterval: 250 });
   const athkarPlayerStatus = useAudioPlayerStatus(athkarPlayer);
   const [loadedAudioPeriod, setLoadedAudioPeriod] = useState<AthkarPeriod | null>(null);
+  // True from tapping play until audio actually starts — streaming from the
+  // network can take a few seconds and the button should show it's working.
+  const [audioStarting, setAudioStarting] = useState(false);
   const currentAudioUrl = ATHKAR_AUDIO_URLS[athkarPeriod];
   const athkarTrackId = `athkar-${athkarPeriod}`;
   const [downloadedPeriods, setDownloadedPeriods] = useState<Set<AthkarPeriod>>(new Set());
@@ -297,8 +310,16 @@ export default function AthkarScreen() {
       athkarPlayer.pause();
       applyAthkarLockScreenControls(null);
       setLoadedAudioPeriod(null);
+      setAudioStarting(false);
     }
   }, [athkarPeriod, loadedAudioPeriod, athkarPlayer, applyAthkarLockScreenControls]);
+
+  // Clear the "starting" spinner the moment audio actually plays
+  useEffect(() => {
+    if (athkarPlayerStatus.playing) {
+      setAudioStarting(false);
+    }
+  }, [athkarPlayerStatus.playing]);
 
   useEffect(() => {
     return () => {
@@ -314,6 +335,7 @@ export default function AthkarScreen() {
   const toggleAthkarAudio = async () => {
     if (!currentAudioUrl) return;
     if (loadedAudioPeriod !== athkarPeriod) {
+      setAudioStarting(true);
       const localUri = await getLocalTrackAudioUri(athkarTrackId);
       athkarPlayer.replace({ uri: localUri ?? currentAudioUrl });
       athkarPlayer.play();
@@ -324,6 +346,7 @@ export default function AthkarScreen() {
     if (athkarPlayerStatus.playing) {
       athkarPlayer.pause();
     } else {
+      setAudioStarting(true);
       athkarPlayer.play();
     }
   };
@@ -627,10 +650,10 @@ export default function AthkarScreen() {
             isDark={isDark}
             badgeLabel="🔊"
             title={athkarPeriod === 'morning' ? t.morningAthkar : t.eveningAthkar}
-            subtitle={t.fullAudioRecitation}
             currentMs={loadedAudioPeriod === athkarPeriod ? (athkarPlayerStatus.currentTime || 0) * 1000 : 0}
             durationMs={loadedAudioPeriod === athkarPeriod ? (athkarPlayerStatus.duration || 0) * 1000 : 0}
             isPlaying={loadedAudioPeriod === athkarPeriod && !!athkarPlayerStatus.playing}
+            isBusy={audioStarting && !athkarPlayerStatus.playing}
             disablePrev
             disableNext
             onPrev={() => {}}
@@ -638,6 +661,7 @@ export default function AthkarScreen() {
             onTogglePlay={toggleAthkarAudio}
             onSeek={(value) => void seekAthkarAudio(value)}
             layout="inline"
+            variant="mini"
           />
           <TouchableOpacity
             style={styles.athkarDownloadRow}

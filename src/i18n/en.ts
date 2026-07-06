@@ -430,4 +430,18 @@ export default {
   aiRegenerateNote: 'Regenerate',
   aiRemoveNote: 'Remove',
   aiNoteFailed: 'Could not generate the note. Check your connection and try again.',
+
+  // Home screen redesign
+  homeSetCity: 'Tap to set your city for prayer times',
+  fridayKahfChip: 'Read Al-Kahf — Friday',
+  dailyAyahMore: 'Why this ayah',
+  dailyAyahLess: 'Show less',
+
+  // Khatmah stats details
+  khatmahDailyPlan: 'daily plan',
+  khatmahNeededNow: 'needed/day to finish on time',
+  khatmahYesterday: 'Yesterday',
+  khatmahRolledOver: 'rolled into today',
+  khatmahYesterdayMet: "Yesterday's goal met",
+  khatmahProjection: 'Projected finish at your current pace',
 } as const;
