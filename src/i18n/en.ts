@@ -418,4 +418,16 @@ export default {
   // Friday Al-Kahf reminder
   kahfReminder: 'Friday Al-Kahf Reminder',
   kahfReminderDesc: 'A weekly reminder to read Surah Al-Kahf every Friday',
+
+  // Share ayah enhancements
+  shareIntentionLabel: 'Share with intention (optional)',
+  intentComfort: 'Comfort',
+  intentCongratulate: 'Congratulate',
+  intentCondolence: 'Condolence',
+  intentEncouragement: 'Encouragement',
+  intentGratitude: 'Gratitude',
+  aiAddNote: '✦ Add AI Note',
+  aiRegenerateNote: 'Regenerate',
+  aiRemoveNote: 'Remove',
+  aiNoteFailed: 'Could not generate the note. Check your connection and try again.',
 } as const;
