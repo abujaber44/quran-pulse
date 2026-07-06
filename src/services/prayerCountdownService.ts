@@ -70,6 +70,7 @@ export async function schedulePrePrayerReminders(prayers: PrayerTime[]): Promise
         body: `${prayer.name} in ${COUNTDOWN_MINUTES} minutes — prepare for prayer`,
         priority: Notifications.AndroidNotificationPriority.LOW,
         sticky: true,
+        data: { source: 'pre-prayer' },
         ...(Platform.OS === 'android' ? { channelId: COUNTDOWN_CHANNEL_ID } : {}),
       },
       trigger: {
@@ -103,6 +104,7 @@ export async function startCountdown(prayerName: string, prayerTimeMs: number): 
       body: `${prayerName} in ${remainingMin} minute${remainingMin !== 1 ? 's' : ''} — prepare for prayer`,
       priority: Notifications.AndroidNotificationPriority.LOW,
       sticky: true,
+      data: { source: 'pre-prayer' },
       ...(Platform.OS === 'android' ? { channelId: COUNTDOWN_CHANNEL_ID } : {}),
     },
     trigger: null,

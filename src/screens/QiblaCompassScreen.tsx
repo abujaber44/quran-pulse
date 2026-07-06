@@ -3,7 +3,7 @@ import { ActivityIndicator, Animated, Easing, ScrollView, StyleSheet, Text, Vibr
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as Location from 'expo-location';
 import { useSettings } from '../context/SettingsContext';
-import { UI_COLORS, UI_GLASS, UI_RADII, UI_SHADOWS } from '../theme/ui';
+import { UI_COLORS, UI_RADII, UI_SHADOWS } from '../theme/ui';
 import GlassBackground from '../components/GlassBackground';
 import ScreenIntroTile from '../components/ScreenIntroTile';
 import {
@@ -43,7 +43,7 @@ const TickMarks = React.memo(() => {
           {
             height: isMajor ? 12 : 6,
             width: isMajor ? 2 : 1,
-            backgroundColor: isMajor ? '#8aa8c0' : '#b9d3e6',
+            backgroundColor: isMajor ? 'rgba(255,255,255,0.5)' : 'rgba(255,255,255,0.22)',
             top: 0,
             left: COMPASS_RADIUS - 1,
             transform: [
@@ -239,19 +239,19 @@ export default function QiblaCompassScreen({ route }: any) {
 
   const compassQuality = useMemo(() => {
     if (!isCompassAvailable) {
-      return { label: t.unavailable, badgeColor: UI_COLORS.danger, textColor: UI_COLORS.white, needsCalibrationPrompt: true, guidance: 'Compass sensor is unavailable on this device/runtime.' };
+      return { label: t.unavailable, badgeColor: UI_COLORS.danger, textColor: UI_COLORS.white, needsCalibrationPrompt: true, guidance: t.calibrationUnavailable };
     }
     if (headingAccuracy === null) {
-      return { label: t.initializing, badgeColor: '#c98200', textColor: UI_COLORS.white, needsCalibrationPrompt: true, guidance: 'Move your phone slowly to initialize compass direction.' };
+      return { label: t.initializing, badgeColor: '#c98200', textColor: UI_COLORS.white, needsCalibrationPrompt: true, guidance: t.calibrationInit };
     }
     if (headingAccuracy <= 1) {
-      return { label: t.lowAccuracy, badgeColor: '#c98200', textColor: UI_COLORS.white, needsCalibrationPrompt: true, guidance: 'Re-calibrate by moving phone in a figure-8 and keep away from metal objects.' };
+      return { label: t.lowAccuracy, badgeColor: '#c98200', textColor: UI_COLORS.white, needsCalibrationPrompt: true, guidance: t.calibrationFigure8 };
     }
     if (headingAccuracy === 2) {
-      return { label: t.medium, badgeColor: UI_COLORS.accent, textColor: UI_COLORS.white, needsCalibrationPrompt: true, guidance: 'Keep phone flat and away from magnetic interference for better accuracy.' };
+      return { label: t.medium, badgeColor: UI_COLORS.accent, textColor: UI_COLORS.white, needsCalibrationPrompt: true, guidance: t.calibrationKeepFlat };
     }
     return { label: t.calibrated, badgeColor: UI_COLORS.primary, textColor: UI_COLORS.white, needsCalibrationPrompt: false, guidance: '' };
-  }, [headingAccuracy, isCompassAvailable]);
+  }, [headingAccuracy, isCompassAvailable, t]);
 
   const instruction = qiblaTurnInstruction();
 
@@ -277,11 +277,11 @@ export default function QiblaCompassScreen({ route }: any) {
         />
 
         <View style={styles.summaryCard}>
-          <Text style={styles.summaryTitle}>🕋 {city || 'Current City'}</Text>
+          <Text style={styles.summaryTitle}>🕋 {city || t.currentCity}</Text>
           <Text style={styles.summaryText}>
             {distanceToKaabaKm !== null
               ? `${t.distanceToKaaba}: ${distanceToKaabaKm.toFixed(1)} km`
-              : 'Distance will appear after coordinates are resolved.'}
+              : t.distancePending}
           </Text>
           {resolvingCoordinates ? (
             <View style={styles.loadingRow}>
@@ -341,6 +341,7 @@ export default function QiblaCompassScreen({ route }: any) {
                       ]}
                     >
                       <View style={styles.qiblaArrowInner}>
+                        <Text style={styles.qiblaArrowKaaba}>🕋</Text>
                         <View style={styles.qiblaArrowHead} />
                         <View style={styles.qiblaArrowStem} />
                       </View>
@@ -390,10 +391,6 @@ export default function QiblaCompassScreen({ route }: any) {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  darkBg: {},
-  darkCard: { backgroundColor: 'rgba(26, 38, 52, 0.75)', borderColor: 'rgba(255, 255, 255, 0.08)' },
-  darkText: { color: UI_COLORS.white },
-  darkMutedText: { color: '#a8b3bd' },
   scrollContent: { padding: 16, paddingBottom: 36 },
   introTile: { width: '100%', marginHorizontal: 0, marginBottom: 12 },
   summaryCard: {
@@ -418,7 +415,6 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     ...UI_SHADOWS.card,
   },
-  qiblaCardFlash: { backgroundColor: '#dff5e7', borderColor: '#87c8a0' },
   qiblaCardFlashDark: { backgroundColor: '#264536', borderColor: '#4f8f6a' },
   qiblaHeaderRow: {
     flexDirection: 'row',
@@ -446,7 +442,6 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.06)',
     overflow: 'hidden',
   },
-  darkQiblaDial: { backgroundColor: '#1a2430' },
   qiblaFaceLayer: {
     position: 'absolute',
     width: '100%',
@@ -465,7 +460,6 @@ const styles = StyleSheet.create({
     borderWidth: 3,
     borderColor: 'rgba(255,255,255,0.2)',
   },
-  darkQiblaOuterRing: { borderColor: '#415061' },
   qiblaInnerRing: {
     position: 'absolute',
     width: COMPASS_SIZE * 0.72,
@@ -474,7 +468,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.12)',
   },
-  darkQiblaInnerRing: { borderColor: '#354252' },
   qiblaCrossLine: { position: 'absolute', backgroundColor: 'rgba(255,255,255,0.1)' },
   qiblaCrossHorizontal: { width: COMPASS_SIZE * 0.8, height: 1 },
   qiblaCrossVertical: { width: 1, height: COMPASS_SIZE * 0.8 },
@@ -503,6 +496,10 @@ const styles = StyleSheet.create({
   },
   qiblaArrowInner: {
     alignItems: 'center',
+  },
+  qiblaArrowKaaba: {
+    fontSize: 18,
+    marginBottom: 2,
   },
   qiblaArrowHead: {
     width: 0,
@@ -562,7 +559,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     alignItems: 'center',
   },
-  darkQiblaMetricPill: { backgroundColor: 'rgba(26, 38, 52, 0.75)', borderColor: 'rgba(255, 255, 255, 0.08)' },
   qiblaMetricLabel: { fontSize: 12, color: UI_COLORS.textMuted, marginBottom: 4 },
   qiblaMetricValue: { fontSize: 20, fontWeight: '800', color: UI_COLORS.text },
   qiblaCalibration: {

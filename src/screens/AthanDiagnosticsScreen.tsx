@@ -22,6 +22,7 @@ import {
   ATHAN_NOTIFICATION_TITLE_PREFIX,
   buildAthanNotificationId,
 } from '../utils/athanNotifications';
+import { getAthanDebugTrace, type AthanDebugTrace } from '../services/prayerTimesService';
 
 type Prayer = {
   name: string;
@@ -262,6 +263,8 @@ export default function AthanDiagnosticsScreen({ route }: any) {
   const [notificationsEnabled, setNotificationsEnabled] = useState<boolean | null>(null);
   const [batteryOptimizationIgnored, setBatteryOptimizationIgnored] = useState<boolean | null>(null);
   const [lastRefreshAt, setLastRefreshAt] = useState<Date | null>(null);
+  const [debugTrace, setDebugTrace] = useState<AthanDebugTrace | null>(null);
+  const [soundTestStatus, setSoundTestStatus] = useState<string | null>(null);
 
   const expectedUpcoming = useMemo<UpcomingPrayer[]>(() => {
     if (prayers.length === 0) return [];
@@ -351,6 +354,9 @@ export default function AthanDiagnosticsScreen({ route }: any) {
 
       setScheduledAthans(sortedAthans);
 
+      const trace = await getAthanDebugTrace();
+      setDebugTrace(trace);
+
       const permissions = await Notifications.getPermissionsAsync();
       setNotificationsEnabled(permissions.status === 'granted');
 
@@ -377,6 +383,42 @@ export default function AthanDiagnosticsScreen({ route }: any) {
   useEffect(() => {
     void refreshDiagnostics();
   }, [refreshDiagnostics]);
+
+  // Fires a notification through the real athan channel a few seconds from
+  // now, so channel sound can be verified immediately after installing a
+  // build instead of waiting for the next prayer time.
+  const testAthanSound = useCallback(async () => {
+    try {
+      setSoundTestStatus('Scheduling test notification...');
+      await Notifications.scheduleNotificationAsync({
+        identifier: 'athan-sound-test',
+        content: {
+          title: 'Athan Sound Test',
+          body: 'If you hear the athan now, the channel sound works.',
+          priority: Notifications.AndroidNotificationPriority.HIGH,
+          vibrate: [0, 250, 250, 250],
+          ...(Platform.OS === 'ios' ? { sound: 'athan_v2.mp3' } : {}),
+        },
+        trigger:
+          Platform.OS === 'android'
+            ? {
+                type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
+                seconds: 3,
+                channelId: ATHAN_CHANNEL_ID,
+              }
+            : {
+                type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
+                seconds: 3,
+              },
+      });
+      setSoundTestStatus(
+        'Test fired — the athan should sound in ~3 seconds. Silent means the channel sound is broken on this build.'
+      );
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      setSoundTestStatus(`Test failed to schedule: ${message}`);
+    }
+  }, []);
 
   return (
     <View style={styles.container}>
@@ -415,7 +457,33 @@ export default function AthanDiagnosticsScreen({ route }: any) {
           <TouchableOpacity style={styles.refreshButton} onPress={() => void refreshDiagnostics()}>
             <Text style={styles.refreshButtonText}>Refresh Diagnostics</Text>
           </TouchableOpacity>
+          <TouchableOpacity style={styles.soundTestButton} onPress={() => void testAthanSound()}>
+            <Text style={styles.refreshButtonText}>Test Athan Sound (3s)</Text>
+          </TouchableOpacity>
+          {soundTestStatus ? <Text style={styles.statusHint}>{soundTestStatus}</Text> : null}
         </View>
+
+        {debugTrace ? (
+          <View style={[styles.statusCard, debugTrace.failed > 0 && styles.statusCardWarn]}>
+            <Text style={styles.statusTitle}>Last Scheduling Attempt</Text>
+            <Text style={styles.statusText}>
+              Ran: {new Date(debugTrace.ranAt).toLocaleString()}
+            </Text>
+            <Text style={styles.statusText}>
+              Attempted: {debugTrace.attempted} · Succeeded: {debugTrace.succeeded} · Failed: {debugTrace.failed}
+            </Text>
+            {debugTrace.outerError ? (
+              <Text style={styles.errorText}>Fatal error: {debugTrace.outerError}</Text>
+            ) : null}
+            {debugTrace.errors.length > 0 ? (
+              <View style={{ marginTop: 6 }}>
+                {debugTrace.errors.map((err, idx) => (
+                  <Text key={idx} style={styles.rowMeta}>• {err}</Text>
+                ))}
+              </View>
+            ) : null}
+          </View>
+        ) : null}
 
         {loading ? (
           <View style={styles.loadingWrap}>
@@ -538,6 +606,10 @@ const styles = StyleSheet.create({
     marginBottom: 14,
     ...UI_SHADOWS.card,
   },
+  statusCardWarn: {
+    borderColor: '#c98200',
+    backgroundColor: 'rgba(224,185,0,0.1)',
+  },
   statusTitle: {
     fontSize: 18,
     fontWeight: '700',
@@ -567,6 +639,14 @@ const styles = StyleSheet.create({
     color: UI_COLORS.white,
     fontWeight: '700',
     fontSize: 13,
+  },
+  soundTestButton: {
+    marginTop: 10,
+    alignSelf: 'flex-start',
+    backgroundColor: UI_COLORS.accent,
+    borderRadius: UI_RADII.md,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
   },
   loadingWrap: {
     alignItems: 'center',

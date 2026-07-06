@@ -10,20 +10,23 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
+  Modal,
+  Pressable,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import * as Location from 'expo-location';
 import * as Notifications from 'expo-notifications';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Ionicons } from '@expo/vector-icons';
 import { useSettings } from '../context/SettingsContext';
 import { useThemedAlert } from '../context/ThemedAlertContext';
 import debounce from 'lodash.debounce';
-import { UI_COLORS, UI_RADII, UI_SHADOWS, UI_GLASS } from '../theme/ui';
+import { UI_COLORS, UI_RADII, UI_SHADOWS } from '../theme/ui';
 import GlassBackground from '../components/GlassBackground';
 import ScreenIntroTile from '../components/ScreenIntroTile';
 import { canScheduleExactAlarms, openExactAlarmSettings } from '../services/exactAlarmService';
 import {
   ATHAN_CHANNEL_ID,
+  STALE_ATHAN_CHANNEL_IDS,
   ATHAN_REMINDER_CHANNEL_ID,
   ATHAN_NOTIFICATION_ID_PREFIX,
   ATHAN_NOTIFICATION_TITLE_PREFIX,
@@ -34,20 +37,28 @@ import {
 import { calculateDistanceToKaabaKm, calculateQiblaBearing, Coordinates } from '../utils/qiblaUtils';
 import { useLanguage } from '../i18n';
 import { schedulePrePrayerReminders } from '../services/prayerCountdownService';
+import { fetchNominatimSuggestions, fetchOpenMeteoSuggestions } from '../services/citySearch';
+import {
+  PRAYER_NAMES,
+  CALCULATION_METHODS,
+  DEFAULT_METHOD_ID,
+  fetchPrayerScheduleWindow,
+  getCalculationMethod,
+  saveCalculationMethod,
+  parsePrayerTime,
+  toLocalDateKey,
+  dateKeyToLocalDate,
+  saveAthanDebugTrace,
+  type PrayerName,
+  type PrayerScheduleDay,
+  type AthanDebugTrace,
+} from '../services/prayerTimesService';
 
 interface Prayer {
   name: string;
   time: string;
   enabled: boolean;
 }
-
-const PRAYER_NAMES = ['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'] as const;
-type PrayerName = (typeof PRAYER_NAMES)[number];
-type PrayerTimings = Record<PrayerName, string>;
-type PrayerScheduleDay = {
-  date: Date;
-  timings: PrayerTimings;
-};
 
 type NextPrayerInfo = {
   name: string;
@@ -56,101 +67,9 @@ type NextPrayerInfo = {
   isTomorrow: boolean;
 };
 
-type NominatimResult = {
-  name?: string;
-  display_name?: string;
-  address?: {
-    city?: string;
-    town?: string;
-    village?: string;
-    municipality?: string;
-    county?: string;
-    state?: string;
-  };
-};
-
-type OpenMeteoResult = {
-  name?: string;
-};
-
 const CITY_STORAGE_KEY = 'prayer_city';
 const PRAYER_PREFS_KEY = 'prayer_athan_prefs';
 const DEFAULT_CITY = 'Makkah';
-const toLocalDateKey = (date: Date): string => {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
-};
-
-const extractPrayerTimings = (rawTimings: any): PrayerTimings | null => {
-  if (!rawTimings || typeof rawTimings !== 'object') return null;
-
-  const extracted: Partial<PrayerTimings> = {};
-  for (const prayerName of PRAYER_NAMES) {
-    const rawValue = rawTimings[prayerName];
-    if (typeof rawValue !== 'string' || !parsePrayerTime(rawValue)) {
-      return null;
-    }
-    extracted[prayerName] = rawValue;
-  }
-
-  return extracted as PrayerTimings;
-};
-
-const fetchPrayerScheduleWindow = async (
-  cityName: string,
-  startDate: Date,
-  days: number
-): Promise<PrayerScheduleDay[]> => {
-  const requests: Array<Promise<PrayerScheduleDay | null>> = [];
-
-  for (let dayOffset = 0; dayOffset < days; dayOffset += 1) {
-    const targetDate = new Date(startDate);
-    targetDate.setDate(startDate.getDate() + dayOffset);
-
-    requests.push(
-      (async () => {
-        const day = String(targetDate.getDate()).padStart(2, '0');
-        const month = String(targetDate.getMonth() + 1).padStart(2, '0');
-        const year = targetDate.getFullYear();
-        const url = `https://api.aladhan.com/v1/timingsByCity/${day}-${month}-${year}?city=${encodeURIComponent(cityName)}&country=&method=2`;
-
-        const response = await fetch(url);
-        const data = await response.json();
-        if (data?.code !== 200) return null;
-
-        const timings = extractPrayerTimings(data?.data?.timings);
-        if (!timings) return null;
-
-        const scheduleDate = new Date(targetDate);
-        scheduleDate.setHours(0, 0, 0, 0);
-
-        return {
-          date: scheduleDate,
-          timings,
-        };
-      })()
-    );
-  }
-
-  const settled = await Promise.all(requests);
-  return settled
-    .filter((item): item is PrayerScheduleDay => item !== null)
-    .sort((a, b) => a.date.getTime() - b.date.getTime());
-};
-
-const parsePrayerTime = (raw: string): { hour: number; minute: number } | null => {
-  const match = raw.match(/(\d{1,2}):(\d{2})/);
-  if (!match) return null;
-
-  const hour = Number(match[1]);
-  const minute = Number(match[2]);
-  if (Number.isNaN(hour) || Number.isNaN(minute)) return null;
-  if (hour < 0 || hour > 23 || minute < 0 || minute > 59) return null;
-
-  return { hour, minute };
-};
 
 const formatTimeFromRaw = (raw: string): string => {
   const parsed = parsePrayerTime(raw);
@@ -201,69 +120,55 @@ const getNextPrayerInfo = (prayerList: Prayer[], now: Date): NextPrayerInfo | nu
   };
 };
 
-const dedupeCities = (values: string[]): string[] => {
-  const cleaned = values
-    .map((value) => value.trim())
-    .filter((value) => value.length > 0);
-  return [...new Set(cleaned)];
-};
+/**
+ * Fraction of the interval between the previous prayer and the next one
+ * that has elapsed — drives the hero progress bar.
+ */
+const getIntervalProgress = (prayerList: Prayer[], now: Date, next: NextPrayerInfo | null): number => {
+  if (!next) return 0;
 
-const extractNominatimCity = (record: NominatimResult): string => {
-  return (
-    record.address?.city ||
-    record.address?.town ||
-    record.address?.village ||
-    record.address?.municipality ||
-    record.address?.county ||
-    record.address?.state ||
-    record.name ||
-    record.display_name?.split(',')[0] ||
-    ''
-  );
-};
+  const nextParsed = parsePrayerTime(next.time);
+  if (!nextParsed) return 0;
+  const nextDate = new Date(now);
+  if (next.isTomorrow) nextDate.setDate(nextDate.getDate() + 1);
+  nextDate.setHours(nextParsed.hour, nextParsed.minute, 0, 0);
 
-const fetchNominatimSuggestions = async (query: string): Promise<string[]> => {
-  const response = await fetch(
-    `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&addressdetails=1&limit=5`,
-    {
-      headers: {
-        Accept: 'application/json',
-        'Accept-Language': 'en',
-        'User-Agent': 'QuranPulse/1.0 (https://abujaber44.github.io/quran-pulse/privacy/)',
-      },
+  // Latest prayer already past today; before Fajr, approximate with
+  // yesterday's Isha using today's time (close enough for a progress bar)
+  let prevDate: Date | null = null;
+  for (const prayer of prayerList) {
+    const parsed = parsePrayerTime(prayer.time);
+    if (!parsed) continue;
+    const candidate = new Date(now);
+    candidate.setHours(parsed.hour, parsed.minute, 0, 0);
+    if (candidate <= now && (!prevDate || candidate > prevDate)) {
+      prevDate = candidate;
     }
-  );
-
-  if (!response.ok) {
-    throw new Error(`Nominatim request failed: ${response.status}`);
+  }
+  if (!prevDate) {
+    const isha = prayerList.find((p) => p.name === 'Isha');
+    const parsedIsha = isha ? parsePrayerTime(isha.time) : null;
+    if (!parsedIsha) return 0;
+    prevDate = new Date(now);
+    prevDate.setDate(prevDate.getDate() - 1);
+    prevDate.setHours(parsedIsha.hour, parsedIsha.minute, 0, 0);
   }
 
-  const data = (await response.json()) as unknown;
-  if (!Array.isArray(data)) return [];
-
-  const cityNames = data.map((item) => extractNominatimCity(item as NominatimResult));
-  return dedupeCities(cityNames).slice(0, 5);
-};
-
-const fetchOpenMeteoSuggestions = async (query: string): Promise<string[]> => {
-  const response = await fetch(
-    `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(query)}&count=5&language=en&format=json`
-  );
-
-  if (!response.ok) {
-    throw new Error(`Open-Meteo request failed: ${response.status}`);
-  }
-
-  const payload = (await response.json()) as { results?: OpenMeteoResult[] };
-  const results = Array.isArray(payload.results) ? payload.results : [];
-  return dedupeCities(results.map((item) => item.name || '')).slice(0, 5);
+  const total = nextDate.getTime() - prevDate.getTime();
+  if (total <= 0) return 0;
+  const elapsed = now.getTime() - prevDate.getTime();
+  return Math.min(1, Math.max(0, elapsed / total));
 };
 
 export default function PrayerTimesScreen({ navigation }: any) {
   const [prayers, setPrayers] = useState<Prayer[]>([]);
   const [prayerScheduleWindow, setPrayerScheduleWindow] = useState<PrayerScheduleDay[]>([]);
+  const [scheduleFromCache, setScheduleFromCache] = useState(false);
   const [countdownNow, setCountdownNow] = useState(() => Date.now());
   const [city, setCity] = useState<string>(DEFAULT_CITY);
+  const [methodId, setMethodId] = useState<number>(DEFAULT_METHOD_ID);
+  const [showMethodModal, setShowMethodModal] = useState(false);
+  const [showWeekly, setShowWeekly] = useState(false);
   const [loading, setLoading] = useState(true);
   const [fetchingLocation, setFetchingLocation] = useState(false);
   const [searchInput, setSearchInput] = useState('');
@@ -273,10 +178,11 @@ export default function PrayerTimesScreen({ navigation }: any) {
   const [exactAlarmEnabled, setExactAlarmEnabled] = useState<boolean>(Platform.OS !== 'android');
   const scheduleRunIdRef = useRef(0);
   const exactAlarmPromptShownRef = useRef(false);
+  const methodIdRef = useRef(DEFAULT_METHOD_ID);
 
   const { settings } = useSettings();
   const { showAlert } = useThemedAlert();
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
   const isDark = settings.isDarkMode;
 
   // Debounced city search for autocomplete using Nominatim
@@ -348,6 +254,13 @@ export default function PrayerTimesScreen({ navigation }: any) {
   const setupAndroidNotificationChannels = async () => {
     if (Platform.OS !== 'android') return;
 
+    // Remove superseded athan channels (created by older builds, possibly
+    // with a broken sound URI) so only the current one appears in Android
+    // notification settings.
+    for (const staleId of STALE_ATHAN_CHANNEL_IDS) {
+      await Notifications.deleteNotificationChannelAsync(staleId).catch(() => {});
+    }
+
     await Notifications.setNotificationChannelAsync(ATHAN_CHANNEL_ID, {
       name: 'Athan Alerts',
       description: 'Prayer time notifications with Athan sound',
@@ -412,6 +325,9 @@ export default function PrayerTimesScreen({ navigation }: any) {
     try {
       const savedCity = await AsyncStorage.getItem(CITY_STORAGE_KEY);
       const savedPrefs = await AsyncStorage.getItem(PRAYER_PREFS_KEY);
+      const savedMethod = await getCalculationMethod();
+      setMethodId(savedMethod);
+      methodIdRef.current = savedMethod;
 
       const cityToUse = savedCity || DEFAULT_CITY;
       setCity(cityToUse);
@@ -515,30 +431,34 @@ export default function PrayerTimesScreen({ navigation }: any) {
   const loadPrayerTimes = async (
     cityName: string,
     initialPrefs?: Record<string, boolean>,
-    preferredCoordinates?: Coordinates
+    preferredCoordinates?: Coordinates,
+    methodOverride?: number
   ) => {
     setLoading(true);
     try {
+      const method = methodOverride ?? methodIdRef.current;
       const today = new Date();
-      const scheduleWindow = await fetchPrayerScheduleWindow(
+      const result = await fetchPrayerScheduleWindow(
         cityName,
+        method,
         today,
         ATHAN_SCHEDULE_WINDOW_DAYS
       );
+      const scheduleWindow = result.days;
 
       if (scheduleWindow.length > 0) {
         const todayKey = toLocalDateKey(today);
         const todaySchedule =
-          scheduleWindow.find((entry) => toLocalDateKey(entry.date) === todayKey) ||
-          scheduleWindow[0];
+          scheduleWindow.find((entry) => entry.dateKey === todayKey) || scheduleWindow[0];
         const timings = todaySchedule.timings;
         const prayerList: Prayer[] = PRAYER_NAMES.map((name) => ({
           name,
           time: timings[name],
-          enabled: initialPrefs?.[name] ?? true,
+          enabled: initialPrefs?.[name] ?? prayers.find((p) => p.name === name)?.enabled ?? true,
         }));
 
         setPrayerScheduleWindow(scheduleWindow);
+        setScheduleFromCache(result.fromCache);
         setPrayers(prayerList);
         await scheduleAthanNotifications(prayerList, scheduleWindow);
         void schedulePrePrayerReminders(prayerList);
@@ -553,15 +473,17 @@ export default function PrayerTimesScreen({ navigation }: any) {
         }
       } else {
         setPrayerScheduleWindow([]);
+        setScheduleFromCache(false);
         showAlert({
           title: 'Invalid City',
           message: `No prayer times found for "${cityName}". Please select a valid city from suggestions or try a major city near you.`,
           variant: 'danger',
         });
-        setSearchInput(''); 
+        setSearchInput('');
       }
     } catch (err) {
       setPrayerScheduleWindow([]);
+      setScheduleFromCache(false);
       showAlert({
         title: 'Network Error',
         message: 'Unable to fetch prayer times. Please check your internet connection.',
@@ -572,6 +494,15 @@ export default function PrayerTimesScreen({ navigation }: any) {
     }
   };
 
+  const handleSelectMethod = (newMethodId: number) => {
+    setShowMethodModal(false);
+    if (newMethodId === methodId) return;
+    setMethodId(newMethodId);
+    methodIdRef.current = newMethodId;
+    void saveCalculationMethod(newMethodId);
+    void loadPrayerTimes(city, undefined, currentCoordinates ?? undefined, newMethodId);
+  };
+
   const scheduleAthanNotifications = async (
     prayerList: Prayer[],
     scheduleWindow: PrayerScheduleDay[]
@@ -579,6 +510,19 @@ export default function PrayerTimesScreen({ navigation }: any) {
     const runId = ++scheduleRunIdRef.current;
 
     const isStaleRun = () => runId !== scheduleRunIdRef.current;
+
+    const trace: AthanDebugTrace = {
+      ranAt: Date.now(),
+      attempted: 0,
+      succeeded: 0,
+      failed: 0,
+      errors: [],
+      outerError: null,
+    };
+    const recordError = (message: string) => {
+      trace.errors.push(message);
+      if (trace.errors.length > 8) trace.errors.shift();
+    };
 
     try {
       const existingScheduled = await Notifications.getAllScheduledNotificationsAsync();
@@ -639,29 +583,37 @@ export default function PrayerTimesScreen({ navigation }: any) {
           const parsed = parsePrayerTime(rawTime);
           if (!parsed) {
             console.warn(
-              `Skipping invalid prayer time for ${prayer.name} on ${toLocalDateKey(daySchedule.date)}: ${rawTime}`
+              `Skipping invalid prayer time for ${prayer.name} on ${daySchedule.dateKey}: ${rawTime}`
             );
             continue;
           }
 
-          const triggerDate = new Date(daySchedule.date);
-          triggerDate.setHours(parsed.hour, parsed.minute, 0, 0);
+          const triggerDate = dateKeyToLocalDate(daySchedule.dateKey, parsed.hour, parsed.minute);
 
           if (triggerDate <= now) continue;
 
+          trace.attempted += 1;
           try {
             const content: Notifications.NotificationContentInput = {
               title: `${ATHAN_NOTIFICATION_TITLE_PREFIX} ${prayer.name}`,
               body: '🕌 اللَّهُمَّ رَبَّ هَذِهِ الدَّعْوَةِ التَّامَّةِ، وَالصَّلَاةِ الْقَائِمَةِ، آتِ مُحَمَّداً الْوَسِيلَةَ وَالْفَضِيلَةَ، وَابْعَثْهُ مَقَاماً مَحْمُوداً الَّذِي وَعَدْتَهُ، إَنَّكَ لَا تُخْلِفُ الْمِيعَادَ',
-              sound: 'athan_v2.mp3',
               priority: Notifications.AndroidNotificationPriority.HIGH,
               vibrate: [0, 250, 250, 250],
               data: { source: 'athan', prayerName: prayer.name },
             };
 
             if (Platform.OS === 'ios') {
+              // iOS has no notification channels — the sound must be set
+              // per-notification here (bundled via the expo-notifications
+              // config plugin's "sounds" array in app.json).
+              content.sound = 'athan_v2.mp3';
               content.interruptionLevel = 'timeSensitive';
             }
+            // On Android, sound comes from the channel (ATHAN_CHANNEL_ID),
+            // configured in setupAndroidNotificationChannels(). Setting
+            // content.sound here as well throws android.net.Uri$HierarchicalUri
+            // inside scheduleNotificationAsync, silently failing every
+            // scheduled athan notification.
 
             const trigger: Notifications.NotificationTriggerInput =
               Platform.OS === 'android'
@@ -680,7 +632,11 @@ export default function PrayerTimesScreen({ navigation }: any) {
               content,
               trigger,
             });
+            trace.succeeded += 1;
           } catch (error) {
+            trace.failed += 1;
+            const message = error instanceof Error ? error.message : String(error);
+            recordError(`${prayer.name} @ ${triggerDate.toISOString()}: ${message}`);
             console.error(`Failed to schedule ${prayer.name} on ${triggerDate.toISOString()}:`, error);
           }
         }
@@ -724,7 +680,13 @@ export default function PrayerTimesScreen({ navigation }: any) {
         console.error('Failed to schedule athan refresh reminder:', reminderError);
       }
     } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      trace.outerError = message;
       console.error('Failed to refresh athan schedules:', error);
+    } finally {
+      if (!isStaleRun()) {
+        void saveAthanDebugTrace(trace);
+      }
     }
   };
 
@@ -766,6 +728,24 @@ export default function PrayerTimesScreen({ navigation }: any) {
   const qiblaBearing = currentCoordinates ? calculateQiblaBearing(currentCoordinates) : null;
   const distanceToKaabaKm = currentCoordinates ? calculateDistanceToKaabaKm(currentCoordinates) : null;
   const nextPrayer = useMemo(() => getNextPrayerInfo(prayers, new Date(countdownNow)), [prayers, countdownNow]);
+  const intervalProgress = useMemo(
+    () => getIntervalProgress(prayers, new Date(countdownNow), nextPrayer),
+    [prayers, countdownNow, nextPrayer]
+  );
+
+  const todaySchedule = useMemo(() => {
+    const todayKey = toLocalDateKey(new Date());
+    return prayerScheduleWindow.find((entry) => entry.dateKey === todayKey) ?? prayerScheduleWindow[0];
+  }, [prayerScheduleWindow]);
+
+  const hijriToday = lang === 'ar' ? todaySchedule?.hijriDateAr : todaySchedule?.hijriDate;
+  const gregorianToday = new Date(countdownNow).toLocaleDateString(lang === 'ar' ? 'ar' : 'en-GB', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+  });
+
+  const selectedMethod = CALCULATION_METHODS.find((m) => m.id === methodId) ?? CALCULATION_METHODS[0];
 
   const PRAYER_ICONS: Record<string, string> = { Fajr: '🌅', Dhuhr: '☀️', Asr: '🌤️', Maghrib: '🌇', Isha: '🌙' };
   const PRAYER_LABELS: Record<string, string> = { Fajr: t.fajr, Dhuhr: t.dhuhr, Asr: t.asr, Maghrib: t.maghrib, Isha: t.isha };
@@ -782,10 +762,10 @@ export default function PrayerTimesScreen({ navigation }: any) {
   if (loading) {
     return (
       <GlassBackground isDark={isDark}>
-        <View style={[styles.center]}>
+        <View style={styles.center}>
           <ActivityIndicator size="large" color="#27ae60" />
-          <Text style={[styles.loadingText]}>
-            Loading prayer times for {city}...
+          <Text style={styles.loadingText}>
+            {t.loadingPrayerTimesFor} {city}...
           </Text>
         </View>
       </GlassBackground>
@@ -795,11 +775,11 @@ export default function PrayerTimesScreen({ navigation }: any) {
   return (
     <GlassBackground isDark={isDark}>
     <KeyboardAvoidingView
-      style={[styles.container]}
+      style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
       <ScrollView
-        style={[styles.container]}
+        style={styles.container}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
@@ -814,27 +794,51 @@ export default function PrayerTimesScreen({ navigation }: any) {
           />
         </View>
 
-        {/* Next Prayer summary */}
-        <View style={[styles.nextPrayerCard]}>
-          <Text style={[styles.nextPrayerLabel]}>{t.nextPrayer}</Text>
-          <Text style={styles.nextPrayerCountdown}>
-            {nextPrayer
-              ? nextPrayer.isTomorrow
-                ? `${PRAYER_LABELS[nextPrayer.name] ?? nextPrayer.name} — ${formatCountdown(nextPrayer.remainingMs)}`
-                : `${PRAYER_LABELS[nextPrayer.name] ?? nextPrayer.name} — ${formatCountdown(nextPrayer.remainingMs)}`
-              : t.prayerScheduleUnavailable}
-          </Text>
+        {/* Next Prayer hero */}
+        <View style={styles.heroCard}>
+          <View style={styles.heroDatesRow}>
+            <Text style={styles.heroCity}>📍 {city}</Text>
+            <View style={styles.heroDates}>
+              {hijriToday ? <Text style={styles.heroHijri}>{hijriToday}</Text> : null}
+              <Text style={styles.heroGregorian}>{gregorianToday}</Text>
+            </View>
+          </View>
+
+          <Text style={styles.heroLabel}>{t.nextPrayer}</Text>
+          {nextPrayer ? (
+            <>
+              <View style={styles.heroPrayerRow}>
+                <Text style={styles.heroPrayerName}>
+                  {PRAYER_ICONS[nextPrayer.name] ?? '🕌'} {PRAYER_LABELS[nextPrayer.name] ?? nextPrayer.name}
+                </Text>
+                <Text style={styles.heroPrayerTime}>{nextPrayer.time}</Text>
+              </View>
+              <Text style={styles.heroCountdown}>{formatCountdown(nextPrayer.remainingMs)}</Text>
+              <View style={styles.heroBarTrack}>
+                <View style={[styles.heroBarFill, { width: `${Math.round(intervalProgress * 100)}%` }]} />
+              </View>
+            </>
+          ) : (
+            <Text style={styles.heroCountdown}>{t.prayerScheduleUnavailable}</Text>
+          )}
+
+          {scheduleFromCache ? (
+            <View style={styles.offlineNotice}>
+              <Ionicons name="cloud-offline-outline" size={13} color="#f5c778" />
+              <Text style={styles.offlineNoticeText}>{t.offlineTimesNotice}</Text>
+            </View>
+          ) : null}
         </View>
 
         {/* City and search controls */}
-        <View style={[styles.cityPanel]}>
+        <View style={styles.cityPanel}>
           <View style={styles.cityHeaderRow}>
-            <View>
-              <Text style={[styles.headerTitle]}>📍 {t.athanTimesFor}</Text>
-              <Text style={[styles.cityName]}>{city}</Text>
+            <View style={styles.cityHeaderText}>
+              <Text style={styles.headerTitle}>{t.athanTimesFor}</Text>
+              <Text style={styles.cityName}>{city}</Text>
             </View>
             <TouchableOpacity
-              style={[styles.locationButton]}
+              style={styles.locationButton}
               onPress={getLocationAndCity}
               disabled={fetchingLocation}
               activeOpacity={0.7}
@@ -848,10 +852,10 @@ export default function PrayerTimesScreen({ navigation }: any) {
           </View>
 
           <View style={styles.searchContainer}>
-            <View style={[styles.searchRow]}>
-              <Text style={styles.searchIcon}>🔍</Text>
+            <View style={styles.searchRow}>
+              <Ionicons name="search" size={15} color="rgba(255,255,255,0.4)" style={styles.searchIcon} />
               <TextInput
-                style={[styles.cityInput]}
+                style={styles.cityInput}
                 placeholder={t.searchCity}
                 placeholderTextColor="rgba(255,255,255,0.35)"
                 value={searchInput}
@@ -870,11 +874,11 @@ export default function PrayerTimesScreen({ navigation }: any) {
             </View>
 
             {(suggestionsLoading || suggestions.length > 0) && (
-              <View style={[styles.suggestionsContainer]}>
+              <View style={styles.suggestionsContainer}>
                 {suggestionsLoading ? (
                   <View style={styles.suggestionsLoadingRow}>
                     <ActivityIndicator size="small" color={UI_COLORS.primary} />
-                    <Text style={styles.loadingSuggestions}>Searching...</Text>
+                    <Text style={styles.loadingSuggestions}>{t.searchingText}</Text>
                   </View>
                 ) : (
                   suggestions.map((item) => (
@@ -884,7 +888,7 @@ export default function PrayerTimesScreen({ navigation }: any) {
                       onPress={() => handleSelectSuggestion(item)}
                     >
                       <Text style={styles.suggestionIcon}>📍</Text>
-                      <Text style={[styles.suggestionText]}>{item}</Text>
+                      <Text style={styles.suggestionText}>{item}</Text>
                     </TouchableOpacity>
                   ))
                 )}
@@ -893,84 +897,172 @@ export default function PrayerTimesScreen({ navigation }: any) {
 
             {searchInput.trim().length >= 3 && suggestions.length === 0 && !suggestionsLoading && (
               <TouchableOpacity style={styles.updateButton} onPress={handleManualUpdate}>
-                <Text style={styles.updateButtonText}>Use "{searchInput.trim()}"</Text>
+                <Text style={styles.updateButtonText}>{t.useThisCity} "{searchInput.trim()}"</Text>
               </TouchableOpacity>
             )}
           </View>
+
+          {/* Calculation method */}
+          <TouchableOpacity style={styles.methodRow} onPress={() => setShowMethodModal(true)}>
+            <Text style={styles.methodLabel}>{t.calcMethod}</Text>
+            <View style={styles.methodValueWrap}>
+              <Text style={styles.methodValue}>
+                {lang === 'ar' ? selectedMethod.labelAr : selectedMethod.label}
+              </Text>
+              <Ionicons name="chevron-forward" size={14} color="rgba(255,255,255,0.4)" />
+            </View>
+          </TouchableOpacity>
         </View>
 
-        {/* Qibla Summary — above prayers for visibility */}
+        {/* Qibla Summary */}
         {qiblaBearing !== null && (
-          <View style={[styles.qiblaCard, { marginBottom: 14 }]}>
+          <View style={styles.qiblaCard}>
             <View style={styles.qiblaSummaryRow}>
-              <View style={[styles.qiblaSummaryPill]}>
-                <Text style={[styles.qiblaSummaryLabel]}>🧭 Qibla</Text>
-                <Text style={[styles.qiblaSummaryValue]}>
-                  {Math.round(qiblaBearing)}°
-                </Text>
+              <View style={styles.qiblaSummaryPill}>
+                <Text style={styles.qiblaSummaryLabel}>🧭 {t.qiblaShort}</Text>
+                <Text style={styles.qiblaSummaryValue}>{Math.round(qiblaBearing)}°</Text>
               </View>
-              <View style={[styles.qiblaSummaryPill]}>
-                <Text style={[styles.qiblaSummaryLabel]}>🕋 Distance</Text>
-                <Text style={[styles.qiblaSummaryValue]}>
+              <View style={styles.qiblaSummaryPill}>
+                <Text style={styles.qiblaSummaryLabel}>🕋 {t.distanceShort}</Text>
+                <Text style={styles.qiblaSummaryValue}>
                   {distanceToKaabaKm !== null ? `${distanceToKaabaKm.toFixed(0)} km` : '--'}
                 </Text>
               </View>
+              <TouchableOpacity
+                style={styles.qiblaOpenButton}
+                onPress={() => navigation.navigate('QiblaCompass', { city, coordinates: currentCoordinates })}
+              >
+                <Text style={styles.qiblaOpenButtonText}>{t.openFullQiblaCompass}</Text>
+              </TouchableOpacity>
             </View>
-            <TouchableOpacity
-              style={styles.qiblaOpenButton}
-              onPress={() => navigation.navigate('QiblaCompass', { city, coordinates: currentCoordinates })}
-            >
-              <Text style={styles.qiblaOpenButtonText}>{t.openFullQiblaCompass}</Text>
-            </TouchableOpacity>
           </View>
         )}
 
-        <Text style={[styles.sectionTitle]}>{t.todaysPrayerSchedule}</Text>
+        <Text style={styles.sectionTitle}>{t.todaysPrayerSchedule}</Text>
 
         {/* Prayer Times Cards */}
         {prayers.map((prayer, i) => {
           const isNext = nextPrayer?.name === prayer.name && !nextPrayer?.isTomorrow;
           const past = isPrayerPast(prayer.time);
           return (
-            <View
-              key={i}
-              style={[
-                styles.prayerCard,
-                isNext && styles.prayerCardNext,
-                past && styles.prayerCardPast,
-              ]}
-            >
-              <View style={styles.prayerCardLeft}>
-                <Text style={styles.prayerIcon}>{PRAYER_ICONS[prayer.name] ?? '🕌'}</Text>
-                <View>
-                  <Text style={[styles.prayerName, past && styles.prayerNamePast]}>
-                    {PRAYER_LABELS[prayer.name] ?? prayer.name}
-                  </Text>
-                  <Text style={[styles.prayerTime, past && styles.prayerTimePast]}>
-                    {prayer.time}
-                  </Text>
-                  {isNext && nextPrayer && (
-                    <Text style={styles.prayerCountdownInline}>
-                      in {formatCountdown(nextPrayer.remainingMs)}
+            <React.Fragment key={prayer.name}>
+              <View
+                style={[
+                  styles.prayerCard,
+                  isNext && styles.prayerCardNext,
+                  past && styles.prayerCardPast,
+                ]}
+              >
+                <View style={styles.prayerCardLeft}>
+                  <Text style={styles.prayerIcon}>{PRAYER_ICONS[prayer.name] ?? '🕌'}</Text>
+                  <View>
+                    <Text style={[styles.prayerName, past && styles.prayerNamePast]}>
+                      {PRAYER_LABELS[prayer.name] ?? prayer.name}
                     </Text>
-                  )}
+                    <Text style={[styles.prayerTime, past && styles.prayerTimePast]}>
+                      {formatTimeFromRaw(prayer.time)}
+                    </Text>
+                    {isNext && nextPrayer && (
+                      <Text style={styles.prayerCountdownInline}>
+                        {formatCountdown(nextPrayer.remainingMs)}
+                      </Text>
+                    )}
+                  </View>
                 </View>
+                <Switch
+                  value={prayer.enabled}
+                  onValueChange={() => togglePrayer(i)}
+                  trackColor={{ false: '#ccc', true: '#27ae60' }}
+                  thumbColor={prayer.enabled ? '#fff' : '#f4f3f4'}
+                />
               </View>
-              <Switch
-                value={prayer.enabled}
-                onValueChange={() => togglePrayer(i)}
-                trackColor={{ false: '#ccc', true: '#27ae60' }}
-                thumbColor={prayer.enabled ? '#fff' : '#f4f3f4'}
-              />
-            </View>
+
+              {/* Sunrise marker between Fajr and Dhuhr */}
+              {prayer.name === 'Fajr' && todaySchedule?.timings.Sunrise ? (
+                <View style={styles.sunriseRow}>
+                  <Text style={styles.sunriseText}>
+                    🌄 {t.sunriseLabel} · {formatTimeFromRaw(todaySchedule.timings.Sunrise)}
+                  </Text>
+                </View>
+              ) : null}
+            </React.Fragment>
           );
         })}
 
-        <Text style={[styles.sectionTitle]}>{t.tools}</Text>
+        {/* Night worship times */}
+        {todaySchedule && (todaySchedule.timings.Midnight || todaySchedule.timings.Lastthird) ? (
+          <View style={styles.nightCard}>
+            <Text style={styles.nightTitle}>🌌 {t.nightTimes}</Text>
+            <Text style={styles.nightSubtitle}>{t.nightTimesSubtitle}</Text>
+            <View style={styles.nightRow}>
+              {todaySchedule.timings.Midnight ? (
+                <View style={styles.nightPill}>
+                  <Text style={styles.nightPillLabel}>{t.midnightLabel}</Text>
+                  <Text style={styles.nightPillValue}>{formatTimeFromRaw(todaySchedule.timings.Midnight)}</Text>
+                </View>
+              ) : null}
+              {todaySchedule.timings.Lastthird ? (
+                <View style={styles.nightPill}>
+                  <Text style={styles.nightPillLabel}>{t.lastThirdLabel}</Text>
+                  <Text style={styles.nightPillValue}>{formatTimeFromRaw(todaySchedule.timings.Lastthird)}</Text>
+                </View>
+              ) : null}
+            </View>
+          </View>
+        ) : null}
 
-        <View style={[styles.diagnosticsCard]}>
-          <Text style={[styles.diagnosticsTitle]}>{t.athanDiagnostics}</Text>
-          <Text style={[styles.diagnosticsText]}>
+        {/* Weekly timetable */}
+        {prayerScheduleWindow.length > 1 && (
+          <View style={styles.weeklyCard}>
+            <TouchableOpacity style={styles.weeklyHeader} onPress={() => setShowWeekly((v) => !v)}>
+              <Text style={styles.weeklyTitle}>📅 {t.weeklyTimetable}</Text>
+              <Ionicons
+                name={showWeekly ? 'chevron-up' : 'chevron-down'}
+                size={16}
+                color="rgba(255,255,255,0.5)"
+              />
+            </TouchableOpacity>
+
+            {showWeekly && (
+              <View style={styles.weeklyTable}>
+                <View style={styles.weeklyRow}>
+                  <Text style={[styles.weeklyCell, styles.weeklyHeadCell, styles.weeklyDayCell]}></Text>
+                  {PRAYER_NAMES.map((name) => (
+                    <Text key={name} style={[styles.weeklyCell, styles.weeklyHeadCell]}>
+                      {(PRAYER_LABELS[name] ?? name).slice(0, 6)}
+                    </Text>
+                  ))}
+                </View>
+                {prayerScheduleWindow.map((day) => {
+                  const date = dateKeyToLocalDate(day.dateKey);
+                  const isToday = day.dateKey === toLocalDateKey(new Date());
+                  const weekday = date.toLocaleDateString(lang === 'ar' ? 'ar' : 'en', { weekday: 'short' });
+                  return (
+                    <View key={day.dateKey} style={[styles.weeklyRow, isToday && styles.weeklyRowToday]}>
+                      <Text style={[styles.weeklyCell, styles.weeklyDayCell, isToday && styles.weeklyCellToday]}>
+                        {weekday} {date.getDate()}
+                      </Text>
+                      {PRAYER_NAMES.map((name) => (
+                        <Text
+                          key={name}
+                          style={[styles.weeklyCell, isToday && styles.weeklyCellToday]}
+                        >
+                          {formatTimeFromRaw(day.timings[name])}
+                        </Text>
+                      ))}
+                    </View>
+                  );
+                })}
+              </View>
+            )}
+          </View>
+        )}
+
+        <Text style={styles.sectionTitle}>{t.tools}</Text>
+
+        <View style={styles.diagnosticsCard}>
+          <Text style={styles.diagnosticsTitle}>{t.athanDiagnostics}</Text>
+          <Text style={styles.diagnosticsText}>
             {t.athanDiagnosticsDesc}
           </Text>
           <TouchableOpacity
@@ -982,16 +1074,11 @@ export default function PrayerTimesScreen({ navigation }: any) {
         </View>
 
         {/* Note */}
-        <Text style={[styles.note]}>
-          Athan is scheduled for the next 7 days, with a reminder to reopen Prayer Times before expiry. After a
-          phone restart, open Prayer Times once to refresh schedules.
-        </Text>
+        <Text style={styles.note}>{t.athanScheduleNote}</Text>
         {Platform.OS === 'android' && !exactAlarmEnabled ? (
           <TouchableOpacity style={styles.exactAlarmWarningCard} onPress={promptExactAlarmAccess}>
-            <Text style={styles.exactAlarmWarningTitle}>Exact timing is not enabled</Text>
-            <Text style={styles.exactAlarmWarningText}>
-              Tap to allow Android "Alarms & reminders" so Athan alerts trigger exactly on time.
-            </Text>
+            <Text style={styles.exactAlarmWarningTitle}>{t.exactAlarmWarningTitle}</Text>
+            <Text style={styles.exactAlarmWarningText}>{t.exactAlarmWarningBody}</Text>
           </TouchableOpacity>
         ) : null}
 
@@ -999,61 +1086,156 @@ export default function PrayerTimesScreen({ navigation }: any) {
         <View style={{ height: 40 }} />
       </ScrollView>
     </KeyboardAvoidingView>
+
+    {/* Calculation method picker */}
+    <Modal
+      visible={showMethodModal}
+      transparent
+      animationType="fade"
+      onRequestClose={() => setShowMethodModal(false)}
+    >
+      <Pressable style={styles.modalBackdrop} onPress={() => setShowMethodModal(false)}>
+        <Pressable style={styles.modalCard} onPress={() => undefined}>
+          <Text style={styles.modalTitle}>{t.calcMethod}</Text>
+          {CALCULATION_METHODS.map((method) => {
+            const isActive = method.id === methodId;
+            return (
+              <TouchableOpacity
+                key={method.id}
+                style={[styles.methodOption, isActive && styles.methodOptionActive]}
+                onPress={() => handleSelectMethod(method.id)}
+              >
+                <Text style={[styles.methodOptionText, isActive && styles.methodOptionTextActive]}>
+                  {lang === 'ar' ? method.labelAr : method.label}
+                </Text>
+                {isActive && <Ionicons name="checkmark" size={16} color="#5ddb92" />}
+              </TouchableOpacity>
+            );
+          })}
+        </Pressable>
+      </Pressable>
+    </Modal>
     </GlassBackground>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  darkBg: {},
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   loadingText: { marginTop: 16, fontSize: 16, color: UI_COLORS.text },
   scrollContent: { padding: 16, paddingBottom: 40 },
   headerContainer: { alignItems: 'center', marginBottom: 8, width: '100%' },
   introTile: { width: '100%', marginHorizontal: 0, marginBottom: 12 },
-  nextPrayerCard: {
-    backgroundColor: 'rgba(255,255,255,0.08)',
-    borderRadius: UI_RADII.lg,
+
+  heroCard: {
+    backgroundColor: 'rgba(31,157,85,0.12)',
+    borderRadius: UI_RADII.xl,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.15)',
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    marginBottom: 12,
+    borderColor: 'rgba(31,157,85,0.3)',
+    padding: 16,
+    marginBottom: 14,
     ...UI_SHADOWS.card,
   },
-  nextPrayerLabel: {
+  heroDatesRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 12,
+  },
+  heroCity: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: UI_COLORS.text,
+  },
+  heroDates: {
+    alignItems: 'flex-end',
+  },
+  heroHijri: {
     fontSize: 12,
-    letterSpacing: 0.3,
+    fontWeight: '700',
+    color: '#5ddb92',
+  },
+  heroGregorian: {
+    fontSize: 11,
+    color: UI_COLORS.textMuted,
+    marginTop: 1,
+  },
+  heroLabel: {
+    fontSize: 11,
+    letterSpacing: 1,
     textTransform: 'uppercase',
     color: UI_COLORS.textMuted,
-    marginBottom: 2,
     fontWeight: '700',
     textAlign: 'center',
   },
-  nextPrayerCountdown: {
-    fontSize: 19,
+  heroPrayerRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'baseline',
+    gap: 10,
+    marginTop: 4,
+  },
+  heroPrayerName: {
+    fontSize: 22,
+    fontWeight: '800',
+    color: UI_COLORS.white,
+  },
+  heroPrayerTime: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: UI_COLORS.textMuted,
+  },
+  heroCountdown: {
+    fontSize: 30,
     color: UI_COLORS.primary,
-    fontWeight: '700',
+    fontWeight: '800',
     textAlign: 'center',
-    marginTop: 2,
+    marginTop: 4,
+    fontVariant: ['tabular-nums'],
   },
+  heroBarTrack: {
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: 'rgba(255,255,255,0.12)',
+    overflow: 'hidden',
+    marginTop: 12,
+  },
+  heroBarFill: {
+    height: '100%',
+    borderRadius: 3,
+    backgroundColor: UI_COLORS.primary,
+  },
+  offlineNotice: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 5,
+    marginTop: 10,
+  },
+  offlineNoticeText: {
+    fontSize: 11,
+    color: '#f5c778',
+    fontWeight: '600',
+  },
+
   cityPanel: {
     backgroundColor: 'rgba(255,255,255,0.08)',
     borderRadius: UI_RADII.lg,
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.15)',
-    padding: 16,
-    marginBottom: 16,
+    padding: 14,
+    marginBottom: 14,
     ...UI_SHADOWS.card,
   },
   cityHeaderRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: 10,
   },
-  headerTitle: { fontSize: 13, color: UI_COLORS.textMuted, fontWeight: '600' },
-  cityName: { fontSize: 24, fontWeight: '800', color: UI_COLORS.text, marginTop: 2 },
+  cityHeaderText: { flex: 1, marginRight: 10 },
+  headerTitle: { fontSize: 12, color: UI_COLORS.textMuted, fontWeight: '600' },
+  cityName: { fontSize: 20, fontWeight: '800', color: UI_COLORS.text, marginTop: 1 },
   locationButton: {
     backgroundColor: 'rgba(45,127,184,0.15)',
     borderWidth: 1,
@@ -1062,38 +1244,59 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 8,
   },
-  darkLocationButton: {
-    backgroundColor: '#1e2a36',
-    borderColor: '#415061',
-  },
   locationButtonText: {
     fontSize: 13,
     fontWeight: '700',
     color: UI_COLORS.accent,
   },
+  methodRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 12,
+    paddingTop: 12,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: 'rgba(255,255,255,0.15)',
+  },
+  methodLabel: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: UI_COLORS.textMuted,
+  },
+  methodValueWrap: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    flexShrink: 1,
+  },
+  methodValue: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#5ddb92',
+  },
+
   sectionTitle: {
-    fontSize: 18,
+    fontSize: 17,
     fontWeight: '700',
     color: UI_COLORS.text,
     marginBottom: 10,
     marginTop: 2,
   },
-  prayerCard: { 
-    flexDirection: 'row', 
-    justifyContent: 'space-between', 
-    alignItems: 'center', 
+  prayerCard: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     backgroundColor: 'rgba(255,255,255,0.08)',
     paddingHorizontal: 18,
-    paddingVertical: 14,
+    paddingVertical: 13,
     borderRadius: UI_RADII.lg,
-    marginBottom: 12,
+    marginBottom: 10,
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.15)',
     borderLeftWidth: 4,
     borderLeftColor: UI_COLORS.primary,
     ...UI_SHADOWS.card,
   },
-  darkCard: { backgroundColor: 'rgba(26, 38, 52, 0.75)', borderColor: 'rgba(255, 255, 255, 0.08)' },
   prayerCardNext: {
     borderLeftColor: UI_COLORS.accent,
     borderLeftWidth: 5,
@@ -1119,8 +1322,120 @@ const styles = StyleSheet.create({
     color: UI_COLORS.accent,
     fontWeight: '700',
     marginTop: 2,
+    fontVariant: ['tabular-nums'],
   },
-  note: { fontSize: 14, color: UI_COLORS.textMuted, textAlign: 'center', marginTop: 24, fontStyle: 'italic' },
+  sunriseRow: {
+    alignItems: 'center',
+    marginTop: -4,
+    marginBottom: 10,
+  },
+  sunriseText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: 'rgba(245,199,120,0.85)',
+  },
+
+  nightCard: {
+    backgroundColor: 'rgba(130,110,220,0.1)',
+    borderRadius: UI_RADII.lg,
+    borderWidth: 1,
+    borderColor: 'rgba(130,110,220,0.25)',
+    padding: 14,
+    marginTop: 4,
+    marginBottom: 14,
+  },
+  nightTitle: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#b0a0f0',
+    textAlign: 'center',
+    marginBottom: 2,
+  },
+  nightSubtitle: {
+    fontSize: 11,
+    color: 'rgba(255,255,255,0.45)',
+    textAlign: 'center',
+    marginBottom: 10,
+  },
+  nightRow: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  nightPill: {
+    flex: 1,
+    alignItems: 'center',
+    backgroundColor: 'rgba(255,255,255,0.06)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.12)',
+    borderRadius: UI_RADII.md,
+    paddingVertical: 9,
+  },
+  nightPillLabel: {
+    fontSize: 11,
+    color: UI_COLORS.textMuted,
+    marginBottom: 3,
+    textAlign: 'center',
+  },
+  nightPillValue: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: UI_COLORS.text,
+  },
+
+  weeklyCard: {
+    backgroundColor: 'rgba(255,255,255,0.08)',
+    borderRadius: UI_RADII.lg,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.15)',
+    padding: 14,
+    marginBottom: 18,
+    ...UI_SHADOWS.card,
+  },
+  weeklyHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  weeklyTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: UI_COLORS.text,
+  },
+  weeklyTable: {
+    marginTop: 12,
+  },
+  weeklyRow: {
+    flexDirection: 'row',
+    paddingVertical: 6,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: 'rgba(255,255,255,0.1)',
+  },
+  weeklyRowToday: {
+    backgroundColor: 'rgba(31,157,85,0.14)',
+    borderRadius: UI_RADII.sm,
+  },
+  weeklyCell: {
+    flex: 1,
+    fontSize: 11,
+    color: UI_COLORS.textMuted,
+    textAlign: 'center',
+    fontVariant: ['tabular-nums'],
+  },
+  weeklyHeadCell: {
+    fontWeight: '700',
+    color: 'rgba(255,255,255,0.55)',
+  },
+  weeklyDayCell: {
+    flex: 1.2,
+    textAlign: 'left',
+    paddingLeft: 4,
+    fontWeight: '700',
+  },
+  weeklyCellToday: {
+    color: '#5ddb92',
+  },
+
+  note: { fontSize: 13, color: UI_COLORS.textMuted, textAlign: 'center', marginTop: 20, fontStyle: 'italic', lineHeight: 19 },
   exactAlarmWarningCard: {
     marginTop: 12,
     backgroundColor: 'rgba(224,185,0,0.15)',
@@ -1143,9 +1458,8 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     lineHeight: 18,
   },
-  darkText: { color: UI_COLORS.white },
-  darkMutedText: { color: '#a8b3bd' },
-  // Autocomplete styles
+
+  // Autocomplete
   searchContainer: {
     width: '100%',
     position: 'relative',
@@ -1154,23 +1468,18 @@ const styles = StyleSheet.create({
   searchRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: UI_COLORS.background,
+    backgroundColor: 'rgba(255,255,255,0.06)',
     borderRadius: UI_RADII.md,
     borderWidth: 1,
-    borderColor: UI_COLORS.border,
+    borderColor: 'rgba(255,255,255,0.15)',
     paddingHorizontal: 12,
   },
-  darkSearchRow: {
-    backgroundColor: '#1a2430',
-    borderColor: '#354252',
-  },
   searchIcon: {
-    fontSize: 16,
     marginRight: 8,
   },
   cityInput: {
     flex: 1,
-    paddingVertical: 12,
+    paddingVertical: 11,
     fontSize: 15,
     color: UI_COLORS.text,
   },
@@ -1181,7 +1490,7 @@ const styles = StyleSheet.create({
     paddingLeft: 8,
   },
   suggestionsContainer: {
-    backgroundColor: 'rgba(255,255,255,0.08)',
+    backgroundColor: 'rgba(18,46,63,0.97)',
     borderRadius: UI_RADII.sm,
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.15)',
@@ -1204,7 +1513,7 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 14,
     borderBottomWidth: 1,
-    borderColor: UI_COLORS.border,
+    borderColor: 'rgba(255,255,255,0.1)',
     gap: 8,
   },
   suggestionIcon: {
@@ -1231,303 +1540,135 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
   },
-qiblaCard: {
-  backgroundColor: 'rgba(255,255,255,0.08)',
-  borderRadius: UI_RADII.lg,
-  borderWidth: 1,
-  borderColor: 'rgba(255,255,255,0.15)',
-  padding: 16,
-  marginBottom: 24,
-  ...UI_SHADOWS.card,
-},
-qiblaCardFlash: {
-  backgroundColor: '#dff5e7',
-  borderColor: '#87c8a0',
-},
-qiblaCardFlashDark: {
-  backgroundColor: '#264536',
-  borderColor: '#4f8f6a',
-},
-qiblaHeaderRow: {
-  flexDirection: 'row',
-  justifyContent: 'space-between',
-  alignItems: 'center',
-  marginBottom: 14,
-},
-qiblaTitle: {
-  fontSize: 18,
-  fontWeight: '700',
-  color: UI_COLORS.text,
-  letterSpacing: 0.2,
-  paddingVertical: 4,
-  paddingHorizontal: 2,
-},
-qiblaStatusBadge: {
-  borderRadius: 999,
-  paddingHorizontal: 12,
-  paddingVertical: 5,
-},
-qiblaStatusBadgeText: {
-  fontSize: 11,
-  fontWeight: '700',
-},
-qiblaHint: {
-  fontSize: 14,
-  textAlign: 'center',
-  color: UI_COLORS.textMuted,
-  lineHeight: 20,
-  marginBottom: 10,
-},
-qiblaSummaryRow: {
-  flexDirection: 'row',
-  gap: 10,
-  marginBottom: 12,
-},
-qiblaSummaryPill: {
-  flex: 1,
-  borderRadius: UI_RADII.md,
-  borderWidth: 1,
-  borderColor: 'rgba(255,255,255,0.15)',
-  backgroundColor: 'rgba(255,255,255,0.06)',
-  paddingVertical: 10,
-  paddingHorizontal: 12,
-},
-darkQiblaSummaryPill: {
-  backgroundColor: '#1e2a36',
-  borderColor: '#354252',
-},
-qiblaSummaryLabel: {
-  fontSize: 12,
-  color: UI_COLORS.textMuted,
-  marginBottom: 3,
-},
-qiblaSummaryValue: {
-  fontSize: 17,
-  fontWeight: '700',
-  color: UI_COLORS.text,
-},
-qiblaOpenButton: {
-  alignSelf: 'flex-start',
-  marginTop: 2,
-  backgroundColor: UI_COLORS.accent,
-  borderRadius: UI_RADII.md,
-  paddingHorizontal: 14,
-  paddingVertical: 10,
-},
-qiblaOpenButtonText: {
-  color: UI_COLORS.white,
-  fontSize: 13,
-  fontWeight: '700',
-},
-qiblaCompassWrap: {
-  alignItems: 'center',
-  marginBottom: 14,
-},
-qiblaDial: {
-  width: 188,
-  height: 188,
-  borderRadius: 94,
-  alignItems: 'center',
-  justifyContent: 'center',
-  backgroundColor: '#edf5fb',
-  overflow: 'hidden',
-},
-darkQiblaDial: {
-  backgroundColor: '#1a2430',
-},
-qiblaFaceLayer: {
-  position: 'absolute',
-  width: '100%',
-  height: '100%',
-  alignItems: 'center',
-  justifyContent: 'center',
-},
-qiblaOuterRing: {
-  position: 'absolute',
-  width: 188,
-  height: 188,
-  borderRadius: 94,
-  borderWidth: 2,
-  borderColor: '#b9d3e6',
-},
-darkQiblaOuterRing: {
-  borderColor: '#415061',
-},
-qiblaInnerRing: {
-  position: 'absolute',
-  width: 142,
-  height: 142,
-  borderRadius: 71,
-  borderWidth: 1,
-  borderColor: '#c8d9e6',
-},
-darkQiblaInnerRing: {
-  borderColor: '#354252',
-},
-qiblaCrossLine: {
-  position: 'absolute',
-  backgroundColor: '#d5e4ef',
-},
-qiblaCrossHorizontal: {
-  width: 156,
-  height: 1,
-},
-qiblaCrossVertical: {
-  width: 1,
-  height: 156,
-},
-qiblaCardinal: {
-  position: 'absolute',
-  fontSize: 12,
-  fontWeight: '700',
-  color: UI_COLORS.textMuted,
-},
-qiblaNorth: {
-  top: 13,
-  color: UI_COLORS.accent,
-},
-qiblaEast: {
-  right: 14,
-},
-qiblaSouth: {
-  bottom: 13,
-},
-qiblaWest: {
-  left: 14,
-},
-qiblaInterCardinal: {
-  position: 'absolute',
-  fontSize: 10,
-  fontWeight: '700',
-  color: '#6f8598',
-  letterSpacing: 0.2,
-},
-qiblaNorthEast: {
-  top: 30,
-  right: 32,
-},
-qiblaSouthEast: {
-  right: 32,
-  bottom: 30,
-},
-qiblaSouthWest: {
-  left: 32,
-  bottom: 30,
-},
-qiblaNorthWest: {
-  top: 30,
-  left: 32,
-},
-qiblaArrowWrap: {
-  position: 'absolute',
-  height: 124,
-  alignItems: 'center',
-  justifyContent: 'flex-start',
-},
-qiblaArrowStem: {
-  width: 2,
-  height: 70,
-  backgroundColor: '#73b891',
-  marginBottom: -4,
-},
-qiblaArrow: {
-  fontSize: 44,
-  color: UI_COLORS.primary,
-  textShadowColor: 'rgba(0,0,0,0.15)',
-  textShadowOffset: { width: 0, height: 1 },
-  textShadowRadius: 2,
-},
-qiblaCenterDot: {
-  width: 14,
-  height: 14,
-  borderRadius: 7,
-  backgroundColor: UI_COLORS.accent,
-  borderWidth: 2,
-  borderColor: UI_COLORS.white,
-},
-qiblaCenterDotAligned: {
-  backgroundColor: UI_COLORS.primary,
-},
-qiblaMetricsRow: {
-  flexDirection: 'row',
-  justifyContent: 'space-between',
-  gap: 10,
-  marginBottom: 8,
-},
-qiblaMetricPill: {
-  flex: 1,
-  borderRadius: UI_RADII.md,
-  borderWidth: 1,
-  borderColor: 'rgba(255,255,255,0.15)',
-  backgroundColor: 'rgba(255,255,255,0.06)',
-  paddingVertical: 9,
-  paddingHorizontal: 12,
-},
-darkQiblaMetricPill: {
-  backgroundColor: '#1e2a36',
-  borderColor: '#354252',
-},
-qiblaMetricLabel: {
-  fontSize: 12,
-  color: UI_COLORS.textMuted,
-  marginBottom: 2,
-},
-qiblaMetricValue: {
-  fontSize: 18,
-  fontWeight: '700',
-  color: UI_COLORS.text,
-},
-qiblaMeta: {
-  fontSize: 14,
-  textAlign: 'center',
-  color: UI_COLORS.textMuted,
-  marginBottom: 6,
-},
-qiblaInstruction: {
-  fontSize: 16,
-  textAlign: 'center',
-  color: UI_COLORS.primary,
-  fontWeight: '700',
-  marginBottom: 8,
-},
-qiblaCalibration: {
-  fontSize: 13,
-  textAlign: 'center',
-  color: UI_COLORS.textMuted,
-  lineHeight: 18,
-  marginTop: 4,
-},
-diagnosticsCard: {
-  backgroundColor: 'rgba(255,255,255,0.08)',
-  borderRadius: UI_RADII.lg,
-  borderWidth: 1,
-  borderColor: 'rgba(255,255,255,0.15)',
-  padding: 16,
-  marginBottom: 24,
-  ...UI_SHADOWS.card,
-},
-diagnosticsTitle: {
-  fontSize: 18,
-  fontWeight: '700',
-  color: UI_COLORS.text,
-  marginBottom: 6,
-},
-diagnosticsText: {
-  fontSize: 14,
-  lineHeight: 21,
-  color: UI_COLORS.textMuted,
-},
-diagnosticsButton: {
-  alignSelf: 'flex-start',
-  marginTop: 12,
-  backgroundColor: UI_COLORS.accent,
-  borderRadius: UI_RADII.md,
-  paddingHorizontal: 14,
-  paddingVertical: 10,
-},
-diagnosticsButtonText: {
-  color: UI_COLORS.white,
-  fontSize: 13,
-  fontWeight: '700',
-},
+
+  // Qibla summary
+  qiblaCard: {
+    backgroundColor: 'rgba(255,255,255,0.08)',
+    borderRadius: UI_RADII.lg,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.15)',
+    padding: 12,
+    marginBottom: 16,
+    ...UI_SHADOWS.card,
+  },
+  qiblaSummaryRow: {
+    flexDirection: 'row',
+    alignItems: 'stretch',
+    gap: 10,
+  },
+  qiblaSummaryPill: {
+    flex: 1,
+    borderRadius: UI_RADII.md,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.15)',
+    backgroundColor: 'rgba(255,255,255,0.06)',
+    paddingVertical: 8,
+    paddingHorizontal: 10,
+  },
+  qiblaSummaryLabel: {
+    fontSize: 11,
+    color: UI_COLORS.textMuted,
+    marginBottom: 2,
+  },
+  qiblaSummaryValue: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: UI_COLORS.text,
+  },
+  qiblaOpenButton: {
+    justifyContent: 'center',
+    backgroundColor: UI_COLORS.accent,
+    borderRadius: UI_RADII.md,
+    paddingHorizontal: 12,
+  },
+  qiblaOpenButtonText: {
+    color: UI_COLORS.white,
+    fontSize: 12,
+    fontWeight: '700',
+    textAlign: 'center',
+  },
+
+  diagnosticsCard: {
+    backgroundColor: 'rgba(255,255,255,0.08)',
+    borderRadius: UI_RADII.lg,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.15)',
+    padding: 16,
+    marginBottom: 24,
+    ...UI_SHADOWS.card,
+  },
+  diagnosticsTitle: {
+    fontSize: 17,
+    fontWeight: '700',
+    color: UI_COLORS.text,
+    marginBottom: 6,
+  },
+  diagnosticsText: {
+    fontSize: 14,
+    lineHeight: 21,
+    color: UI_COLORS.textMuted,
+  },
+  diagnosticsButton: {
+    alignSelf: 'flex-start',
+    marginTop: 12,
+    backgroundColor: UI_COLORS.accent,
+    borderRadius: UI_RADII.md,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+  },
+  diagnosticsButtonText: {
+    color: UI_COLORS.white,
+    fontSize: 13,
+    fontWeight: '700',
+  },
+
+  // Method picker modal
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(5,18,31,0.6)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 30,
+  },
+  modalCard: {
+    width: '100%',
+    maxWidth: 360,
+    backgroundColor: 'rgba(18,46,63,0.97)',
+    borderRadius: UI_RADII.lg,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.15)',
+    padding: 18,
+  },
+  modalTitle: {
+    fontSize: 17,
+    fontWeight: '700',
+    color: UI_COLORS.text,
+    textAlign: 'center',
+    marginBottom: 12,
+  },
+  methodOption: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 12,
+    borderRadius: UI_RADII.sm,
+    marginBottom: 6,
+    backgroundColor: 'rgba(255,255,255,0.05)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.1)',
+  },
+  methodOptionActive: {
+    backgroundColor: 'rgba(31,157,85,0.15)',
+    borderColor: 'rgba(31,157,85,0.4)',
+  },
+  methodOptionText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: UI_COLORS.textMuted,
+    flexShrink: 1,
+  },
+  methodOptionTextActive: {
+    color: UI_COLORS.text,
+  },
 });

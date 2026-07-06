@@ -27,6 +27,7 @@ import GlassBackground from '../components/GlassBackground';
 import ScreenIntroTile from '../components/ScreenIntroTile';
 import debounce from 'lodash.debounce';
 import { useLanguage } from '../i18n';
+import { normalizeArabicForSearch } from '../utils/arabicSearch';
 
 export default function MemorizeUnderstandScreen({ navigation }: any) {
   const [surahs, setSurahs] = useState<Surah[]>([]);
@@ -208,6 +209,31 @@ export default function MemorizeUnderstandScreen({ navigation }: any) {
 
   const isSearchMode = searchQuery.trim().length > 0;
 
+  // Instant, offline surah-name matches (English, Arabic, or surah number)
+  // shown above the AI results — surah navigation shouldn't need the network.
+  const surahNameMatches = useMemo(() => {
+    const query = searchQuery.trim();
+    if (query.length === 0) return [];
+
+    if (/^\d{1,3}$/.test(query)) {
+      const byNumber = surahLookupById.get(Number(query));
+      return byNumber ? [byNumber] : [];
+    }
+
+    if (query.length < 2) return [];
+    const queryLower = query.toLowerCase();
+    const queryArabic = normalizeArabicForSearch(query);
+
+    return surahs
+      .filter((surah) => {
+        if (surah.name_simple.toLowerCase().includes(queryLower)) return true;
+        if (surah.translated_name?.name?.toLowerCase().includes(queryLower)) return true;
+        if (queryArabic && normalizeArabicForSearch(surah.name_arabic).includes(queryArabic)) return true;
+        return false;
+      })
+      .slice(0, 5);
+  }, [searchQuery, surahs, surahLookupById]);
+
   return (
     <GlassBackground isDark={isDark}>
       <SafeAreaView style={styles.safeArea} edges={['left', 'right', 'bottom']}>
@@ -316,8 +342,38 @@ export default function MemorizeUnderstandScreen({ navigation }: any) {
             renderItem={renderAiResult}
             contentContainerStyle={styles.list}
             showsVerticalScrollIndicator={false}
+            ListHeaderComponent={
+              surahNameMatches.length > 0 ? (
+                <View style={styles.surahMatchSection}>
+                  {surahNameMatches.map((surah) => (
+                    <TouchableOpacity
+                      key={`surah-match-${surah.id}`}
+                      style={styles.surahCard}
+                      onPress={() => navigateToSurah(surah)}
+                    >
+                      <View style={styles.surahInfo}>
+                        <Text style={styles.surahNumber}>{surah.id}</Text>
+                        <View>
+                          <Text style={styles.surahNameEnglish}>{surah.name_simple}</Text>
+                          <Text
+                            style={[
+                              styles.surahNameArabic,
+                              { fontSize: arabicNameFontSize },
+                              arabicFontFamily ? { fontFamily: arabicFontFamily } : null,
+                            ]}
+                          >
+                            {surah.name_arabic}
+                          </Text>
+                        </View>
+                      </View>
+                      <Text style={styles.surahMatchBadge}>{t.surahTab} →</Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              ) : null
+            }
             ListEmptyComponent={
-              !isSearching ? (
+              !isSearching && surahNameMatches.length === 0 ? (
                 <Text style={styles.emptyText}>
                   {searchQuery.trim().length < 2
                     ? t.minCharsSearch
@@ -495,6 +551,14 @@ const styles = StyleSheet.create({
     ...UI_SHADOWS.card,
   },
   darkCard: { backgroundColor: 'rgba(26, 38, 52, 0.75)', borderColor: 'rgba(255, 255, 255, 0.08)' },
+  surahMatchSection: {
+    marginBottom: 4,
+  },
+  surahMatchBadge: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: UI_COLORS.accent,
+  },
   surahInfo: { flexDirection: 'row', alignItems: 'center' },
   surahNumber: {
     fontSize: 24,

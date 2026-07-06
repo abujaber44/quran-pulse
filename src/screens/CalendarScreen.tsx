@@ -427,26 +427,15 @@ export default function CalendarScreen() {
     return [...baseGrid, ...trailingEmptyCells];
   }, [monthData]);
 
+  // Only the curated ISLAMIC_EVENTS list drives events. The Aladhan API's
+  // hijri.holidays[] is deliberately ignored — it carries a long tail of
+  // minor commemorations (scholar birthdays, regional observances) that
+  // cluttered the calendar.
   const selectedDayEvents = useMemo<string[]>(() => {
     if (!selectedDay) return [];
-    const apiEvents = Array.isArray(selectedDay.hijri.holidays)
-      ? selectedDay.hijri.holidays
-          .filter((event): event is string => typeof event === 'string')
-          .map((event) => event.trim())
-          .filter((event) => event.length > 0)
-      : [];
-
-    const staticEvents = getEventsForHijriDay(hijriMonth, Number(selectedDay.hijri.day)).map((e) =>
+    return getEventsForHijriDay(hijriMonth, Number(selectedDay.hijri.day)).map((e) =>
       lang === 'ar' ? `${e.emoji} ${e.nameAr}` : `${e.emoji} ${e.nameEn}`
     );
-
-    // Static list first (localized), then any extra API holidays not duplicating it
-    const merged = [...staticEvents];
-    for (const apiEvent of apiEvents) {
-      const dup = staticEvents.some((s) => s.toLowerCase().includes(apiEvent.toLowerCase().slice(0, 8)));
-      if (!dup) merged.push(apiEvent);
-    }
-    return merged;
   }, [selectedDay, hijriMonth, lang]);
 
   const selectedDayFastingBadges = useMemo<string[]>(() => {
@@ -495,9 +484,7 @@ export default function CalendarScreen() {
       greg.month.number === today.getMonth() + 1 &&
       Number(greg.year) === today.getFullYear();
 
-    const hasEvent =
-      getEventsForHijriDay(hijriMonth, hijDayNum).length > 0 ||
-      (Array.isArray(hij.holidays) && hij.holidays.length > 0);
+    const hasEvent = getEventsForHijriDay(hijriMonth, hijDayNum).length > 0;
     const whiteDay = isWhiteDay(hijDayNum);
     const sunnahFast = isSunnahFastWeekday(greg.weekday.en);
 

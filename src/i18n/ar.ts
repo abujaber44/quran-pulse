@@ -306,6 +306,30 @@ export default {
   quizAccuracy: 'الدقة',
   versesMastered: 'متقنة',
 
+  // Prayer screen overhaul
+  loadingPrayerTimesFor: 'جاري تحميل مواقيت الصلاة لمدينة',
+  searchingText: 'جاري البحث...',
+  useThisCity: 'استخدم',
+  qiblaShort: 'القبلة',
+  distanceShort: 'المسافة',
+  calcMethod: 'طريقة الحساب',
+  sunriseLabel: 'الشروق',
+  midnightLabel: 'منتصف الليل',
+  lastThirdLabel: 'الثلث الأخير من الليل',
+  nightTimes: 'أوقات قيام الليل',
+  nightTimesSubtitle: 'محسوبة من غروب الشمس إلى الفجر، وليس منتصف الساعة ٢٤',
+  weeklyTimetable: 'جدول الأسبوع',
+  offlineTimesNotice: 'يتم عرض المواقيت المحفوظة — اتصل بالإنترنت للتحديث',
+  athanScheduleNote: 'يتم جدولة الأذان للأيام السبعة القادمة، مع تذكير بإعادة فتح مواقيت الصلاة قبل انتهائها. بعد إعادة تشغيل الهاتف، افتح مواقيت الصلاة مرة واحدة لتحديث الجدول.',
+  exactAlarmWarningTitle: 'التوقيت الدقيق غير مفعّل',
+  exactAlarmWarningBody: 'اضغط للسماح بـ"المنبهات والتذكيرات" في أندرويد ليصدر الأذان في وقته تماماً.',
+  currentCity: 'المدينة الحالية',
+  distancePending: 'ستظهر المسافة بعد تحديد الإحداثيات.',
+  calibrationUnavailable: 'حساس البوصلة غير متوفر على هذا الجهاز.',
+  calibrationInit: 'حرّك هاتفك ببطء لتهيئة اتجاه البوصلة.',
+  calibrationFigure8: 'أعد المعايرة بتحريك الهاتف على شكل الرقم ٨ وابتعد عن الأجسام المعدنية.',
+  calibrationKeepFlat: 'أبقِ الهاتف مستوياً وبعيداً عن التداخل المغناطيسي لدقة أفضل.',
+
   // Quran Miracles overhaul
   searchMiracles: 'ابحث في المعجزات...',
   loadingMiracles: 'جاري تحميل المعجزات...',
@@ -376,4 +400,22 @@ export default {
   practiceComplete: 'اكتمل التسميع!',
   practiceStats: 'متقنة في هذه الجولة',
   noVersesToPractice: 'احفظ آيات من وضع التعلّم لتسميعها هنا',
+
+  // Onboarding
+  onboardingWelcome: 'مرحباً بك في نبض القرآن',
+  onboardingLanguageTitle: 'اختر لغتك',
+  onboardingLanguageDesc: 'يمكنك تغييرها في أي وقت من الإعدادات.',
+  onboardingCityTitle: 'أين تصلي؟',
+  onboardingCityDesc: 'تُستخدم مدينتك لحساب مواقيت الصلاة واتجاه القبلة بدقة. يمكنك التخطي وضبطها لاحقاً من شاشة مواقيت الصلاة.',
+  onboardingCityPlaceholder: 'اكتب اسم مدينتك...',
+  onboardingDetectLocation: 'استخدم موقعي',
+  onboardingNotifTitle: 'الأذان والتذكيرات',
+  onboardingNotifDesc: 'اسمح بالإشعارات ليصدح الأذان في وقت الصلاة وتصلك تذكيرات لطيفة للقراءة. يمكن التحكم بكل تنبيه لاحقاً من الإعدادات وشاشة مواقيت الصلاة.',
+  onboardingEnableNotifs: 'تفعيل الإشعارات',
+  onboardingSkip: 'تخطَّ الآن',
+  onboardingContinue: 'متابعة',
+
+  // Friday Al-Kahf reminder
+  kahfReminder: 'تذكير سورة الكهف يوم الجمعة',
+  kahfReminderDesc: 'تذكير أسبوعي بقراءة سورة الكهف كل جمعة',
 } as const;
