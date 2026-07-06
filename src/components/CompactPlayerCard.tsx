@@ -1,5 +1,5 @@
 import React from 'react';
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import Slider from '@react-native-community/slider';
 import { UI_COLORS, UI_RADII, UI_SHADOWS } from '../theme/ui';
 
@@ -20,6 +20,8 @@ type CompactPlayerCardProps = {
   onSeek: (value: number) => void;
   onClose?: () => void;
   layout?: 'floating' | 'inline';
+  /** 'mini' renders a single play/slider/time row — no title, badge, or prev/next. */
+  variant?: 'full' | 'mini';
 };
 
 const formatTime = (ms: number): string => {
@@ -46,7 +48,39 @@ export default function CompactPlayerCard({
   onSeek,
   onClose,
   layout = 'floating',
+  variant = 'full',
 }: CompactPlayerCardProps) {
+  if (variant === 'mini') {
+    return (
+      <View style={[styles.playerContainer, layout === 'inline' ? styles.inlineContainer : styles.floatingContainer]}>
+        <View style={[styles.playerCard, styles.miniCard, isDark && styles.darkPlayerCard]}>
+          <View style={styles.miniRow}>
+            <TouchableOpacity style={styles.playButtonMini} onPress={onTogglePlay}>
+              {isBusy ? (
+                <ActivityIndicator size="small" color={UI_COLORS.white} />
+              ) : (
+                <Text style={styles.playButtonLabel}>{isPlaying ? '⏸' : '▶'}</Text>
+              )}
+            </TouchableOpacity>
+            <Slider
+              style={styles.miniSlider}
+              minimumValue={0}
+              maximumValue={Math.max(durationMs, 1)}
+              value={Math.min(Math.max(currentMs, 0), Math.max(durationMs, 1))}
+              onSlidingComplete={onSeek}
+              minimumTrackTintColor={UI_COLORS.primary}
+              maximumTrackTintColor={isDark ? '#355160' : '#c9d9e7'}
+              thumbTintColor={UI_COLORS.primary}
+            />
+            <Text style={[styles.timeTextMini, isDark && styles.darkMutedText]}>
+              {formatTime(currentMs)} / {formatTime(durationMs)}
+            </Text>
+          </View>
+        </View>
+      </View>
+    );
+  }
+
   return (
     <View style={[styles.playerContainer, layout === 'inline' ? styles.inlineContainer : styles.floatingContainer]}>
       <View style={[styles.playerCard, isDark && styles.darkPlayerCard]}>
@@ -92,7 +126,11 @@ export default function CompactPlayerCard({
               <Text style={[styles.iconLabel, disablePrev && styles.iconLabelDisabled]}>⏮</Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.playButton} onPress={onTogglePlay}>
-              <Text style={styles.playButtonLabel}>{isBusy ? '…' : isPlaying ? '⏸' : '▶'}</Text>
+              {isBusy ? (
+                <ActivityIndicator size="small" color={UI_COLORS.white} />
+              ) : (
+                <Text style={styles.playButtonLabel}>{isPlaying ? '⏸' : '▶'}</Text>
+              )}
             </TouchableOpacity>
             <TouchableOpacity
               style={[styles.iconButton, disableNext && styles.iconButtonDisabled]}
@@ -261,6 +299,34 @@ const styles = StyleSheet.create({
     color: UI_COLORS.textMuted,
     fontWeight: '600',
     marginTop: 5,
+  },
+  miniCard: {
+    paddingHorizontal: 10,
+    paddingTop: 6,
+    paddingBottom: 6,
+  },
+  miniRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  playButtonMini: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: UI_COLORS.primary,
+  },
+  miniSlider: {
+    flex: 1,
+    height: 26,
+  },
+  timeTextMini: {
+    fontSize: 11,
+    color: UI_COLORS.textMuted,
+    fontWeight: '600',
+    fontVariant: ['tabular-nums'],
   },
   darkText: {
     color: UI_COLORS.white,

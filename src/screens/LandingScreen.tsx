@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState, useMemo } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Animated, ScrollView, Platform, Easing, Modal, Pressable, TextInput, Alert } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Animated, ScrollView, Platform, Easing, Modal, Pressable, TextInput, Alert, AppState } from 'react-native';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import type { StackNavigationProp } from '@react-navigation/stack';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -34,7 +34,7 @@ import NextPrayerHero from '../components/NextPrayerHero';
 
 type RootStackParamList = {
   MemorizeUnderstand: undefined;
-  Athkar: undefined;
+  Athkar: { period?: 'morning' | 'evening'; nonce?: number } | undefined;
   PrayerTimes: undefined;
   QuranMiracles: undefined;
   Bookmarks: undefined;
@@ -79,6 +79,17 @@ export default function LandingScreen() {
   const [ramadan, setRamadan] = useState<RamadanStatus | null>(null);
   const [hijriLine, setHijriLine] = useState<string | null>(null);
   const [dailyAyahExpanded, setDailyAyahExpanded] = useState(false);
+  // Bumped on focus and on returning from background so time-of-day chips
+  // recompute — without this, a chip built the previous evening survives
+  // an overnight backgrounded app.
+  const [lastActiveAt, setLastActiveAt] = useState(() => Date.now());
+
+  useEffect(() => {
+    const subscription = AppState.addEventListener('change', (state) => {
+      if (state === 'active') setLastActiveAt(Date.now());
+    });
+    return () => subscription.remove();
+  }, []);
 
   const shimmerAnim = useRef(new Animated.Value(0)).current;
   const phraseFade = useRef(new Animated.Value(0)).current;
@@ -116,6 +127,7 @@ export default function LandingScreen() {
 
   useFocusEffect(
     useCallback(() => {
+      setLastActiveAt(Date.now());
       Promise.all([getReadingProgress(), getReadingStreak(), getLastRead()]).then(([p, s, lr]) => {
         setProgress(p);
         setStreak(s);
@@ -175,7 +187,7 @@ export default function LandingScreen() {
   // Priority-ordered, capped at 4, changes with time of day / weekday / activity.
   const smartChips: SmartChip[] = (() => {
     const chips: SmartChip[] = [];
-    const nowDate = new Date();
+    const nowDate = new Date(lastActiveAt);
 
     if (ramadan?.isRamadan) {
       const suhoor = ramadan.fajr ? countdownTo(ramadan.fajr) : null;
@@ -219,10 +231,14 @@ export default function LandingScreen() {
         onPress: () => (navigation as any).navigate('MushafReader', { juzNumber: 1, initialPage: khatmahNextPage }),
       });
     }
+    // Morning athkar from pre-dawn through early afternoon; evening athkar
+    // from mid-afternoon (Asr time) through the night.
+    const hour = nowDate.getHours();
+    const athkarPeriod: 'morning' | 'evening' = hour >= 4 && hour < 15 ? 'morning' : 'evening';
     chips.push({
       key: 'athkar',
-      label: nowDate.getHours() < 12 ? `🌅 ${t.morningAthkar}` : `🌇 ${t.eveningAthkar}`,
-      onPress: () => navigation.navigate('Athkar'),
+      label: athkarPeriod === 'morning' ? `🌅 ${t.morningAthkar}` : `🌇 ${t.eveningAthkar}`,
+      onPress: () => navigation.navigate('Athkar', { period: athkarPeriod, nonce: Date.now() }),
     });
 
     return chips.slice(0, 4);
