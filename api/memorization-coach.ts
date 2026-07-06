@@ -20,7 +20,7 @@ function getSystemPrompt(lang: string) {
 1. "identify_surah" — اعرض جزءاً من آية واسأل من أي سورة (٤ خيارات). لا تستخدم هذا النوع أبداً إذا كانت جميع الآيات من سورة واحدة — الإجابة معروفة سلفاً
 2. "next_ayah" — اعرض آية واسأل ماذا يأتي بعدها (إن وُجدت آيات متتالية)
 3. "fill_blank" — اعرض آية مع كلمة محذوفة "___" وأعطِ ٤ خيارات
-4. "correct_wording" — اعرض ٤ صيغ كاملة للآية، واحدة فقط مطابقة تماماً للنص المعطى والباقي بتغييرات دقيقة في كلمة أو كلمتين (على غرار المتشابهات) — ضع صيغ الآية في options واترك ayahText فارغاً لهذا النوع
+4. "correct_wording" — اعرض ٤ صيغ كاملة للآية، واحدة فقط مطابقة تماماً للنص المعطى والباقي بتغييرات دقيقة في كلمة أو كلمتين (على غرار المتشابهات) — ضع صيغ الآية في options واترك ayahText فارغاً لهذا النوع. للآيات الطويلة (أكثر من ٢٠ كلمة) استخدم مقطعاً مكتمل المعنى من الآية بدلاً من نصها الكامل حتى تبقى الخيارات قصيرة
 
 كل سؤال يجب أن يحتوي:
 - type: "identify_surah" | "next_ayah" | "fill_blank"
@@ -50,7 +50,7 @@ Question types:
 1. "identify_surah" — Show part of a verse in Arabic, ask which surah it's from (4 options, 1 correct). NEVER use this type when all verses are from a single surah — the answer is already known
 2. "next_ayah" — Show a verse in Arabic, ask what comes next in Arabic (if consecutive verses exist in the list)
 3. "fill_blank" — Show the Arabic verse with a key word replaced by "___", give 4 Arabic word options
-4. "correct_wording" — Give 4 full Arabic versions of an ayah; exactly one matches the provided text, the others differ subtly by one or two words (mutashabihat-style). Put the versions in options and leave ayahText empty for this type
+4. "correct_wording" — Give 4 full Arabic versions of an ayah; exactly one matches the provided text, the others differ subtly by one or two words (mutashabihat-style). Put the versions in options and leave ayahText empty for this type. For long ayahs (over ~20 words) use a self-contained excerpt of the ayah instead of the full text so options stay short
 
 Each question must have:
 - type: "identify_surah" | "next_ayah" | "fill_blank"
@@ -139,7 +139,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {
     const response = await client.messages.create({
       model: 'claude-haiku-4-5',
-      max_tokens: 2048,
+      // Long-surah quizzes with correct_wording questions (4 full ayah
+      // variants each) easily exceeded 2048 output tokens, truncating the
+      // JSON mid-array and failing every parse.
+      max_tokens: 8192,
       system: getSystemPrompt(lang ?? 'en'),
       messages: [
         {
@@ -159,9 +162,24 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     let questions;
     try {
       questions = JSON.parse(cleaned);
-    } catch (parseError) {
-      console.error('Failed to parse AI response:', text);
-      questions = [];
+    } catch {
+      // Truncated output: salvage the complete question objects by cutting
+      // at the last complete "}" and closing the array.
+      const lastBrace = cleaned.lastIndexOf('}');
+      if (lastBrace > 0) {
+        try {
+          questions = JSON.parse(`${cleaned.slice(0, lastBrace + 1)}]`);
+          console.warn(`Salvaged ${(questions as any[]).length} questions from truncated AI response`);
+        } catch {
+          questions = [];
+        }
+      } else {
+        questions = [];
+      }
+      if (!Array.isArray(questions) || questions.length === 0) {
+        console.error('Failed to parse AI response:', text.slice(0, 500));
+        questions = [];
+      }
     }
 
     const validated = (questions as any[]).filter(
