@@ -278,7 +278,7 @@ export default {
 
   // Juz Browser
   juz: 'Juz',
-  browseBySurah: 'Learn',
+  browseBySurah: 'Learn & Memorize',
   browseByJuz: 'Mushaf',
 
   // Last Read
@@ -444,4 +444,17 @@ export default {
   khatmahRolledOver: 'rolled into today',
   khatmahYesterdayMet: "Yesterday's goal met",
   khatmahProjection: 'Projected finish at your current pace',
+
+  // Quiz & practice discoverability
+  quizMeChip: 'Quiz me',
+  practiceQuizRow: 'Practice & Quiz',
+  takeQuiz: 'Take a quiz',
+
+  // Quiz setup
+  quizSetupTitle: 'What do you want to be tested on?',
+  quizMyBookmarks: 'My bookmarked ayahs',
+  quizBookmarksHint: 'Each surah from its start up to your bookmarked ayah',
+  quizChooseScope: 'Or pick a surah or juz',
+  startQuiz: 'Start Quiz',
+  chooseWording: '🔍 Choose the Exact Wording',
 } as const;

@@ -9,10 +9,8 @@ import {
   getReadingProgress,
   getReadingStreak,
   getCompletedSurahCount,
-  getLastRead,
   type ReadingProgress,
   type ReadingStreak,
-  type LastReadPosition,
 } from '../services/readingProgressService';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { fetchSurahs } from '../services/quranApi';
@@ -31,13 +29,15 @@ import { refreshFridayKahfReminder } from '../services/fridayKahfService';
 import { getRamadanStatus, countdownTo, type RamadanStatus } from '../services/ramadanService';
 import { getHijriToday, getHijriMonthName } from '../services/islamicEventsService';
 import NextPrayerHero from '../components/NextPrayerHero';
+import MemorizationQuizModal from '../components/MemorizationQuizModal';
+import type { BookmarkForQuiz } from '../services/aiService';
 
 type RootStackParamList = {
   MemorizeUnderstand: undefined;
   Athkar: { period?: 'morning' | 'evening'; nonce?: number } | undefined;
+  Bookmarks: { initialTag?: 'memorize' | 'read'; nonce?: number } | undefined;
   PrayerTimes: undefined;
   QuranMiracles: undefined;
-  Bookmarks: undefined;
   QuranPlayer: undefined;
   Calendar: undefined;
   Settings: undefined;
@@ -68,7 +68,6 @@ export default function LandingScreen() {
   const slideAnim = useRef(new Animated.Value(20)).current;
   const [progress, setProgress] = useState<ReadingProgress | null>(null);
   const [streak, setStreak] = useState<ReadingStreak | null>(null);
-  const [lastRead, setLastRead] = useState<LastReadPosition | null>(null);
   const [surahs, setSurahs] = useState<any[]>([]);
   const [dailyAyah, setDailyAyah] = useState<DailyAyah | null>(null);
   const [loadingDailyAyah, setLoadingDailyAyah] = useState(false);
@@ -76,6 +75,8 @@ export default function LandingScreen() {
   const [showKhatmahModal, setShowKhatmahModal] = useState(false);
   const [customDaysInput, setCustomDaysInput] = useState('');
   const [dueReviewCount, setDueReviewCount] = useState(0);
+  const [memorizeBookmarks, setMemorizeBookmarks] = useState<BookmarkForQuiz[]>([]);
+  const [quizVisible, setQuizVisible] = useState(false);
   const [ramadan, setRamadan] = useState<RamadanStatus | null>(null);
   const [hijriLine, setHijriLine] = useState<string | null>(null);
   const [dailyAyahExpanded, setDailyAyahExpanded] = useState(false);
@@ -128,18 +129,26 @@ export default function LandingScreen() {
   useFocusEffect(
     useCallback(() => {
       setLastActiveAt(Date.now());
-      Promise.all([getReadingProgress(), getReadingStreak(), getLastRead()]).then(([p, s, lr]) => {
+      Promise.all([getReadingProgress(), getReadingStreak()]).then(([p, s]) => {
         setProgress(p);
         setStreak(s);
-        setLastRead(lr);
       });
       getKhatmah().then(setKhatmah);
       getRamadanStatus().then(setRamadan).catch(() => {});
       Promise.all([getBookmarks(), getReviewSchedule()]).then(([bookmarks, schedule]) => {
-        const memorizeKeys = bookmarks
-          .filter((b) => b.tag === 'memorize')
-          .map((b) => `${b.surahId}:${b.ayahNum}`);
-        setDueReviewCount(getDueVerseKeys(memorizeKeys, schedule).length);
+        const memorizeList = bookmarks.filter((b) => b.tag === 'memorize');
+        setMemorizeBookmarks(
+          memorizeList.map((b): BookmarkForQuiz => ({
+            surahId: b.surahId,
+            surahName: b.surahName,
+            ayahNum: b.ayahNum,
+            ayahText: b.ayahText,
+            translation: b.translation,
+          }))
+        );
+        setDueReviewCount(
+          getDueVerseKeys(memorizeList.map((b) => `${b.surahId}:${b.ayahNum}`), schedule).length
+        );
       });
     }, [])
   );
@@ -214,16 +223,15 @@ export default function LandingScreen() {
       chips.push({
         key: 'review',
         label: `🧠 ${dueReviewCount} ${t.dueForReview}`,
-        onPress: () => navigation.navigate('Bookmarks'),
+        onPress: () => navigation.navigate('Bookmarks', { initialTag: 'memorize', nonce: Date.now() }),
       });
     }
-    if (lastRead) {
-      chips.push({
-        key: 'continue',
-        label: `▶️ ${lastRead.surahName} · ${t.ayah} ${lastRead.ayahNum}`,
-        onPress: () => openSurahById(lastRead.surahId, lastRead.ayahNum),
-      });
-    }
+    // Always present: the quiz works with or without bookmarks (surah/juz scope)
+    chips.push({
+      key: 'quiz',
+      label: `✏️ ${t.quizMeChip}`,
+      onPress: () => setQuizVisible(true),
+    });
     if (khatmahStatus && !khatmahStatus.completed && khatmahStatus.leftToday > 0) {
       chips.push({
         key: 'khatmah-today',
@@ -473,6 +481,12 @@ export default function LandingScreen() {
           </TouchableOpacity>
         </View>
       </ScrollView>
+
+      <MemorizationQuizModal
+        visible={quizVisible}
+        onClose={() => setQuizVisible(false)}
+        bookmarks={memorizeBookmarks}
+      />
 
       <Modal
         visible={showKhatmahModal}

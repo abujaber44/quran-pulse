@@ -1,7 +1,7 @@
 import React, { useCallback, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useFocusEffect } from '@react-navigation/native';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { UI_COLORS, UI_RADII, UI_SHADOWS } from '../theme/ui';
 import GlassBackground from '../components/GlassBackground';
 import ScreenIntroTile from '../components/ScreenIntroTile';
@@ -21,6 +21,10 @@ import {
   type ReviewSchedule,
 } from '../services/memorizationService';
 import { getKhatmah, getKhatmahStatus, getKhatmahInsights, type KhatmahStatus, type KhatmahInsights } from '../services/khatmahService';
+import { getBookmarks, type Bookmark } from '../services/bookmarkService';
+import MemorizationQuizModal from '../components/MemorizationQuizModal';
+import RevealPracticeModal from '../components/RevealPracticeModal';
+import type { BookmarkForQuiz } from '../services/aiService';
 
 const dateKeyOffset = (daysAgo: number): string => {
   const d = new Date();
@@ -36,6 +40,7 @@ const weekdayLabel = (daysAgo: number, lang: string): string => {
 
 export default function StatsScreen() {
   const { t, lang } = useLanguage();
+  const navigation = useNavigation();
   const [progress, setProgress] = useState<ReadingProgress | null>(null);
   const [streak, setStreak] = useState<ReadingStreak | null>(null);
   const [dailyLog, setDailyLog] = useState<Record<string, number>>({});
@@ -43,6 +48,9 @@ export default function StatsScreen() {
   const [schedule, setSchedule] = useState<ReviewSchedule>({});
   const [khatmahStatus, setKhatmahStatus] = useState<KhatmahStatus | null>(null);
   const [khatmahInsights, setKhatmahInsights] = useState<KhatmahInsights | null>(null);
+  const [memorizeBookmarks, setMemorizeBookmarks] = useState<Bookmark[]>([]);
+  const [quizVisible, setQuizVisible] = useState(false);
+  const [practiceVisible, setPracticeVisible] = useState(false);
 
   useFocusEffect(
     useCallback(() => {
@@ -51,6 +59,9 @@ export default function StatsScreen() {
       getDailyLog().then(setDailyLog);
       getQuizHistory().then(setQuizHistory);
       getReviewSchedule().then(setSchedule);
+      getBookmarks()
+        .then((bookmarks) => setMemorizeBookmarks(bookmarks.filter((b) => b.tag === 'memorize')))
+        .catch(() => {});
       getKhatmah().then((plan) => {
         if (!plan) {
           setKhatmahStatus(null);
@@ -151,6 +162,22 @@ export default function StatsScreen() {
                 <Text style={styles.statLabel}>{t.versesMastered}</Text>
               </View>
             </View>
+            <View style={styles.memorizeActionsRow}>
+              <TouchableOpacity
+                style={styles.memorizeActionBtn}
+                activeOpacity={0.8}
+                onPress={() => setQuizVisible(true)}
+              >
+                <Text style={styles.memorizeActionText}>✏️ {t.takeQuiz}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.memorizeActionBtn}
+                activeOpacity={0.8}
+                onPress={() => setPracticeVisible(true)}
+              >
+                <Text style={styles.memorizeActionText}>🎙 {t.practice}</Text>
+              </TouchableOpacity>
+            </View>
           </View>
 
           {/* Khatmah */}
@@ -216,6 +243,24 @@ export default function StatsScreen() {
             </View>
           )}
         </ScrollView>
+
+        <MemorizationQuizModal
+          visible={quizVisible}
+          onClose={() => setQuizVisible(false)}
+          bookmarks={memorizeBookmarks.map((b): BookmarkForQuiz => ({
+            surahId: b.surahId,
+            surahName: b.surahName,
+            ayahNum: b.ayahNum,
+            ayahText: b.ayahText,
+            translation: b.translation,
+          }))}
+        />
+
+        <RevealPracticeModal
+          visible={practiceVisible}
+          onClose={() => setPracticeVisible(false)}
+          bookmarks={memorizeBookmarks}
+        />
       </SafeAreaView>
     </GlassBackground>
   );
@@ -309,6 +354,25 @@ const styles = StyleSheet.create({
     height: '100%',
     borderRadius: 4,
     backgroundColor: '#f5a623',
+  },
+  memorizeActionsRow: {
+    flexDirection: 'row',
+    gap: 10,
+    marginTop: 14,
+  },
+  memorizeActionBtn: {
+    flex: 1,
+    alignItems: 'center',
+    backgroundColor: 'rgba(155,89,182,0.15)',
+    borderWidth: 1,
+    borderColor: 'rgba(155,89,182,0.35)',
+    borderRadius: UI_RADII.md,
+    paddingVertical: 10,
+  },
+  memorizeActionText: {
+    fontSize: 13.5,
+    fontWeight: '700',
+    color: UI_COLORS.white,
   },
   khatmahDetailRow: {
     flexDirection: 'row',

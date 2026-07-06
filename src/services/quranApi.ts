@@ -39,6 +39,23 @@ export const fetchSurahs = async () => {
 
 import offlineQuran from '../data/quranText.json';
 
+/** Juz list with verse_mapping (surahId -> "from-to"), deduped and cached forever. */
+export const fetchJuzs = async () => {
+  return cacheFirst(
+    'juzs',
+    async () => {
+      const { data } = await axios.get(`${BASE_URL}/juzs`);
+      const seen = new Set<number>();
+      return (data.juzs as any[]).filter((j) => {
+        if (seen.has(j.juz_number)) return false;
+        seen.add(j.juz_number);
+        return true;
+      });
+    },
+    (v) => Array.isArray(v) && v.length > 0
+  );
+};
+
 export const fetchAyahs = async (chapterId: number) => {
   try {
     return await cacheFirst(

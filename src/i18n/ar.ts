@@ -278,7 +278,7 @@ export default {
 
   // Juz Browser
   juz: 'جزء',
-  browseBySurah: 'تعلّم',
+  browseBySurah: 'التعلّم والحفظ',
   browseByJuz: 'المصحف',
 
   // Last Read
@@ -444,4 +444,17 @@ export default {
   khatmahRolledOver: 'مُرحّلة إلى اليوم',
   khatmahYesterdayMet: 'أنجزت ورد الأمس',
   khatmahProjection: 'الإنجاز المتوقع بوتيرتك الحالية',
+
+  // Quiz & practice discoverability
+  quizMeChip: 'اختبرني',
+  practiceQuizRow: 'التسميع والاختبار',
+  takeQuiz: 'ابدأ اختباراً',
+
+  // Quiz setup
+  quizSetupTitle: 'على ماذا تريد أن تُختبر؟',
+  quizMyBookmarks: 'آياتي المحفوظة',
+  quizBookmarksHint: 'كل سورة من بدايتها حتى آيتك المحفوظة',
+  quizChooseScope: 'أو اختر سورة أو جزءاً',
+  startQuiz: 'ابدأ الاختبار',
+  chooseWording: '🔍 اختر اللفظ الصحيح',
 } as const;

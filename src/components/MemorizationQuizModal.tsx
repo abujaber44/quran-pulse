@@ -20,7 +20,10 @@ import {
   saveQuizResults,
   type QuizAttempt,
 } from '../services/memorizationService';
+import { fetchSurahs, fetchAyahs, fetchJuzs } from '../services/quranApi';
 import { useLanguage } from '../i18n';
+import { useSettings } from '../context/SettingsContext';
+import { resolveArabicFontFamily } from '../theme/fonts';
 
 interface MemorizationQuizModalProps {
   visible: boolean;
@@ -28,7 +31,37 @@ interface MemorizationQuizModalProps {
   bookmarks: BookmarkForQuiz[];
 }
 
-type QuizState = 'loading' | 'question' | 'feedback' | 'summary' | 'error';
+type QuizState = 'setup' | 'loading' | 'question' | 'feedback' | 'summary' | 'error';
+type QuizScope = 'bookmarks' | 'surah' | 'juz';
+type VerseRange = { surahId: number; from: number; to: number };
+
+// Large scopes (a whole juz, a long surah) can't be sent to the AI in full —
+// sample this many ayahs, in consecutive triplets so "what comes next"
+// questions remain possible. Every quiz re-samples, so repeat quizzes on the
+// same scope cover different verses.
+const MAX_QUIZ_VERSES = 18;
+const SAMPLE_WINDOW = 3;
+
+const sampleVerseKeys = (ranges: VerseRange[]): Set<string> => {
+  const picked = new Set<string>();
+  const total = ranges.reduce((sum, r) => sum + (r.to - r.from + 1), 0);
+  if (total <= MAX_QUIZ_VERSES) {
+    for (const r of ranges) {
+      for (let n = r.from; n <= r.to; n++) picked.add(`${r.surahId}:${n}`);
+    }
+    return picked;
+  }
+  let guard = 0;
+  while (picked.size < MAX_QUIZ_VERSES && guard++ < 80) {
+    const r = ranges[Math.floor(Math.random() * ranges.length)];
+    const len = r.to - r.from + 1;
+    const start = r.from + Math.floor(Math.random() * Math.max(1, len - SAMPLE_WINDOW + 1));
+    for (let n = start; n < start + SAMPLE_WINDOW && n <= r.to; n++) {
+      picked.add(`${r.surahId}:${n}`);
+    }
+  }
+  return picked;
+};
 
 export default function MemorizationQuizModal({
   visible,
@@ -36,15 +69,100 @@ export default function MemorizationQuizModal({
   bookmarks,
 }: MemorizationQuizModalProps) {
   const { t, lang } = useLanguage();
-  const [state, setState] = useState<QuizState>('loading');
+  const { settings } = useSettings();
+  const arabicFontFamily = resolveArabicFontFamily(settings.arabicFontFamily);
+  const [state, setState] = useState<QuizState>('setup');
   const [questions, setQuestions] = useState<QuizQuestion[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
   const [results, setResults] = useState<QuizAttempt[]>([]);
   const [errorMessage, setErrorMessage] = useState('');
+  const [surahs, setSurahs] = useState<any[]>([]);
+  const [pickerMode, setPickerMode] = useState<'surah' | 'juz'>('surah');
+  const [selectedSurahId, setSelectedSurahId] = useState<number | null>(null);
+  const [selectedJuz, setSelectedJuz] = useState<number | null>(null);
   const abortRef = useRef<AbortController | null>(null);
+  const lastScopeRef = useRef<QuizScope | null>(null);
 
-  const loadQuiz = useCallback(async () => {
+  useEffect(() => {
+    if (visible) {
+      setState('setup');
+      setSelectedSurahId(null);
+      setSelectedJuz(null);
+      lastScopeRef.current = null;
+      fetchSurahs().then(setSurahs).catch(() => {});
+    }
+    return () => {
+      abortRef.current?.abort();
+    };
+  }, [visible]);
+
+  const buildRanges = useCallback(async (scope: QuizScope): Promise<VerseRange[]> => {
+    if (scope === 'bookmarks') {
+      // Users memorize sequentially: test each bookmarked surah from its
+      // start up to the furthest bookmarked ayah.
+      const maxBySurah = new Map<number, number>();
+      for (const b of bookmarks) {
+        maxBySurah.set(b.surahId, Math.max(maxBySurah.get(b.surahId) ?? 0, b.ayahNum));
+      }
+      return [...maxBySurah.entries()].map(([surahId, to]) => ({ surahId, from: 1, to }));
+    }
+    if (scope === 'surah' && selectedSurahId) {
+      const surah = surahs.find((s: any) => Number(s.id) === selectedSurahId);
+      return surah ? [{ surahId: selectedSurahId, from: 1, to: Number(surah.verses_count) }] : [];
+    }
+    if (scope === 'juz' && selectedJuz) {
+      const juzs = await fetchJuzs();
+      const juz = (juzs as any[]).find((j) => j.juz_number === selectedJuz);
+      if (!juz?.verse_mapping) return [];
+      return Object.entries(juz.verse_mapping as Record<string, string>).map(([surahIdStr, range]) => {
+        const [from, to] = String(range).split('-').map(Number);
+        return { surahId: Number(surahIdStr), from: from || 1, to: to || from || 1 };
+      });
+    }
+    return [];
+  }, [bookmarks, selectedSurahId, selectedJuz, surahs]);
+
+  const buildQuizVerses = useCallback(async (scope: QuizScope): Promise<BookmarkForQuiz[]> => {
+    const ranges = await buildRanges(scope);
+    if (ranges.length === 0) return [];
+
+    const picked = sampleVerseKeys(ranges);
+    const surahIds = [...new Set([...picked].map((key) => Number(key.split(':')[0])))];
+
+    const textBySurah = new Map<number, Map<number, string>>();
+    for (const surahId of surahIds) {
+      const ayahs = await fetchAyahs(surahId);
+      textBySurah.set(
+        surahId,
+        new Map((ayahs as any[]).map((a) => [Number(a.verse_number), a.text_uthmani as string]))
+      );
+    }
+
+    const items: BookmarkForQuiz[] = [];
+    for (const key of picked) {
+      const [surahIdStr, ayahStr] = key.split(':');
+      const surahId = Number(surahIdStr);
+      const ayahNum = Number(ayahStr);
+      const ayahText = textBySurah.get(surahId)?.get(ayahNum);
+      if (!ayahText) continue;
+      const surah = surahs.find((s: any) => Number(s.id) === surahId);
+      items.push({
+        surahId,
+        surahName: surah
+          ? (lang === 'ar' ? surah.name_arabic : surah.name_simple)
+          : `Surah ${surahId}`,
+        ayahNum,
+        ayahText,
+        translation: '',
+      });
+    }
+    items.sort((a, b) => a.surahId - b.surahId || a.ayahNum - b.ayahNum);
+    return items;
+  }, [buildRanges, surahs, lang]);
+
+  const startQuiz = useCallback(async (scope: QuizScope) => {
+    lastScopeRef.current = scope;
     setState('loading');
     setQuestions([]);
     setCurrentIndex(0);
@@ -55,9 +173,21 @@ export default function MemorizationQuizModal({
     abortRef.current = controller;
 
     try {
-      const history = await getQuizHistory();
-      const quizQuestions = await getMemorizationQuiz(bookmarks, history, controller.signal, lang);
+      const verses = await buildQuizVerses(scope);
+      if (verses.length === 0) {
+        setErrorMessage(t.couldNotGenerateQuiz);
+        setState('error');
+        return;
+      }
 
+      const history = await getQuizHistory();
+      const surahCount = new Set(verses.map((v) => v.surahId)).size;
+      const quizQuestions = await getMemorizationQuiz(verses, history, controller.signal, lang, {
+        type: scope,
+        surahCount,
+      });
+
+      if (controller.signal.aborted) return;
       if (quizQuestions.length === 0) {
         setErrorMessage(t.couldNotGenerateQuiz);
         setState('error');
@@ -71,20 +201,19 @@ export default function MemorizationQuizModal({
       setErrorMessage('Failed to load quiz. Please try again.');
       setState('error');
     }
-  }, [bookmarks, lang, t]);
+  }, [buildQuizVerses, lang, t]);
 
-  useEffect(() => {
-    if (visible && bookmarks.length >= 1) {
-      void loadQuiz();
+  const retryQuiz = useCallback(() => {
+    if (lastScopeRef.current) {
+      void startQuiz(lastScopeRef.current);
+    } else {
+      setState('setup');
     }
-    return () => {
-      abortRef.current?.abort();
-    };
-  }, [visible, loadQuiz]);
+  }, [startQuiz]);
 
   const handleClose = () => {
     abortRef.current?.abort();
-    setState('loading');
+    setState('setup');
     onClose();
   };
 
@@ -128,6 +257,92 @@ export default function MemorizationQuizModal({
           </View>
 
           <ScrollView contentContainerStyle={styles.content}>
+            {state === 'setup' && (
+              <View>
+                <Text style={styles.setupTitle}>{t.quizSetupTitle}</Text>
+
+                {bookmarks.length > 0 && (
+                  <TouchableOpacity
+                    style={styles.scopeCard}
+                    activeOpacity={0.8}
+                    onPress={() => void startQuiz('bookmarks')}
+                  >
+                    <Text style={styles.scopeCardTitle}>📌 {t.quizMyBookmarks}</Text>
+                    <Text style={styles.scopeCardHint}>{t.quizBookmarksHint}</Text>
+                  </TouchableOpacity>
+                )}
+
+                <Text style={styles.setupDivider}>{t.quizChooseScope}</Text>
+
+                <View style={styles.pickerTabs}>
+                  <TouchableOpacity
+                    style={[styles.pickerTab, pickerMode === 'surah' && styles.pickerTabActive]}
+                    onPress={() => setPickerMode('surah')}
+                  >
+                    <Text style={[styles.pickerTabText, pickerMode === 'surah' && styles.pickerTabTextActive]}>
+                      {t.surahTab}
+                    </Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.pickerTab, pickerMode === 'juz' && styles.pickerTabActive]}
+                    onPress={() => setPickerMode('juz')}
+                  >
+                    <Text style={[styles.pickerTabText, pickerMode === 'juz' && styles.pickerTabTextActive]}>
+                      {t.juz}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+
+                {pickerMode === 'surah' ? (
+                  <ScrollView style={styles.surahList} nestedScrollEnabled>
+                    {surahs.map((surah: any) => {
+                      const id = Number(surah.id);
+                      const isSelected = selectedSurahId === id;
+                      return (
+                        <TouchableOpacity
+                          key={id}
+                          style={[styles.surahRow, isSelected && styles.surahRowActive]}
+                          onPress={() => setSelectedSurahId(id)}
+                        >
+                          <Text style={[styles.surahRowText, isSelected && styles.surahRowTextActive]}>
+                            {id}. {lang === 'ar' ? surah.name_arabic : surah.name_simple}
+                          </Text>
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </ScrollView>
+                ) : (
+                  <View style={styles.juzGrid}>
+                    {Array.from({ length: 30 }, (_, i) => i + 1).map((juzNumber) => {
+                      const isSelected = selectedJuz === juzNumber;
+                      return (
+                        <TouchableOpacity
+                          key={juzNumber}
+                          style={[styles.juzPill, isSelected && styles.juzPillActive]}
+                          onPress={() => setSelectedJuz(juzNumber)}
+                        >
+                          <Text style={[styles.juzPillText, isSelected && styles.juzPillTextActive]}>
+                            {juzNumber}
+                          </Text>
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </View>
+                )}
+
+                <TouchableOpacity
+                  style={[
+                    styles.startButton,
+                    !(pickerMode === 'surah' ? selectedSurahId : selectedJuz) && styles.startButtonDisabled,
+                  ]}
+                  disabled={!(pickerMode === 'surah' ? selectedSurahId : selectedJuz)}
+                  onPress={() => void startQuiz(pickerMode)}
+                >
+                  <Text style={styles.startButtonText}>{t.startQuiz}</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+
             {state === 'loading' && (
               <View style={styles.centeredState}>
                 <ActivityIndicator size="large" color={UI_COLORS.primary} />
@@ -138,8 +353,8 @@ export default function MemorizationQuizModal({
             {state === 'error' && (
               <View style={styles.centeredState}>
                 <Text style={styles.errorText}>{errorMessage}</Text>
-                <TouchableOpacity style={styles.retryButton} onPress={loadQuiz}>
-                  <Text style={styles.retryButtonText}>Try Again</Text>
+                <TouchableOpacity style={styles.retryButton} onPress={retryQuiz}>
+                  <Text style={styles.retryButtonText}>{t.retry}</Text>
                 </TouchableOpacity>
               </View>
             )}
@@ -161,9 +376,21 @@ export default function MemorizationQuizModal({
                       ? t.identifySurah
                       : currentQuestion.type === 'next_ayah'
                         ? t.whatComesNext
-                        : t.fillInBlank}
+                        : currentQuestion.type === 'correct_wording'
+                          ? t.chooseWording
+                          : t.fillInBlank}
                   </Text>
                   <Text style={styles.questionPrompt}>{currentQuestion.prompt}</Text>
+                  {currentQuestion.ayahText ? (
+                    <Text
+                      style={[
+                        styles.questionAyah,
+                        arabicFontFamily ? { fontFamily: arabicFontFamily } : null,
+                      ]}
+                    >
+                      {currentQuestion.ayahText}
+                    </Text>
+                  ) : null}
                 </View>
 
                 <View style={styles.optionsWrap}>
@@ -244,7 +471,7 @@ export default function MemorizationQuizModal({
                   </View>
                 )}
 
-                <TouchableOpacity style={styles.retryButton} onPress={loadQuiz}>
+                <TouchableOpacity style={styles.retryButton} onPress={() => setState('setup')}>
                   <Text style={styles.retryButtonText}>{t.takeAnotherQuiz}</Text>
                 </TouchableOpacity>
                 <TouchableOpacity style={styles.doneButton} onPress={handleClose}>
@@ -290,6 +517,132 @@ const styles = StyleSheet.create({
   },
   closeText: { fontSize: 16, color: UI_COLORS.textMuted, fontWeight: '600' },
   content: { padding: 20, paddingBottom: 40 },
+  setupTitle: {
+    fontSize: 17,
+    fontWeight: '700',
+    color: UI_COLORS.text,
+    textAlign: 'center',
+    marginBottom: 16,
+  },
+  scopeCard: {
+    backgroundColor: 'rgba(31,157,85,0.12)',
+    borderWidth: 1,
+    borderColor: 'rgba(31,157,85,0.35)',
+    borderRadius: UI_RADII.lg,
+    padding: 16,
+    marginBottom: 16,
+    alignItems: 'center',
+  },
+  scopeCardTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: UI_COLORS.text,
+  },
+  scopeCardHint: {
+    fontSize: 12,
+    color: UI_COLORS.textMuted,
+    marginTop: 4,
+    textAlign: 'center',
+  },
+  setupDivider: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: UI_COLORS.textMuted,
+    textAlign: 'center',
+    marginBottom: 10,
+  },
+  pickerTabs: {
+    flexDirection: 'row',
+    borderRadius: UI_RADII.md,
+    overflow: 'hidden',
+    backgroundColor: UI_COLORS.surface,
+    borderWidth: 1,
+    borderColor: UI_COLORS.border,
+    marginBottom: 12,
+  },
+  pickerTab: {
+    flex: 1,
+    paddingVertical: 9,
+    alignItems: 'center',
+  },
+  pickerTabActive: {
+    backgroundColor: UI_COLORS.primary,
+  },
+  pickerTabText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: UI_COLORS.textMuted,
+  },
+  pickerTabTextActive: {
+    color: UI_COLORS.white,
+  },
+  surahList: {
+    maxHeight: 280,
+    backgroundColor: UI_COLORS.surface,
+    borderWidth: 1,
+    borderColor: UI_COLORS.border,
+    borderRadius: UI_RADII.md,
+    marginBottom: 14,
+  },
+  surahRow: {
+    paddingVertical: 11,
+    paddingHorizontal: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: UI_COLORS.border,
+  },
+  surahRowActive: {
+    backgroundColor: 'rgba(31,157,85,0.25)',
+  },
+  surahRowText: {
+    fontSize: 14.5,
+    color: UI_COLORS.text,
+  },
+  surahRowTextActive: {
+    fontWeight: '700',
+  },
+  juzGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    justifyContent: 'center',
+    marginBottom: 14,
+  },
+  juzPill: {
+    width: 46,
+    height: 40,
+    borderRadius: UI_RADII.md,
+    backgroundColor: UI_COLORS.surface,
+    borderWidth: 1,
+    borderColor: UI_COLORS.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  juzPillActive: {
+    backgroundColor: UI_COLORS.primary,
+    borderColor: UI_COLORS.primary,
+  },
+  juzPillText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: UI_COLORS.text,
+  },
+  juzPillTextActive: {
+    color: UI_COLORS.white,
+  },
+  startButton: {
+    backgroundColor: UI_COLORS.primary,
+    borderRadius: UI_RADII.sm,
+    paddingVertical: 13,
+    alignItems: 'center',
+  },
+  startButtonDisabled: {
+    opacity: 0.4,
+  },
+  startButtonText: {
+    color: UI_COLORS.white,
+    fontWeight: '700',
+    fontSize: 15,
+  },
   centeredState: { alignItems: 'center', paddingTop: 60 },
   stateText: { fontSize: 15, color: UI_COLORS.textMuted, marginTop: 16, fontStyle: 'italic' },
   errorText: { fontSize: 15, color: UI_COLORS.danger, textAlign: 'center', marginBottom: 16 },
@@ -311,6 +664,14 @@ const styles = StyleSheet.create({
   },
   questionType: { fontSize: 13, color: UI_COLORS.accent, fontWeight: '700', marginBottom: 10, textAlign: 'center' },
   questionPrompt: { fontSize: 16, lineHeight: 26, color: UI_COLORS.text, textAlign: 'center' },
+  questionAyah: {
+    fontSize: 21,
+    lineHeight: 38,
+    color: UI_COLORS.text,
+    textAlign: 'center',
+    writingDirection: 'rtl',
+    marginTop: 12,
+  },
   optionsWrap: { gap: 10 },
   optionButton: {
     backgroundColor: UI_COLORS.surface,

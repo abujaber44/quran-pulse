@@ -37,7 +37,7 @@ type RootStackParamList = {
   // Add other routes here if needed
 };
 
-export default function BookmarksScreen() {
+export default function BookmarksScreen({ route }: any) {
   const [bookmarks, setBookmarks] = useState<Bookmark[]>([]);
   const [surahs, setSurahs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -63,6 +63,15 @@ export default function BookmarksScreen() {
     const unsubscribe = navigation.addListener('focus', loadData);
     return unsubscribe;
   }, [navigation]);
+
+  // Deep link (e.g. the home review chip): land on a specific tag
+  // (nonce re-applies on repeated navigations while the screen stays mounted).
+  useEffect(() => {
+    const tag = route?.params?.initialTag;
+    if (tag === 'memorize' || tag === 'read') {
+      setSelectedTag(tag);
+    }
+  }, [route?.params?.initialTag, route?.params?.nonce]);
 
   const loadData = async () => {
     try {
