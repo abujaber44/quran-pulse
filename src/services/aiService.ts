@@ -168,6 +168,49 @@ export async function getAiInsight(
   return data.insight;
 }
 
+export type ShareIntention =
+  | 'comfort'
+  | 'congratulate'
+  | 'condolence'
+  | 'encouragement'
+  | 'gratitude';
+
+/**
+ * A short AI note to accompany a shared ayah: a personal dedication when an
+ * intention is given, or a single reflection sentence otherwise.
+ * Deliberately uncached so "Regenerate" returns fresh text.
+ */
+export async function fetchShareNote(params: {
+  surahName: string;
+  verseKey: string;
+  arabicText: string;
+  translation: string;
+  intention: ShareIntention | null;
+  lang?: string;
+  signal?: AbortSignal;
+}): Promise<string> {
+  const { signal, lang, intention, ...context } = params;
+
+  const response = await fetch(`${AI_API_BASE}/api/ai-insight`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      type: 'share',
+      context: { ...context, intention: intention ?? '' },
+      lang: lang ?? 'en',
+    }),
+    signal,
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error((errorData as { error?: string }).error ?? 'Failed to generate note');
+  }
+
+  const data = (await response.json()) as { insight: string };
+  return data.insight.trim();
+}
+
 export interface DailyAyah {
   surahId: number;
   surahName: string;

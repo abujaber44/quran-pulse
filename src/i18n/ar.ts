@@ -418,4 +418,16 @@ export default {
   // Friday Al-Kahf reminder
   kahfReminder: 'تذكير سورة الكهف يوم الجمعة',
   kahfReminderDesc: 'تذكير أسبوعي بقراءة سورة الكهف كل جمعة',
+
+  // Share ayah enhancements
+  shareIntentionLabel: 'شارك بنية (اختياري)',
+  intentComfort: 'مواساة',
+  intentCongratulate: 'تهنئة',
+  intentCondolence: 'تعزية',
+  intentEncouragement: 'تشجيع',
+  intentGratitude: 'امتنان',
+  aiAddNote: '✦ أضف تأملاً',
+  aiRegenerateNote: 'إعادة التوليد',
+  aiRemoveNote: 'إزالة',
+  aiNoteFailed: 'تعذر توليد التأمل. تحقق من الاتصال وحاول مجدداً.',
 } as const;

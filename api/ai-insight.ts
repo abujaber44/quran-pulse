@@ -34,6 +34,20 @@ const PROMPTS: Record<string, Record<string, string>> = {
 - لا تكرر نص الحديث — القارئ يراه بالفعل
 - أجب بالكامل باللغة العربية.`,
   },
+  share: {
+    en: `You write a single short note to accompany a Quran verse that someone is sharing with a friend or family member.
+- If an intention is provided (comfort, congratulate, condolence, encouragement, gratitude), write 1-2 warm, personal sentences connecting THIS specific verse to that intention, addressed gently to the recipient.
+- If no intention is provided, write exactly one elegant sentence of reflection (tadabbur) on the verse.
+- Never repeat or quote the verse text. No hashtags, no emojis, no greetings like "Dear...".
+- Output only the note text, nothing else.
+- Respond entirely in English.`,
+    ar: `أنت تكتب ملاحظة قصيرة واحدة ترافق آية قرآنية يشاركها شخص مع صديق أو قريب.
+- إذا وُجدت نية (مواساة، تهنئة، تعزية، تشجيع، امتنان)، اكتب جملة أو جملتين دافئتين شخصيتين تربطان هذه الآية تحديداً بتلك النية، موجّهة برفق إلى المتلقي.
+- إذا لم تُذكر نية، اكتب جملة واحدة أنيقة من التدبر في الآية.
+- لا تكرر نص الآية ولا تقتبسه. بدون وسوم أو رموز تعبيرية أو تحيات.
+- أخرج نص الملاحظة فقط لا غير.
+- أجب بالكامل باللغة العربية.`,
+  },
   athkar: {
     en: `You are a knowledgeable Islamic scholar explaining a dhikr (remembrance of Allah). Given the dhikr text, its title, and repetition count:
 - Explain the meaning of the Arabic words
@@ -76,7 +90,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const { type, context, lang } = req.body as { type?: string; context?: Record<string, any>; lang?: string };
 
   if (!type || !context || !PROMPTS[type]) {
-    return res.status(400).json({ error: 'Missing or invalid type. Must be: miracle, hadith, or athkar' });
+    return res.status(400).json({ error: 'Missing or invalid type. Must be: miracle, hadith, athkar, or share' });
   }
 
   const resolvedLang = lang === 'ar' ? 'ar' : 'en';
@@ -93,6 +107,11 @@ Referenced Ayahs: ${(context.ayahRefs as string[])?.join(', ') ?? 'None'}`;
     userMessage = `Arabic: ${context.arabic}
 English Translation: ${context.english}
 Source: ${context.source}`;
+  } else if (type === 'share') {
+    userMessage = `Verse: ${context.verseKey} (${context.surahName})
+Arabic: ${context.arabicText}
+Translation: ${context.translation}
+Intention: ${context.intention || 'none — write a single reflection sentence'}`;
   } else if (type === 'athkar') {
     userMessage = `Title: ${context.title}
 Arabic Text: ${context.text}
