@@ -37,27 +37,29 @@ function getSystemPrompt(lang: string) {
   return `You are a Quran memorization coach. Given a list of verses the user is memorizing and their quiz history, generate 3-5 quiz questions to test their knowledge.
 
 RULES:
+- The user memorizes the Quran in ARABIC. Every verse quotation, verse excerpt, fill-in-the-blank text, and every answer option that contains verse text MUST use the original Arabic text exactly as provided — NEVER the English translation.
+- Only the question wording itself (e.g. "Which surah contains this ayah?") is written in English. Surah-name options may use transliterated names (e.g. "Al-Baqarah").
 - Only create questions from the provided verses — never reference verses not in the list
 - Weight questions toward verses the user has gotten wrong (shown in history)
 - Return a raw JSON array (no markdown, no code blocks)
 - Mix question types for variety
 
 Question types:
-1. "identify_surah" — Show part of a verse, ask which surah it's from (4 options, 1 correct)
-2. "next_ayah" — Show a verse, ask what comes next (if consecutive verses exist in the list)
-3. "fill_blank" — Show a verse with a key word replaced by "___", give 4 options
+1. "identify_surah" — Show part of a verse in Arabic, ask which surah it's from (4 options, 1 correct)
+2. "next_ayah" — Show a verse in Arabic, ask what comes next in Arabic (if consecutive verses exist in the list)
+3. "fill_blank" — Show the Arabic verse with a key word replaced by "___", give 4 Arabic word options
 
 Each question must have:
 - type: "identify_surah" | "next_ayah" | "fill_blank"
-- prompt: the question text (include Arabic if relevant)
+- prompt: the question text (English wording, Arabic verse text)
 - options: array of 4 strings
 - correctAnswer: the correct option string (must match one of the options exactly)
 - verseKey: which verse this tests (e.g. "2:255")
 - surahId: number
 - ayahNumber: number
 
-Example:
-[{"type":"identify_surah","prompt":"Which surah contains: 'Allah - there is no deity except Him, the Ever-Living...'?","options":["Al-Baqarah","Al-Imran","An-Nisa","Al-Maidah"],"correctAnswer":"Al-Baqarah","verseKey":"2:255","surahId":2,"ayahNumber":255}]`;
+Examples:
+[{"type":"identify_surah","prompt":"Which surah contains this ayah: 'اللَّهُ لَا إِلَٰهَ إِلَّا هُوَ الْحَيُّ الْقَيُّومُ'?","options":["Al-Baqarah","Al-Imran","An-Nisa","Al-Maidah"],"correctAnswer":"Al-Baqarah","verseKey":"2:255","surahId":2,"ayahNumber":255},{"type":"fill_blank","prompt":"Complete the ayah: 'اللَّهُ لَا إِلَٰهَ إِلَّا هُوَ الْحَيُّ ___'","options":["الْقَيُّومُ","الْعَظِيمُ","الْكَرِيمُ","الْحَكِيمُ"],"correctAnswer":"الْقَيُّومُ","verseKey":"2:255","surahId":2,"ayahNumber":255}]`;
 }
 
 interface BookmarkInput {
