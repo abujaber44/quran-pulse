@@ -356,7 +356,7 @@ export default function LandingScreen() {
               <View>
                 <TouchableOpacity
                   activeOpacity={0.85}
-                  onPress={() => openSurahById(dailyAyah.surahId, dailyAyah.ayahNumber)}
+                  onPress={() => setDailyAyahExpanded((prev) => !prev)}
                 >
                   <Text
                     style={styles.dailyAyahArabic}
@@ -365,7 +365,12 @@ export default function LandingScreen() {
                     {dailyAyah.arabicText}
                   </Text>
                   <View style={styles.dailyAyahFooter}>
-                    <Text style={styles.dailyAyahRef}>{dailyAyah.surahName} — {dailyAyah.verseKey}</Text>
+                    <TouchableOpacity
+                      onPress={() => openSurahById(dailyAyah.surahId, dailyAyah.ayahNumber)}
+                      hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+                    >
+                      <Text style={styles.dailyAyahRef}>{dailyAyah.surahName} — {dailyAyah.verseKey} ›</Text>
+                    </TouchableOpacity>
                     <Text style={styles.dailyAyahBadge}>{t.selectedForYou}</Text>
                   </View>
                   {dailyAyahExpanded && (
