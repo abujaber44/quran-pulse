@@ -17,6 +17,8 @@ import { searchVerses, type SearchResult } from '../services/aiService';
 import { getPageBookmark, getLastViewedPage, type PageBookmark } from './MushafReaderScreen';
 import { Ionicons } from '@expo/vector-icons';
 import { getSearchHistory, addSearchHistory, clearSearchHistory, type SearchHistoryItem } from '../services/searchHistoryService';
+import { getBookmarks } from '../services/bookmarkService';
+import { getReviewSchedule, getDueVerseKeys } from '../services/memorizationService';
 import { Surah } from '../types';
 import { useSettings } from '../context/SettingsContext';
 import { useThemedAlert } from '../context/ThemedAlertContext';
@@ -39,6 +41,7 @@ export default function MemorizeUnderstandScreen({ navigation }: any) {
   const [browseMode, setBrowseMode] = useState<'surah' | 'juz'>('surah');
   const [juzData, setJuzData] = useState<any[]>([]);
   const [savedBookmark, setSavedBookmark] = useState<PageBookmark | null>(null);
+  const [dueReviewCount, setDueReviewCount] = useState(0);
   const [lastViewedPage, setLastViewedPage] = useState<number | null>(null);
   const abortRef = useRef<AbortController | null>(null);
 
@@ -53,6 +56,14 @@ export default function MemorizeUnderstandScreen({ navigation }: any) {
     const unsub = navigation.addListener('focus', () => {
       getPageBookmark().then(setSavedBookmark);
       getLastViewedPage().then(setLastViewedPage);
+      Promise.all([getBookmarks(), getReviewSchedule()])
+        .then(([bookmarks, schedule]) => {
+          const memorizeKeys = bookmarks
+            .filter((b) => b.tag === 'memorize')
+            .map((b) => `${b.surahId}:${b.ayahNum}`);
+          setDueReviewCount(getDueVerseKeys(memorizeKeys, schedule).length);
+        })
+        .catch(() => {});
     });
     return unsub;
   }, [navigation]);
@@ -265,6 +276,21 @@ export default function MemorizeUnderstandScreen({ navigation }: any) {
           </TouchableOpacity>
         </View>
 
+        <TouchableOpacity
+          style={styles.practiceRow}
+          activeOpacity={0.8}
+          onPress={() => navigation.navigate('Bookmarks', { initialTag: 'memorize', nonce: Date.now() })}
+        >
+          <Text style={styles.practiceRowText}>🧠 {t.practiceQuizRow}</Text>
+          {dueReviewCount > 0 ? (
+            <View style={styles.practiceBadge}>
+              <Text style={styles.practiceBadgeText}>{dueReviewCount} {t.dueForReview}</Text>
+            </View>
+          ) : (
+            <Ionicons name="chevron-forward" size={16} color="rgba(255,255,255,0.4)" />
+          )}
+        </TouchableOpacity>
+
         {browseMode === 'surah' ? (
           <View style={styles.searchContainer}>
             <View style={styles.searchWrapper}>
@@ -460,6 +486,35 @@ const styles = StyleSheet.create({
   searchContainer: {
     paddingHorizontal: 16,
     paddingBottom: 12,
+  },
+  practiceRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginHorizontal: 16,
+    marginBottom: 12,
+    paddingVertical: 11,
+    paddingHorizontal: 14,
+    backgroundColor: 'rgba(155,89,182,0.12)',
+    borderWidth: 1,
+    borderColor: 'rgba(155,89,182,0.3)',
+    borderRadius: UI_RADII.lg,
+  },
+  practiceRowText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: UI_COLORS.text,
+  },
+  practiceBadge: {
+    backgroundColor: 'rgba(155,89,182,0.3)',
+    borderRadius: UI_RADII.xl,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+  },
+  practiceBadgeText: {
+    fontSize: 11.5,
+    fontWeight: '700',
+    color: '#e3c8ef',
   },
   searchWrapper: {
     flexDirection: 'row',

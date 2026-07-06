@@ -80,11 +80,15 @@ export default function MemorizationQuizModal({
   useEffect(() => {
     if (visible && bookmarks.length >= 1) {
       void loadQuiz();
+    } else if (visible) {
+      // Auto-opened (e.g. from Stats) with no memorize-tagged ayahs yet
+      setErrorMessage(t.noVersesToPractice);
+      setState('error');
     }
     return () => {
       abortRef.current?.abort();
     };
-  }, [visible, loadQuiz]);
+  }, [visible, loadQuiz, bookmarks.length, t.noVersesToPractice]);
 
   const handleClose = () => {
     abortRef.current?.abort();

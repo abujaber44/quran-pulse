@@ -35,9 +35,11 @@ import NextPrayerHero from '../components/NextPrayerHero';
 type RootStackParamList = {
   MemorizeUnderstand: undefined;
   Athkar: { period?: 'morning' | 'evening'; nonce?: number } | undefined;
+  Bookmarks:
+    | { initialTag?: 'memorize' | 'read'; autoOpen?: 'quiz' | 'practice'; nonce?: number }
+    | undefined;
   PrayerTimes: undefined;
   QuranMiracles: undefined;
-  Bookmarks: undefined;
   QuranPlayer: undefined;
   Calendar: undefined;
   Settings: undefined;
@@ -76,6 +78,7 @@ export default function LandingScreen() {
   const [showKhatmahModal, setShowKhatmahModal] = useState(false);
   const [customDaysInput, setCustomDaysInput] = useState('');
   const [dueReviewCount, setDueReviewCount] = useState(0);
+  const [memorizeCount, setMemorizeCount] = useState(0);
   const [ramadan, setRamadan] = useState<RamadanStatus | null>(null);
   const [hijriLine, setHijriLine] = useState<string | null>(null);
   const [dailyAyahExpanded, setDailyAyahExpanded] = useState(false);
@@ -136,10 +139,11 @@ export default function LandingScreen() {
       getKhatmah().then(setKhatmah);
       getRamadanStatus().then(setRamadan).catch(() => {});
       Promise.all([getBookmarks(), getReviewSchedule()]).then(([bookmarks, schedule]) => {
-        const memorizeKeys = bookmarks
+        const memorizeKeysList = bookmarks
           .filter((b) => b.tag === 'memorize')
           .map((b) => `${b.surahId}:${b.ayahNum}`);
-        setDueReviewCount(getDueVerseKeys(memorizeKeys, schedule).length);
+        setMemorizeCount(memorizeKeysList.length);
+        setDueReviewCount(getDueVerseKeys(memorizeKeysList, schedule).length);
       });
     }, [])
   );
@@ -214,7 +218,15 @@ export default function LandingScreen() {
       chips.push({
         key: 'review',
         label: `🧠 ${dueReviewCount} ${t.dueForReview}`,
-        onPress: () => navigation.navigate('Bookmarks'),
+        onPress: () => navigation.navigate('Bookmarks', { initialTag: 'memorize', nonce: Date.now() }),
+      });
+    }
+    if (memorizeCount > 0) {
+      chips.push({
+        key: 'quiz',
+        label: `✏️ ${t.quizMeChip}`,
+        onPress: () =>
+          navigation.navigate('Bookmarks', { initialTag: 'memorize', autoOpen: 'quiz', nonce: Date.now() }),
       });
     }
     if (lastRead) {

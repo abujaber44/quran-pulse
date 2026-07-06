@@ -444,4 +444,9 @@ export default {
   khatmahRolledOver: 'مُرحّلة إلى اليوم',
   khatmahYesterdayMet: 'أنجزت ورد الأمس',
   khatmahProjection: 'الإنجاز المتوقع بوتيرتك الحالية',
+
+  // Quiz & practice discoverability
+  quizMeChip: 'اختبرني',
+  practiceQuizRow: 'التسميع والاختبار',
+  takeQuiz: 'ابدأ اختباراً',
 } as const;

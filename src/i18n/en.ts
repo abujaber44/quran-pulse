@@ -444,4 +444,9 @@ export default {
   khatmahRolledOver: 'rolled into today',
   khatmahYesterdayMet: "Yesterday's goal met",
   khatmahProjection: 'Projected finish at your current pace',
+
+  // Quiz & practice discoverability
+  quizMeChip: 'Quiz me',
+  practiceQuizRow: 'Practice & Quiz',
+  takeQuiz: 'Take a quiz',
 } as const;

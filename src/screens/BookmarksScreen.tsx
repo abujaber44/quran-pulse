@@ -37,7 +37,7 @@ type RootStackParamList = {
   // Add other routes here if needed
 };
 
-export default function BookmarksScreen() {
+export default function BookmarksScreen({ route }: any) {
   const [bookmarks, setBookmarks] = useState<Bookmark[]>([]);
   const [surahs, setSurahs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -63,6 +63,19 @@ export default function BookmarksScreen() {
     const unsubscribe = navigation.addListener('focus', loadData);
     return unsubscribe;
   }, [navigation]);
+
+  // Deep link from Home chips / Learn / Stats: land on a specific tag and
+  // optionally auto-open the quiz or practice modal (nonce re-applies on
+  // repeated navigations while the screen stays mounted).
+  useEffect(() => {
+    const tag = route?.params?.initialTag;
+    if (tag === 'memorize' || tag === 'read') {
+      setSelectedTag(tag);
+    }
+    const autoOpen = route?.params?.autoOpen;
+    if (autoOpen === 'quiz') setQuizModalVisible(true);
+    else if (autoOpen === 'practice') setPracticeModalVisible(true);
+  }, [route?.params?.initialTag, route?.params?.autoOpen, route?.params?.nonce]);
 
   const loadData = async () => {
     try {
