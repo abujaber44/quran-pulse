@@ -72,6 +72,8 @@ export default function NextPrayerHero({ onPress }: { onPress: () => void }) {
     Maghrib: t.maghrib,
     Isha: t.isha,
   };
+  const localizedName = (name: string | null): string =>
+    name ? (prayerLabels[name] ?? name) : '';
 
   const remainingMs = next.at.getTime() - now;
   let progress = 0;
@@ -96,8 +98,12 @@ export default function NextPrayerHero({ onPress }: { onPress: () => void }) {
         <View style={[styles.barFill, { width: `${Math.round(progress * 100)}%` }]} />
       </View>
       <View style={styles.timesRow}>
-        <Text style={styles.timeHint}>{next.previousAt ? formatClock(next.previousAt) : ''}</Text>
-        <Text style={styles.timeHint}>{formatClock(next.at)}</Text>
+        <Text style={styles.timeHint}>
+          {next.previousAt ? `${localizedName(next.previousName)} ${formatClock(next.previousAt)}` : ''}
+        </Text>
+        <Text style={styles.timeHint}>
+          {`${localizedName(next.name)} ${formatClock(next.at)}`}
+        </Text>
       </View>
     </TouchableOpacity>
   );

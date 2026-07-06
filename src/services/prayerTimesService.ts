@@ -179,6 +179,7 @@ export interface NextPrayerFromCache {
   at: Date;
   /** The most recent prayer before now, for interval progress. Null before Fajr with no cached yesterday. */
   previousAt: Date | null;
+  previousName: PrayerName | null;
   city: string;
 }
 
@@ -197,6 +198,7 @@ export async function getNextPrayerFromCache(now: Date = new Date()): Promise<Ne
 
     let next: { name: PrayerName; at: Date } | null = null;
     let previousAt: Date | null = null;
+    let previousName: PrayerName | null = null;
 
     for (const day of days) {
       for (const name of PRAYER_NAMES) {
@@ -204,7 +206,10 @@ export async function getNextPrayerFromCache(now: Date = new Date()): Promise<Ne
         if (!parsed) continue;
         const at = dateKeyToLocalDate(day.dateKey, parsed.hour, parsed.minute);
         if (at <= now) {
-          if (!previousAt || at > previousAt) previousAt = at;
+          if (!previousAt || at > previousAt) {
+            previousAt = at;
+            previousName = name;
+          }
         } else if (!next || at < next.at) {
           next = { name, at };
         }
@@ -213,7 +218,7 @@ export async function getNextPrayerFromCache(now: Date = new Date()): Promise<Ne
     }
 
     if (!next) return null;
-    return { ...next, previousAt, city };
+    return { ...next, previousAt, previousName, city };
   } catch {
     return null;
   }

@@ -313,18 +313,13 @@ export default function LandingScreen() {
 
         <NextPrayerHero onPress={() => navigation.navigate('PrayerTimes')} />
 
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          style={styles.chipsScroll}
-          contentContainerStyle={styles.chipsRow}
-        >
+        <View style={styles.chipsRow}>
           {smartChips.map((chip) => (
             <TouchableOpacity key={chip.key} style={styles.chip} activeOpacity={0.8} onPress={chip.onPress}>
-              <Text style={styles.chipText}>{chip.label}</Text>
+              <Text style={styles.chipText} numberOfLines={1}>{chip.label}</Text>
             </TouchableOpacity>
           ))}
-        </ScrollView>
+        </View>
 
         {(dailyAyah || loadingDailyAyah) && (
           <View style={styles.dailyAyahCard}>
@@ -530,15 +525,15 @@ const styles = StyleSheet.create({
     color: 'rgba(214,228,238,0.75)',
     marginTop: 2,
   },
-  chipsScroll: {
-    marginBottom: 14,
-    marginHorizontal: -22,
-  },
   chipsRow: {
-    paddingHorizontal: 22,
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
     gap: 8,
+    marginBottom: 14,
   },
   chip: {
+    maxWidth: '100%',
     backgroundColor: 'rgba(255,255,255,0.1)',
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.18)',
