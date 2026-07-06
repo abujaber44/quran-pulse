@@ -430,4 +430,10 @@ export default {
   aiRegenerateNote: 'إعادة التوليد',
   aiRemoveNote: 'إزالة',
   aiNoteFailed: 'تعذر توليد التأمل. تحقق من الاتصال وحاول مجدداً.',
+
+  // Home screen redesign
+  homeSetCity: 'اضغط لتحديد مدينتك لمواقيت الصلاة',
+  fridayKahfChip: 'اقرأ سورة الكهف — الجمعة',
+  dailyAyahMore: 'لماذا هذه الآية',
+  dailyAyahLess: 'إخفاء',
 } as const;

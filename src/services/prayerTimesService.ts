@@ -171,6 +171,54 @@ const writeScheduleCache = (city: string, methodId: number, days: PrayerSchedule
   AsyncStorage.setItem(cacheKeyFor(city, methodId), JSON.stringify(payload)).catch(() => {});
 };
 
+// Same key the Prayer Times screen writes the chosen city to
+const CITY_STORAGE_KEY = 'prayer_city';
+
+export interface NextPrayerFromCache {
+  name: PrayerName;
+  at: Date;
+  /** The most recent prayer before now, for interval progress. Null before Fajr with no cached yesterday. */
+  previousAt: Date | null;
+  city: string;
+}
+
+/**
+ * Next upcoming prayer from the locally cached 7-day schedule — no network.
+ * Returns null when no city has been chosen yet or the cache is empty
+ * (e.g. Prayer Times was never opened).
+ */
+export async function getNextPrayerFromCache(now: Date = new Date()): Promise<NextPrayerFromCache | null> {
+  try {
+    const city = await AsyncStorage.getItem(CITY_STORAGE_KEY);
+    if (!city) return null;
+    const methodId = await getCalculationMethod();
+    const days = await readScheduleCache(city, methodId);
+    if (days.length === 0) return null;
+
+    let next: { name: PrayerName; at: Date } | null = null;
+    let previousAt: Date | null = null;
+
+    for (const day of days) {
+      for (const name of PRAYER_NAMES) {
+        const parsed = parsePrayerTime(day.timings[name]);
+        if (!parsed) continue;
+        const at = dateKeyToLocalDate(day.dateKey, parsed.hour, parsed.minute);
+        if (at <= now) {
+          if (!previousAt || at > previousAt) previousAt = at;
+        } else if (!next || at < next.at) {
+          next = { name, at };
+        }
+      }
+      if (next) break;
+    }
+
+    if (!next) return null;
+    return { ...next, previousAt, city };
+  } catch {
+    return null;
+  }
+}
+
 const fetchDay = async (
   cityName: string,
   methodId: number,
