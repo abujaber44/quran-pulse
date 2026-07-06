@@ -41,6 +41,9 @@ const reciters = [
 const LIST_SCROLL_RETRY_DELAY_MS = 300;
 const INITIAL_AYAH_SCROLL_RETRY_MS = 180;
 const INITIAL_AYAH_SCROLL_MAX_ATTEMPTS = 6;
+// Delay before centering an ayah the user just expanded content on, so the
+// new content (translation/tafseer/words) has laid out first.
+const AYAH_FOCUS_DELAY_MS = 300;
 const TOUCH_HIT_SLOP = { top: 8, bottom: 8, left: 8, right: 8 };
 
 type AyahItemProps = {
@@ -65,6 +68,7 @@ type AyahItemProps = {
   surahId: number;
   isExpanded: boolean;
   onToggleExpand: (ayahNum: number) => void;
+  onContentExpanded?: (ayahNum: number) => void;
 };
 
 const AyahItem = memo(({
@@ -89,6 +93,7 @@ const AyahItem = memo(({
   surahId,
   isExpanded,
   onToggleExpand,
+  onContentExpanded,
 }: AyahItemProps) => {
   const { t } = useLanguage();
   const [showWords, setShowWords] = useState(false);
@@ -105,12 +110,17 @@ const AyahItem = memo(({
 
   const toggleWordByWord = async () => {
     if (showWords) { setShowWords(false); return; }
-    if (words.length > 0) { setShowWords(true); return; }
+    if (words.length > 0) {
+      setShowWords(true);
+      onContentExpanded?.(ayah.verse_number);
+      return;
+    }
     setLoadingWords(true);
     try {
       const data = await fetchWordByWord(surahId, ayah.verse_number);
       setWords(data);
       setShowWords(true);
+      onContentExpanded?.(ayah.verse_number);
     } catch { setWords([]); }
     finally { setLoadingWords(false); }
   };
@@ -352,6 +362,10 @@ export default function SurahScreen({ route }: any) {
     }
   }, [ayahs.length]);
 
+  // Holds the latest focusAyah (defined after the scroll helpers below) so
+  // toggleExpandAyah can use it without reordering declarations.
+  const focusAyahRef = useRef<(ayahNum: number) => void>(() => {});
+
   const toggleExpandAyah = useCallback((ayahNum: number) => {
     if (expandedAyahNum === ayahNum) {
       setExpandedTranslation(null);
@@ -363,6 +377,7 @@ export default function SurahScreen({ route }: any) {
     void recordAyahRead(surah.id, ayahNum, surah.verses_count);
     void saveLastRead({ surahId: surah.id, surahName: surah.name_simple, ayahNum, timestamp: Date.now() });
     setExpandedAyahNum(ayahNum);
+    focusAyahRef.current(ayahNum);
   }, [expandedAyahNum, surah.id, surah.name_simple, surah.verses_count]);
 
   const flatListRef = useRef<FlatList<any>>(null);
@@ -488,6 +503,17 @@ export default function SurahScreen({ route }: any) {
     }
   }, [ayahs]);
 
+  // Center an ayah the user just expanded content on. Only ever runs in
+  // direct response to a tap on that ayah's controls — never from scroll
+  // events or playback — and defers to the deep-link initial scroll.
+  const focusAyah = useCallback((ayahNum: number) => {
+    setTimeout(() => {
+      if (initialAyahScrollInProgressRef.current) return;
+      scrollToAyah(ayahNum, true);
+    }, AYAH_FOCUS_DELAY_MS);
+  }, [scrollToAyah]);
+  focusAyahRef.current = focusAyah;
+
   const scrollToAyahWithRetry = useCallback((ayahNum: number, attempt = 0) => {
     if (!flatListRef.current || ayahs.length === 0) {
       initialAyahScrollInProgressRef.current = false;
@@ -580,6 +606,7 @@ export default function SurahScreen({ route }: any) {
       setCurrentTafseer(cached);
       setLoadingTafseer(false);
       setExpandedTafseer(ayahNum);
+      focusAyah(ayahNum);
       return;
     }
 
@@ -592,6 +619,7 @@ export default function SurahScreen({ route }: any) {
     setCurrentTafseer('');
     setLoadingTafseer(true);
     setExpandedTafseer(ayahNum);
+    focusAyah(ayahNum);
 
     const controller = new AbortController();
     abortControllerRef.current = controller;
@@ -617,7 +645,7 @@ export default function SurahScreen({ route }: any) {
         abortControllerRef.current = null;
       }
     }
-  }, [expandedTafseer, surah.id]);
+  }, [expandedTafseer, focusAyah, surah.id]);
 
   // New: Toggle translation (similar to toggleTafseer)
   const toggleTranslation = useCallback((ayahNum: number) => {
@@ -625,8 +653,9 @@ export default function SurahScreen({ route }: any) {
       setExpandedTranslation(null);
     } else {
       setExpandedTranslation(ayahNum);
+      focusAyah(ayahNum);
     }
-  }, [expandedTranslation]);
+  }, [expandedTranslation, focusAyah]);
 
   const saveBookmarkWithTag = useCallback(async (ayahNum: number, tag: BookmarkTag) => {
     const key = `${surah.id}-${ayahNum}`;
@@ -770,9 +799,11 @@ export default function SurahScreen({ route }: any) {
         surahId={surah.id}
         isExpanded={expandedAyahNum === item.verse_number}
         onToggleExpand={toggleExpandAyah}
+        onContentExpanded={focusAyah}
       />
     );
   }, [
+    focusAyah,
     bookmarkedAyahs,
     surah.id,
     currentAyahNumForThisSurah,
