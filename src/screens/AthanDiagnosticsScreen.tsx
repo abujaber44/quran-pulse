@@ -9,6 +9,7 @@ import {
   View,
 } from 'react-native';
 import * as Notifications from 'expo-notifications';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { UI_COLORS, UI_RADII, UI_SHADOWS } from '../theme/ui';
 import ScreenIntroTile from '../components/ScreenIntroTile';
 import {
@@ -252,8 +253,22 @@ const formatDateExact = (date: Date | null): string => {
 };
 
 export default function AthanDiagnosticsScreen({ route }: any) {
-  const city = typeof route?.params?.city === 'string' ? route.params.city : 'Unknown';
+  // Opened via the hidden Settings long-press with no params — fall back to
+  // the saved prayer city. The prayers list (enabled flags) is only used for
+  // the expected-upcoming comparison and degrades gracefully when absent.
+  const [city, setCity] = useState<string>(
+    typeof route?.params?.city === 'string' ? route.params.city : 'Unknown'
+  );
   const prayers: Prayer[] = Array.isArray(route?.params?.prayers) ? route.params.prayers : [];
+
+  useEffect(() => {
+    if (city !== 'Unknown') return;
+    AsyncStorage.getItem('prayer_city')
+      .then((saved) => {
+        if (saved) setCity(saved);
+      })
+      .catch(() => {});
+  }, [city]);
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
