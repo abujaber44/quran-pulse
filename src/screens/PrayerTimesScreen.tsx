@@ -1058,21 +1058,6 @@ export default function PrayerTimesScreen({ navigation }: any) {
           </View>
         )}
 
-        <Text style={styles.sectionTitle}>{t.tools}</Text>
-
-        <View style={styles.diagnosticsCard}>
-          <Text style={styles.diagnosticsTitle}>{t.athanDiagnostics}</Text>
-          <Text style={styles.diagnosticsText}>
-            {t.athanDiagnosticsDesc}
-          </Text>
-          <TouchableOpacity
-            style={styles.diagnosticsButton}
-            onPress={() => navigation.navigate('AthanDiagnostics', { city, prayers })}
-          >
-            <Text style={styles.diagnosticsButtonText}>{t.openDiagnostics}</Text>
-          </TouchableOpacity>
-        </View>
-
         {/* Note */}
         <Text style={styles.note}>{t.athanScheduleNote}</Text>
         {Platform.OS === 'android' && !exactAlarmEnabled ? (
@@ -1586,40 +1571,6 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '700',
     textAlign: 'center',
-  },
-
-  diagnosticsCard: {
-    backgroundColor: 'rgba(255,255,255,0.08)',
-    borderRadius: UI_RADII.lg,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.15)',
-    padding: 16,
-    marginBottom: 24,
-    ...UI_SHADOWS.card,
-  },
-  diagnosticsTitle: {
-    fontSize: 17,
-    fontWeight: '700',
-    color: UI_COLORS.text,
-    marginBottom: 6,
-  },
-  diagnosticsText: {
-    fontSize: 14,
-    lineHeight: 21,
-    color: UI_COLORS.textMuted,
-  },
-  diagnosticsButton: {
-    alignSelf: 'flex-start',
-    marginTop: 12,
-    backgroundColor: UI_COLORS.accent,
-    borderRadius: UI_RADII.md,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-  },
-  diagnosticsButtonText: {
-    color: UI_COLORS.white,
-    fontSize: 13,
-    fontWeight: '700',
   },
 
   // Method picker modal

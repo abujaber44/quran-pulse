@@ -135,11 +135,28 @@ export default function SettingsScreen({ navigation }: any) {
     <GlassBackground isDark={isDark}>
     <SafeAreaView style={styles.container} edges={['left', 'right', 'bottom']}>
       <ScrollView contentContainerStyle={styles.scroll}>
-        {/* Long-press the title to reach the hidden Audio Diagnostics screen */}
+        {/* Long-press the title to reach the hidden diagnostics screens */}
         <TouchableOpacity
           activeOpacity={1}
           delayLongPress={1500}
-          onLongPress={() => navigation?.navigate?.('AudioDiagnostics')}
+          onLongPress={() =>
+            showAlert({
+              title: 'Diagnostics',
+              message: 'Hidden developer tools',
+              variant: 'info',
+              buttons: [
+                {
+                  text: t.athanDiagnostics,
+                  onPress: () => navigation?.navigate?.('AthanDiagnostics'),
+                },
+                {
+                  text: 'Audio Diagnostics',
+                  onPress: () => navigation?.navigate?.('AudioDiagnostics'),
+                },
+                { text: t.cancel, role: 'cancel' },
+              ],
+            })
+          }
         >
         <ScreenIntroTile
           title="Settings"
