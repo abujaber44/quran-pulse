@@ -376,10 +376,11 @@ export default function MemorizeUnderstandScreen({ navigation }: any) {
         ) : null}
 
         {isSearchMode && !isSearching && aiResults.length > 0 && (
-          <View style={styles.searchMetaRow}>
+          <View style={styles.searchMetaBlock}>
             <Text style={styles.searchMetaText}>
               {aiResults.length} {t.versesFound}
             </Text>
+            <Text style={styles.searchMetaHint}>{t.notExhaustiveHint}</Text>
           </View>
         )}
 
@@ -609,17 +610,19 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: UI_COLORS.textMuted,
   },
-  searchMetaRow: {
+  searchMetaBlock: {
     paddingHorizontal: 16,
     marginBottom: 10,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
   },
   searchMetaText: {
     fontSize: 13,
     color: UI_COLORS.textMuted,
     fontWeight: '600',
+  },
+  searchMetaHint: {
+    fontSize: 11.5,
+    color: 'rgba(255,255,255,0.4)',
+    marginTop: 2,
   },
   searchDoneButton: {
     backgroundColor: UI_COLORS.primary,
