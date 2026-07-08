@@ -108,7 +108,17 @@ export default function MemorizeUnderstandScreen({ navigation }: any) {
         abortRef.current = controller;
 
         try {
-          const results = await searchVerses(query.trim(), controller.signal, lang);
+          const rawResults = await searchVerses(query.trim(), controller.signal, lang);
+          // Drop any result whose ayah number falls outside the surah's real
+          // verse count — the AI recalls verses from training knowledge
+          // rather than an indexed text search, so an occasional
+          // out-of-range/hallucinated reference is possible. This is a plain
+          // in-memory lookup against the already-loaded surah list, so it
+          // adds no network or storage cost.
+          const results = rawResults.filter((r) => {
+            const surah = surahLookupById.get(r.surahId);
+            return !!surah && r.ayahNumber >= 1 && r.ayahNumber <= surah.verses_count;
+          });
           if (!controller.signal.aborted) {
             setAiResults(results);
             setIsSearching(false);
@@ -126,7 +136,7 @@ export default function MemorizeUnderstandScreen({ navigation }: any) {
           }
         }
       }, 800),
-    []
+    [lang, surahLookupById]
   );
 
   // Set the pending/empty state synchronously the moment the query changes,
