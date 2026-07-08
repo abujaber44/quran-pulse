@@ -241,15 +241,7 @@ export default function App() {
             <Stack.Screen
               name="AthanDiagnostics"
               component={AthanDiagnosticsScreen}
-              options={{
-                title: '',
-                headerShadowVisible: false,
-                headerStyle: { backgroundColor: '#17384d' },
-                ...(isExpoGo ? {} : { statusBarStyle: 'light' as const }),
-                headerBackVisible: true,
-                headerBackTitle: 'Prayer Times',
-                headerTintColor: UI_COLORS.accent,
-              }}
+              options={({ navigation }) => getSharedHeaderOptions(navigation)}
             />
             <Stack.Screen
               name="QiblaCompass"
