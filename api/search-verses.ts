@@ -60,7 +60,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {
     const response = await client.messages.create({
       model: 'claude-haiku-4-5',
-      max_tokens: 2048,
+      // Arabic searches (8-10 results with full ayah text + relevance) can
+      // exceed 2048 output tokens; truncated JSON then parsed as "no results".
+      max_tokens: 8192,
       system: systemPrompt,
       messages: [{ role: 'user', content: `Find Quranic verses about: ${query.trim()}` }],
     });
@@ -73,9 +75,24 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     let results;
     try {
       results = JSON.parse(cleaned);
-    } catch (parseError) {
-      console.error('Failed to parse AI response:', text);
-      results = [];
+    } catch {
+      // Truncated output: salvage the complete result objects by cutting at
+      // the last complete "}" and closing the array.
+      const lastBrace = cleaned.lastIndexOf('}');
+      if (lastBrace > 0) {
+        try {
+          results = JSON.parse(`${cleaned.slice(0, lastBrace + 1)}]`);
+          console.warn(`Salvaged ${(results as any[]).length} results from truncated AI response`);
+        } catch {
+          results = [];
+        }
+      } else {
+        results = [];
+      }
+      if (!Array.isArray(results) || results.length === 0) {
+        console.error('Failed to parse AI response:', text.slice(0, 500));
+        results = [];
+      }
     }
 
     const validated = (results as any[]).filter(

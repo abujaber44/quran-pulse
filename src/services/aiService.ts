@@ -108,7 +108,10 @@ export async function searchVerses(
   const normalizedQuery = query.trim().toLowerCase();
   const key = cacheKey(['search', normalizedQuery, lang ?? 'en']);
   const cached = await getCached<SearchResult[]>(key);
-  if (cached) return cached;
+  // An empty cached array is treated as a miss: a transient backend failure
+  // (e.g. truncated AI output) must not pin a query to "no results" for the
+  // whole cache TTL on this device.
+  if (cached && cached.length > 0) return cached;
 
   const response = await fetch(`${AI_API_BASE}/api/search-verses`, {
     method: 'POST',
@@ -123,7 +126,9 @@ export async function searchVerses(
   }
 
   const data = (await response.json()) as { results: SearchResult[] };
-  setCache(key, data.results);
+  if (data.results.length > 0) {
+    setCache(key, data.results);
+  }
   return data.results;
 }
 

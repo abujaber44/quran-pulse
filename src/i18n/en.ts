@@ -40,6 +40,7 @@ export default {
   memorizeDescription: 'Search by concept — try \'patience\', \'gratitude\', \'story of Moses\', or any topic. AI finds the most relevant verses for you.',
   searchPlaceholder: 'Search by concept (e.g. patience, gratitude)...',
   versesFound: 'verses found',
+  notExhaustiveHint: 'Top matches, not an exhaustive list — try rephrasing to find others',
   searching: 'Searching...',
   aiSearching: 'AI is finding relevant verses...',
   noVersesFound: 'No verses found. Try a different concept.',

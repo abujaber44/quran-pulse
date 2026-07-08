@@ -100,8 +100,6 @@ export default function MemorizeUnderstandScreen({ navigation }: any) {
     () =>
       debounce(async (query: string) => {
         if (query.trim().length < 2) {
-          setAiResults([]);
-          setIsSearching(false);
           return;
         }
 
@@ -109,11 +107,18 @@ export default function MemorizeUnderstandScreen({ navigation }: any) {
         const controller = new AbortController();
         abortRef.current = controller;
 
-        setIsSearching(true);
-        setSearchError(null);
-
         try {
-          const results = await searchVerses(query.trim(), controller.signal, lang);
+          const rawResults = await searchVerses(query.trim(), controller.signal, lang);
+          // Drop any result whose ayah number falls outside the surah's real
+          // verse count — the AI recalls verses from training knowledge
+          // rather than an indexed text search, so an occasional
+          // out-of-range/hallucinated reference is possible. This is a plain
+          // in-memory lookup against the already-loaded surah list, so it
+          // adds no network or storage cost.
+          const results = rawResults.filter((r) => {
+            const surah = surahLookupById.get(r.surahId);
+            return !!surah && r.ayahNumber >= 1 && r.ayahNumber <= surah.verses_count;
+          });
           if (!controller.signal.aborted) {
             setAiResults(results);
             setIsSearching(false);
@@ -131,10 +136,22 @@ export default function MemorizeUnderstandScreen({ navigation }: any) {
           }
         }
       }, 800),
-    []
+    [lang, surahLookupById]
   );
 
+  // Set the pending/empty state synchronously the moment the query changes,
+  // so the "no verses found" empty-state can never flash during the 800ms
+  // debounce wait — before the request (cached or fresh) has even started.
   useEffect(() => {
+    const trimmed = searchQuery.trim();
+    if (trimmed.length < 2) {
+      setIsSearching(false);
+      setAiResults([]);
+      setSearchError(null);
+    } else {
+      setIsSearching(true);
+      setSearchError(null);
+    }
     performSearch(searchQuery);
     return () => {
       performSearch.cancel();
@@ -359,10 +376,11 @@ export default function MemorizeUnderstandScreen({ navigation }: any) {
         ) : null}
 
         {isSearchMode && !isSearching && aiResults.length > 0 && (
-          <View style={styles.searchMetaRow}>
+          <View style={styles.searchMetaBlock}>
             <Text style={styles.searchMetaText}>
               {aiResults.length} {t.versesFound}
             </Text>
+            <Text style={styles.searchMetaHint}>{t.notExhaustiveHint}</Text>
           </View>
         )}
 
@@ -592,17 +610,19 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: UI_COLORS.textMuted,
   },
-  searchMetaRow: {
+  searchMetaBlock: {
     paddingHorizontal: 16,
     marginBottom: 10,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
   },
   searchMetaText: {
     fontSize: 13,
     color: UI_COLORS.textMuted,
     fontWeight: '600',
+  },
+  searchMetaHint: {
+    fontSize: 11.5,
+    color: 'rgba(255,255,255,0.4)',
+    marginTop: 2,
   },
   searchDoneButton: {
     backgroundColor: UI_COLORS.primary,
