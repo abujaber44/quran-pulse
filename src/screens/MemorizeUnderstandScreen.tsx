@@ -100,17 +100,12 @@ export default function MemorizeUnderstandScreen({ navigation }: any) {
     () =>
       debounce(async (query: string) => {
         if (query.trim().length < 2) {
-          setAiResults([]);
-          setIsSearching(false);
           return;
         }
 
         abortRef.current?.abort();
         const controller = new AbortController();
         abortRef.current = controller;
-
-        setIsSearching(true);
-        setSearchError(null);
 
         try {
           const results = await searchVerses(query.trim(), controller.signal, lang);
@@ -134,7 +129,19 @@ export default function MemorizeUnderstandScreen({ navigation }: any) {
     []
   );
 
+  // Set the pending/empty state synchronously the moment the query changes,
+  // so the "no verses found" empty-state can never flash during the 800ms
+  // debounce wait — before the request (cached or fresh) has even started.
   useEffect(() => {
+    const trimmed = searchQuery.trim();
+    if (trimmed.length < 2) {
+      setIsSearching(false);
+      setAiResults([]);
+      setSearchError(null);
+    } else {
+      setIsSearching(true);
+      setSearchError(null);
+    }
     performSearch(searchQuery);
     return () => {
       performSearch.cancel();
