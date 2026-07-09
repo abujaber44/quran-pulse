@@ -26,6 +26,7 @@ import ScreenIntroTile from '../components/ScreenIntroTile';
 import { canScheduleExactAlarms, openExactAlarmSettings } from '../services/exactAlarmService';
 import {
   ATHAN_CHANNEL_ID,
+  ATHAN_IOS_SOUND,
   STALE_ATHAN_CHANNEL_IDS,
   ATHAN_REMINDER_CHANNEL_ID,
   ATHAN_NOTIFICATION_ID_PREFIX,
@@ -604,9 +605,9 @@ export default function PrayerTimesScreen({ navigation }: any) {
 
             if (Platform.OS === 'ios') {
               // iOS has no notification channels — the sound must be set
-              // per-notification here (bundled via the expo-notifications
-              // config plugin's "sounds" array in app.json).
-              content.sound = 'athan_v2.mp3';
+              // per-notification here (see ATHAN_IOS_SOUND for why it is a
+              // 29s .caf clip rather than the full athan_v2.mp3).
+              content.sound = ATHAN_IOS_SOUND;
               content.interruptionLevel = 'timeSensitive';
             }
             // On Android, sound comes from the channel (ATHAN_CHANNEL_ID),

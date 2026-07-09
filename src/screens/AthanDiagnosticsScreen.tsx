@@ -18,6 +18,7 @@ import {
 } from '../services/exactAlarmService';
 import {
   ATHAN_CHANNEL_ID,
+  ATHAN_IOS_SOUND,
   ATHAN_NOTIFICATION_ID_PREFIX,
   ATHAN_SCHEDULE_WINDOW_DAYS,
   ATHAN_NOTIFICATION_TITLE_PREFIX,
@@ -412,7 +413,7 @@ export default function AthanDiagnosticsScreen({ route }: any) {
           body: 'If you hear the athan now, the channel sound works.',
           priority: Notifications.AndroidNotificationPriority.HIGH,
           vibrate: [0, 250, 250, 250],
-          ...(Platform.OS === 'ios' ? { sound: 'athan_v2.mp3' } : {}),
+          ...(Platform.OS === 'ios' ? { sound: ATHAN_IOS_SOUND } : {}),
         },
         trigger:
           Platform.OS === 'android'

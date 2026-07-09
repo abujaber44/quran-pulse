@@ -10,7 +10,7 @@
 		13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 13B07FB51A68108700A75B9A /* Images.xcassets */; };
 		321FC1B8DC66734994476ABF /* ExpoModulesProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = F87FFD6F5D283227567D71A0 /* ExpoModulesProvider.swift */; };
 		3E461D99554A48A4959DE609 /* SplashScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */; };
-		81F4C7FA18164348B96768FD /* athan.mp3 in Resources */ = {isa = PBXBuildFile; fileRef = F0708AA8A5DC481FBCB5EC0A /* athan.mp3 */; };
+		81F4C7FA18164348B96768FD /* athan_ios.caf in Resources */ = {isa = PBXBuildFile; fileRef = F0708AA8A5DC481FBCB5EC0A /* athan_ios.caf */; };
 		891D4D7DD6C63A527DB786AB /* libPods-QuranPulse.a in Frameworks */ = {isa = PBXBuildFile; fileRef = C4735F7D206A4699258B4216 /* libPods-QuranPulse.a */; };
 		8C406B2090E034101AE93EBB /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = A37028CCCCEC88E205AC20DB /* PrivacyInfo.xcprivacy */; };
 		BB2F792D24A3F905000567C9 /* Expo.plist in Resources */ = {isa = PBXBuildFile; fileRef = BB2F792C24A3F905000567C9 /* Expo.plist */; };
@@ -28,7 +28,7 @@
 		BB2F792C24A3F905000567C9 /* Expo.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = Expo.plist; sourceTree = "<group>"; };
 		C4735F7D206A4699258B4216 /* libPods-QuranPulse.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-QuranPulse.a"; sourceTree = BUILT_PRODUCTS_DIR; };
 		ED297162215061F000B7C4FE /* JavaScriptCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = JavaScriptCore.framework; path = System/Library/Frameworks/JavaScriptCore.framework; sourceTree = SDKROOT; };
-		F0708AA8A5DC481FBCB5EC0A /* athan.mp3 */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = undefined; includeInIndex = 0; lastKnownFileType = unknown; name = athan.mp3; path = QuranPulse/athan.mp3; sourceTree = "<group>"; };
+		F0708AA8A5DC481FBCB5EC0A /* athan_ios.caf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = undefined; includeInIndex = 0; lastKnownFileType = unknown; name = athan_ios.caf; path = QuranPulse/athan_ios.caf; sourceTree = "<group>"; };
 		F11748412D0307B40044C1D9 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AppDelegate.swift; path = QuranPulse/AppDelegate.swift; sourceTree = "<group>"; };
 		F11748442D0722820044C1D9 /* QuranPulse-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = "QuranPulse-Bridging-Header.h"; path = "QuranPulse/QuranPulse-Bridging-Header.h"; sourceTree = "<group>"; };
 		F87FFD6F5D283227567D71A0 /* ExpoModulesProvider.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = ExpoModulesProvider.swift; path = "Pods/Target Support Files/Pods-QuranPulse/ExpoModulesProvider.swift"; sourceTree = "<group>"; };
@@ -55,7 +55,7 @@
 				13B07FB51A68108700A75B9A /* Images.xcassets */,
 				13B07FB61A68108700A75B9A /* Info.plist */,
 				AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */,
-				F0708AA8A5DC481FBCB5EC0A /* athan.mp3 */,
+				F0708AA8A5DC481FBCB5EC0A /* athan_ios.caf */,
 				A37028CCCCEC88E205AC20DB /* PrivacyInfo.xcprivacy */,
 			);
 			name = QuranPulse;
@@ -199,7 +199,7 @@
 				BB2F792D24A3F905000567C9 /* Expo.plist in Resources */,
 				13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */,
 				3E461D99554A48A4959DE609 /* SplashScreen.storyboard in Resources */,
-				81F4C7FA18164348B96768FD /* athan.mp3 in Resources */,
+				81F4C7FA18164348B96768FD /* athan_ios.caf in Resources */,
 				8C406B2090E034101AE93EBB /* PrivacyInfo.xcprivacy in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -362,7 +362,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.0;
+				MARKETING_VERSION = 1.3.0;
 				OTHER_LDFLAGS = (
 					"$(inherited)",
 					"-ObjC",
@@ -393,7 +393,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.0;
+				MARKETING_VERSION = 1.3.0;
 				OTHER_LDFLAGS = (
 					"$(inherited)",
 					"-ObjC",
