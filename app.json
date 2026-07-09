@@ -18,7 +18,7 @@
       "assets/sounds/*"
     ],
     "ios": {
-      "supportsTablet": true,
+      "supportsTablet": false,
       "bundleIdentifier": "com.quranpulse.app",
       "infoPlist": {
         "UIBackgroundModes": [
@@ -57,7 +57,8 @@
           "icon": "./assets/notification-icon.png",
           "color": "#27ae60",
           "sounds": [
-            "./assets/sounds/athan_v2.mp3"
+            "./assets/sounds/athan_v2.mp3",
+            "./assets/sounds/athan_ios.caf"
           ]
         }
       ],
