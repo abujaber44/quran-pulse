@@ -18,7 +18,7 @@
       "assets/sounds/*"
     ],
     "ios": {
-      "supportsTablet": true,
+      "supportsTablet": false,
       "bundleIdentifier": "com.quranpulse.app",
       "infoPlist": {
         "UIBackgroundModes": [
