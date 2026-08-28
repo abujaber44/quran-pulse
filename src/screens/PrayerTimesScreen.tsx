@@ -38,7 +38,12 @@ import {
 import { calculateDistanceToKaabaKm, calculateQiblaBearing, Coordinates } from '../utils/qiblaUtils';
 import { useLanguage } from '../i18n';
 import { schedulePrePrayerReminders } from '../services/prayerCountdownService';
-import { fetchNominatimSuggestions, fetchOpenMeteoSuggestions } from '../services/citySearch';
+import {
+  cacheCityCoordinates,
+  fetchNominatimSuggestions,
+  fetchOpenMeteoSuggestions,
+  geocodeCity,
+} from '../services/citySearch';
 import {
   PRAYER_NAMES,
   CALCULATION_METHODS,
@@ -240,16 +245,19 @@ export default function PrayerTimesScreen({ navigation }: any) {
   const resolveCoordinatesForCity = async (cityName: string): Promise<Coordinates | null> => {
     try {
       const geocoded = await Location.geocodeAsync(cityName);
-      if (!Array.isArray(geocoded) || geocoded.length === 0) {
-        return null;
+      if (Array.isArray(geocoded) && geocoded.length > 0) {
+        const coords = {
+          latitude: geocoded[0].latitude,
+          longitude: geocoded[0].longitude,
+        };
+        cacheCityCoordinates(cityName, coords);
+        return coords;
       }
-      return {
-        latitude: geocoded[0].latitude,
-        longitude: geocoded[0].longitude,
-      };
     } catch {
-      return null;
+      // The device geocoder needs location services; fall back to the
+      // same providers the city suggestions come from.
     }
+    return geocodeCity(cityName);
   };
 
   const setupAndroidNotificationChannels = async () => {
@@ -443,7 +451,8 @@ export default function PrayerTimesScreen({ navigation }: any) {
         cityName,
         method,
         today,
-        ATHAN_SCHEDULE_WINDOW_DAYS
+        ATHAN_SCHEDULE_WINDOW_DAYS,
+        preferredCoordinates ?? null
       );
       const scheduleWindow = result.days;
 
@@ -476,8 +485,10 @@ export default function PrayerTimesScreen({ navigation }: any) {
         setPrayerScheduleWindow([]);
         setScheduleFromCache(false);
         showAlert({
-          title: 'Invalid City',
-          message: `No prayer times found for "${cityName}". Please select a valid city from suggestions or try a major city near you.`,
+          title: result.unresolvedCity ? 'City Not Found' : 'Prayer Times Unavailable',
+          message: result.unresolvedCity
+            ? `We couldn't find "${cityName}" on the map. Please pick a city from the suggestions, or use the locate button.`
+            : `Could not calculate prayer times for "${cityName}". Please try again.`,
           variant: 'danger',
         });
         setSearchInput('');
