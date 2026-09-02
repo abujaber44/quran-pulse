@@ -17,7 +17,7 @@ import GlassBackground from '../components/GlassBackground';
 import { UI_COLORS, UI_RADII, UI_SHADOWS } from '../theme/ui';
 import { useLanguage } from '../i18n';
 import { useSettings } from '../context/SettingsContext';
-import { fetchCitySuggestions } from '../services/citySearch';
+import { cacheCityCoordinates, fetchCitySuggestions } from '../services/citySearch';
 
 export const ONBOARDING_DONE_KEY = '@qp_onboarding_done';
 const CITY_STORAGE_KEY = 'prayer_city'; // same key the Prayer Times screen reads
@@ -80,7 +80,15 @@ export default function OnboardingScreen({ navigation }: any) {
       const places = await Location.reverseGeocodeAsync(position.coords);
       const place = places[0];
       const cityName = place?.city || place?.region || place?.country;
-      if (cityName) chooseCity(cityName);
+      if (cityName) {
+        // Keep the exact GPS fix: prayer times are computed from it, so the
+        // schedule never depends on the detected name being geocodable.
+        cacheCityCoordinates(cityName, {
+          latitude: position.coords.latitude,
+          longitude: position.coords.longitude,
+        });
+        chooseCity(cityName);
+      }
     } catch {
       // Silent — the user can still type a city or skip
     } finally {

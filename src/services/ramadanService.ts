@@ -1,6 +1,9 @@
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
+import { geocodeCity } from './citySearch';
+import { computePrayerScheduleWindow, getCalculationMethod } from './prayerTimesService';
+
 const HIJRI_CACHE_PREFIX = '@qp_hijri:';
 const TIMINGS_CACHE_PREFIX = '@qp_ramadan_timings:';
 const CITY_STORAGE_KEY = 'prayer_city'; // shared with PrayerTimesScreen
@@ -58,13 +61,19 @@ async function getTodayTimings(): Promise<{ fajr?: string; maghrib?: string }> {
   try {
     const city = await AsyncStorage.getItem(CITY_STORAGE_KEY);
     if (!city) return {};
-    const url = `https://api.aladhan.com/v1/timingsByCity/${gregorianDDMMYYYY()}?city=${encodeURIComponent(city)}&country=&method=2`;
-    const { data } = await axios.get(url);
-    const timings = data?.data?.timings;
-    if (!timings) return {};
+
+    // Computed locally from the city's coordinates and the user's chosen
+    // method, so suhoor/iftar always agree with the Prayer Times screen.
+    const coordinates = await geocodeCity(city);
+    if (!coordinates) return {};
+
+    const methodId = await getCalculationMethod();
+    const [today] = computePrayerScheduleWindow(coordinates, methodId, new Date(), 1);
+    if (!today) return {};
+
     const result = {
-      fajr: (timings.Fajr as string)?.slice(0, 5),
-      maghrib: (timings.Maghrib as string)?.slice(0, 5),
+      fajr: today.timings.Fajr,
+      maghrib: today.timings.Maghrib,
     };
     AsyncStorage.setItem(cacheKey, JSON.stringify(result)).catch(() => {});
     return result;

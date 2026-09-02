@@ -1,4 +1,17 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import {
+  CalculationMethod,
+  Coordinates as AdhanCoordinates,
+  PrayerTimes,
+  type CalculationParameters,
+} from 'adhan';
+
+import {
+  cacheCityCoordinates,
+  geocodeCity,
+  type CityCoordinates,
+} from './citySearch';
+import { getHijriMonthName, getHijriToday } from './islamicEventsService';
 
 export const PRAYER_NAMES = ['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'] as const;
 export type PrayerName = (typeof PRAYER_NAMES)[number];
@@ -22,6 +35,8 @@ export type PrayerScheduleDay = {
 export type PrayerScheduleResult = {
   days: PrayerScheduleDay[];
   fromCache: boolean;
+  /** The city name could not be resolved to coordinates by any provider */
+  unresolvedCity?: boolean;
 };
 
 export interface CalculationMethod {
@@ -224,70 +239,158 @@ export async function getNextPrayerFromCache(now: Date = new Date()): Promise<Ne
   }
 }
 
-const fetchDay = async (
-  cityName: string,
+/** adhan's parameter set for each calculation method we expose. */
+const buildCalculationParameters = (methodId: number): CalculationParameters => {
+  switch (methodId) {
+    case 1:
+      return CalculationMethod.Karachi();
+    case 3:
+      return CalculationMethod.MuslimWorldLeague();
+    case 4:
+      return CalculationMethod.UmmAlQura();
+    case 5:
+      return CalculationMethod.Egyptian();
+    case 13:
+      return CalculationMethod.Turkey();
+    case 2:
+    default:
+      return CalculationMethod.NorthAmerica();
+  }
+};
+
+/** "HH:MM" in the device's local timezone, matching the old API string format. */
+const formatLocalTime = (date: Date): string =>
+  `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
+
+const isValidDate = (date: Date): boolean => !Number.isNaN(date.getTime());
+
+/**
+ * One day of prayer times, computed locally from coordinates.
+ *
+ * Night markers follow the same convention the app has always displayed
+ * (Aladhan's default "midnight mode"): the night runs from sunset to the
+ * NEXT sunrise, so both need tomorrow's times as well. adhan's own
+ * SunnahTimes measures maghrib→fajr instead, which would silently shift
+ * the Night Worship card by ~40 minutes.
+ */
+const computeDay = (
+  coords: AdhanCoordinates,
   methodId: number,
   targetDate: Date
-): Promise<PrayerScheduleDay | null> => {
-  const day = String(targetDate.getDate()).padStart(2, '0');
-  const month = String(targetDate.getMonth() + 1).padStart(2, '0');
-  const year = targetDate.getFullYear();
-  const url = `https://api.aladhan.com/v1/timingsByCity/${day}-${month}-${year}?city=${encodeURIComponent(cityName)}&country=&method=${methodId}`;
+): PrayerScheduleDay | null => {
+  const today = new PrayerTimes(coords, targetDate, buildCalculationParameters(methodId));
 
-  const response = await fetch(url);
-  const data = await response.json();
-  if (data?.code !== 200) return null;
+  const tomorrowDate = new Date(targetDate);
+  tomorrowDate.setDate(targetDate.getDate() + 1);
+  const tomorrow = new PrayerTimes(coords, tomorrowDate, buildCalculationParameters(methodId));
 
-  const timings = extractTimings(data?.data?.timings);
+  const core = [today.fajr, today.sunrise, today.dhuhr, today.asr, today.maghrib, today.isha];
+  if (core.some((value) => !(value instanceof Date) || !isValidDate(value))) {
+    // Polar latitudes can leave a prayer undefined for part of the year.
+    return null;
+  }
+
+  const raw: Record<ExtendedTimeKey, string> = {
+    Fajr: formatLocalTime(today.fajr),
+    Sunrise: formatLocalTime(today.sunrise),
+    Dhuhr: formatLocalTime(today.dhuhr),
+    Asr: formatLocalTime(today.asr),
+    Maghrib: formatLocalTime(today.maghrib),
+    Isha: formatLocalTime(today.isha),
+    Midnight: '',
+    Lastthird: '',
+  };
+
+  if (tomorrow.sunrise instanceof Date && isValidDate(tomorrow.sunrise)) {
+    const nightMs = tomorrow.sunrise.getTime() - today.maghrib.getTime();
+    if (nightMs > 0) {
+      raw.Midnight = formatLocalTime(new Date(today.maghrib.getTime() + nightMs / 2));
+      raw.Lastthird = formatLocalTime(new Date(today.maghrib.getTime() + (nightMs * 2) / 3));
+    }
+  }
+
+  const timings = extractTimings(raw);
   if (!timings) return null;
 
-  const hijri = data?.data?.date?.hijri;
-  const hijriDate = hijri
-    ? `${hijri.day} ${hijri.month?.en ?? ''} ${hijri.year}`.trim()
-    : undefined;
-  const hijriDateAr = hijri
-    ? `${hijri.day} ${hijri.month?.ar ?? ''} ${hijri.year}`.trim()
-    : undefined;
-
-  return {
-    dateKey: toLocalDateKey(targetDate),
-    timings,
-    hijriDate,
-    hijriDateAr,
-  };
+  return { dateKey: toLocalDateKey(targetDate), timings };
 };
 
 /**
- * Fetch the schedule window from Aladhan; on any failure fall back to the
- * cached copy for this city+method so the screen keeps working offline.
+ * Prayer times for a coordinate, computed on-device. Pure astronomy — no
+ * network, so this cannot fail because a geocoder does not recognise a town.
+ */
+export function computePrayerScheduleWindow(
+  coordinates: CityCoordinates,
+  methodId: number,
+  startDate: Date,
+  days: number
+): PrayerScheduleDay[] {
+  const coords = new AdhanCoordinates(coordinates.latitude, coordinates.longitude);
+  const schedule: PrayerScheduleDay[] = [];
+
+  for (let dayOffset = 0; dayOffset < days; dayOffset += 1) {
+    const targetDate = new Date(startDate);
+    targetDate.setDate(startDate.getDate() + dayOffset);
+    const day = computeDay(coords, methodId, targetDate);
+    if (day) schedule.push(day);
+  }
+
+  return schedule;
+}
+
+/** Today's hijri date, attached best-effort — never blocks the schedule. */
+const attachHijriToToday = async (days: PrayerScheduleDay[]): Promise<void> => {
+  const todayKey = toLocalDateKey(new Date());
+  const todayEntry = days.find((day) => day.dateKey === todayKey);
+  if (!todayEntry) return;
+
+  try {
+    const hijri = await getHijriToday();
+    if (!hijri) return;
+    todayEntry.hijriDate = `${hijri.day} ${getHijriMonthName(hijri.month, 'en')} ${hijri.year}`;
+    todayEntry.hijriDateAr = `${hijri.day} ${getHijriMonthName(hijri.month, 'ar')} ${hijri.year}`;
+  } catch {
+    // The schedule is still complete without it
+  }
+};
+
+/**
+ * The schedule window for a city.
+ *
+ * Coordinates are the only thing that needs looking up, and they are cached
+ * per city, so a city chosen once keeps producing times forever with no
+ * network. This replaced Aladhan's timingsByCity endpoint, whose geocoder
+ * fails on much of the world (Chicago and Toronto included) and took athan
+ * scheduling down with it.
  */
 export async function fetchPrayerScheduleWindow(
   cityName: string,
   methodId: number,
   startDate: Date,
-  days: number
+  days: number,
+  knownCoordinates?: CityCoordinates | null
 ): Promise<PrayerScheduleResult> {
-  try {
-    const requests: Array<Promise<PrayerScheduleDay | null>> = [];
-    for (let dayOffset = 0; dayOffset < days; dayOffset += 1) {
-      const targetDate = new Date(startDate);
-      targetDate.setDate(startDate.getDate() + dayOffset);
-      requests.push(fetchDay(cityName, methodId, targetDate).catch(() => null));
-    }
-
-    const settled = await Promise.all(requests);
-    const fetched = settled
-      .filter((item): item is PrayerScheduleDay => item !== null)
-      .sort((a, b) => a.dateKey.localeCompare(b.dateKey));
-
-    if (fetched.length > 0) {
-      writeScheduleCache(cityName, methodId, fetched);
-      return { days: fetched, fromCache: false };
-    }
-  } catch {
-    // fall through to cache
+  let coordinates = knownCoordinates ?? null;
+  if (coordinates) {
+    cacheCityCoordinates(cityName, coordinates);
+  } else {
+    coordinates = await geocodeCity(cityName);
   }
 
-  const cached = await readScheduleCache(cityName, methodId);
-  return { days: cached, fromCache: true };
+  if (!coordinates) {
+    // Nothing to compute from; a previously cached schedule is better than
+    // an empty screen.
+    const cached = await readScheduleCache(cityName, methodId);
+    return { days: cached, fromCache: true, unresolvedCity: cached.length === 0 };
+  }
+
+  const computed = computePrayerScheduleWindow(coordinates, methodId, startDate, days);
+  if (computed.length === 0) {
+    const cached = await readScheduleCache(cityName, methodId);
+    return { days: cached, fromCache: true, unresolvedCity: false };
+  }
+
+  await attachHijriToToday(computed);
+  writeScheduleCache(cityName, methodId, computed);
+  return { days: computed, fromCache: false, unresolvedCity: false };
 }
